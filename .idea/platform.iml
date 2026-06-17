@@ -5,6 +5,7 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/accounts/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/domains/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/ultary/domains/tofu/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
