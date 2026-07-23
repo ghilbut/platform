@@ -12,6 +12,9 @@
 .env
 .secret
 
+## git worktrees
+.worktrees
+
 ## temporary directory
 .tmp
 

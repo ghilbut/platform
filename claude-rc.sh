@@ -2,9 +2,10 @@
 
 set -eu
 
+export ANTHROPIC_MODEL=claude-opus-4-8
+export CLAUDE_CODE_EFFORT_LEVEL=xhigh
+
 exec claude \
-  --model claude-opus-4-8 \
-  --effort xhigh \
   remote-control \
   --remote-control-session-name-prefix "ghilbut" \
   --permission-mode bypassPermissions \

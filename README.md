@@ -2,10 +2,12 @@
 
 ## Claude Remote-Control
 
+[**claude-rc.sh**](claude-rc.sh)
+
 ```shell
-claude \
-  --model claude-opus-4-8 \
-  --effort xhigh \
+$ ANTHROPIC_MODEL=claude-opus-4-8 \
+  CLAUDE_CODE_EFFORT_LEVEL=xhigh \
+  claude \
   remote-control \
   --remote-control-session-name-prefix "ghilbut" \
   --permission-mode bypassPermissions \
