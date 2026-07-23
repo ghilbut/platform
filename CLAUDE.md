@@ -1,1 +1,1 @@
-Follow [AGENTS.md](./AGENTS.md) file
+@AGENTS.md
