@@ -1,4 +1,4 @@
-name: Build and upload CDN Lambda@Edge to S3
+name: Build and deploy CDN Lambda@Edge
 
 on:
   push:
@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - .github/workflows/aws-cdn-lambda.yml
+      - aws/cdn/404.html
+      - aws/cdn/503.html
       - aws/cdn/lambda/**
       - aws/cdn/tofu/**
 
@@ -14,8 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Test, build, and upload
+  deploy:
+    name: Test, build, and deploy
     runs-on: ubuntu-latest
 
     permissions:
@@ -59,26 +61,12 @@ jobs:
       - name: Build
         run: pnpm --filter @ghilbut/cdn-lambda build
 
-      - name: Create zip
-        run: zip lambda.zip index.mjs
-        working-directory: aws/cdn/lambda/dist
-
-      - name: Compute SHA-256
-        run: openssl dgst -sha256 -binary lambda.zip | base64 > lambda.zip.sha256
-        working-directory: aws/cdn/lambda/dist
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: us-east-1
           role-to-assume: ${{ vars.AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN }}
           disable-retry: true
-
-      - name: Upload to S3
-        run: |
-          aws s3 cp lambda.zip s3://ghilbut-cloudfront-cdn/lambda.zip
-          aws s3 cp lambda.zip.sha256 s3://ghilbut-cloudfront-cdn/lambda.zip.sha256 --content-type text/plain
-        working-directory: aws/cdn/lambda/dist
 
       - name: Setup OpenTofu
         uses: opentofu/setup-opentofu@v2
@@ -90,10 +78,6 @@ jobs:
         run: tofu init
         working-directory: aws/cdn/tofu
 
-      - name: OpenTofu apply Lambda, CloudFront Function, and distribution targets
-        run: |
-          tofu apply -auto-approve \
-            -target=aws_lambda_function.this \
-            -target=aws_cloudfront_function.viewer_request \
-            -target=aws_cloudfront_distribution.this
+      - name: OpenTofu apply
+        run: tofu apply -auto-approve
         working-directory: aws/cdn/tofu

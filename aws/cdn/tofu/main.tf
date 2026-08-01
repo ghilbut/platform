@@ -22,6 +22,10 @@ module "s3" {
   source = "./modules/s3"
 
   bucket_name = "${var.name}-cloudfront-cdn"
+  error_page_files = {
+    "404.html" = "${path.root}/../404.html"
+    "503.html" = "${path.root}/../503.html"
+  }
 }
 
 module "certificate" {
@@ -36,12 +40,13 @@ module "certificate" {
 module "edge" {
   source = "./modules/edge"
 
-  allowlist    = local.viewer_request_allowlist
-  bucket_arn   = module.s3.arn
-  bucket_name  = module.s3.name
-  name         = var.name
-  redirect_map = local.viewer_request_redirect_map
-  spa_hosts    = local.viewer_request_spa_hosts
+  allowlist          = local.viewer_request_allowlist
+  bucket_arn         = module.s3.arn
+  bucket_name        = module.s3.name
+  name               = var.name
+  redirect_map       = local.viewer_request_redirect_map
+  spa_hosts          = local.viewer_request_spa_hosts
+  lambda_source_file = "${path.root}/../lambda/dist/index.mjs"
 }
 
 module "cloudfront" {

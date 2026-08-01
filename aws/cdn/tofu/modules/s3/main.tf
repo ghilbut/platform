@@ -12,3 +12,13 @@ resource "aws_s3_bucket_public_access_block" "this" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+resource "aws_s3_object" "error_page" {
+  for_each = var.error_page_files
+
+  bucket       = aws_s3_bucket.this.id
+  key          = each.key
+  source       = each.value
+  source_hash  = filemd5(each.value)
+  content_type = "text/html; charset=utf-8"
+}

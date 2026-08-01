@@ -11,8 +11,10 @@ resource "aws_iam_role" "this" {
       Effect    = "Allow"
       Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
       Condition = {
-        StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
-        StringLike   = { "token.actions.githubusercontent.com:sub" = "repo:${var.repository_full_name}:*" }
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:${var.repository_full_name}:ref:refs/heads/main"
+        }
       }
     }]
   })
@@ -26,7 +28,6 @@ data "aws_iam_policy_document" "upload" {
       "${var.cdn_bucket_arn}/404.html",
       "${var.cdn_bucket_arn}/503.html",
       "${var.cdn_bucket_arn}/lambda.zip",
-      "${var.cdn_bucket_arn}/lambda.zip.sha256",
     ]
   }
 }
@@ -63,7 +64,7 @@ data "aws_iam_policy_document" "apply" {
 
   statement {
     actions   = ["s3:GetObject", "s3:GetObjectTagging"]
-    resources = ["${var.cdn_bucket_arn}/lambda.zip", "${var.cdn_bucket_arn}/lambda.zip.sha256"]
+    resources = ["${var.cdn_bucket_arn}/lambda.zip"]
   }
 
   statement {
@@ -106,6 +107,11 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
+    actions   = ["iam:GetOpenIDConnectProvider"]
+    resources = [data.aws_iam_openid_connect_provider.github.arn]
+  }
+
+  statement {
     actions   = ["acm:DescribeCertificate", "acm:ListTagsForCertificate"]
     resources = [var.acm_certificate_arn]
   }
@@ -116,8 +122,13 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
-    actions   = ["route53:ChangeResourceRecordSets", "route53:GetChange", "route53:ListResourceRecordSets", "route53:ListTagsForResource"]
+    actions   = ["route53:ChangeResourceRecordSets", "route53:ListResourceRecordSets", "route53:ListTagsForResource"]
     resources = [for zone_id in distinct(values(var.zone_ids)) : "arn:aws:route53:::hostedzone/${zone_id}"]
+  }
+
+  statement {
+    actions   = ["route53:GetChange"]
+    resources = ["arn:aws:route53:::change/*"]
   }
 }
 

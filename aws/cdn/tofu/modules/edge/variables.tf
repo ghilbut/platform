@@ -4,3 +4,4 @@ variable "bucket_name" { type = string }
 variable "name" { type = string }
 variable "redirect_map" { type = map(string) }
 variable "spa_hosts" { type = list(string) }
+variable "lambda_source_file" { type = string }

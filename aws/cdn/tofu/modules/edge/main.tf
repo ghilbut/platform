@@ -32,14 +32,17 @@ resource "aws_iam_role_policy" "lambda_s3" {
   policy = data.aws_iam_policy_document.lambda_s3.json
 }
 
-data "aws_s3_object" "lambda_zip" {
-  bucket = var.bucket_name
-  key    = "lambda.zip"
+data "archive_file" "lambda" {
+  type        = "zip"
+  source_file = var.lambda_source_file
+  output_path = "${path.root}/.terraform/${var.name}-cdn-lambda.zip"
 }
 
-data "aws_s3_object" "lambda_sha256" {
-  bucket = var.bucket_name
-  key    = "lambda.zip.sha256"
+resource "aws_s3_object" "lambda_zip" {
+  bucket      = var.bucket_name
+  key         = "lambda.zip"
+  source      = data.archive_file.lambda.output_path
+  source_hash = data.archive_file.lambda.output_base64sha256
 }
 
 resource "aws_lambda_function" "this" {
@@ -50,8 +53,8 @@ resource "aws_lambda_function" "this" {
   publish       = true
 
   s3_bucket        = var.bucket_name
-  s3_key           = data.aws_s3_object.lambda_zip.key
-  source_code_hash = trimspace(data.aws_s3_object.lambda_sha256.body)
+  s3_key           = aws_s3_object.lambda_zip.key
+  source_code_hash = data.archive_file.lambda.output_base64sha256
   tags             = { Name = "${var.name}-cdn" }
 }
 
