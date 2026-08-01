@@ -2,7 +2,7 @@
 
 set -eu
 
-export ANTHROPIC_MODEL=claude-opus-4-8
+export ANTHROPIC_MODEL=claude-opus-5
 export CLAUDE_CODE_EFFORT_LEVEL=xhigh
 
 exec claude \
