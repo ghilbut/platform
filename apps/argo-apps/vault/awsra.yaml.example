@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awsra
+  namespace: kube-system
+type: Opaque
+stringData:
+  AWS_ROLESANYWHERE_PKCS8_PASSWORD: ""
+  AWS_ROLESANYWHERE_PROFILE_ARN: ""
+  AWS_ROLESANYWHERE_ROLE_ARN: ""
+  AWS_ROLESANYWHERE_TRUST_ANCHOR_ARN: ""
