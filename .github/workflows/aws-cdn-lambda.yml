@@ -9,7 +9,9 @@ on:
       - aws/cdn/404.html
       - aws/cdn/503.html
       - aws/cdn/lambda/**
-      - aws/cdn/tofu/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
 
 concurrency:
   group: cdn-lambda-deploy

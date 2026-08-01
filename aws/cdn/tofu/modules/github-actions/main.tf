@@ -63,8 +63,12 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
-    actions   = ["s3:GetObject", "s3:GetObjectTagging"]
-    resources = ["${var.cdn_bucket_arn}/lambda.zip"]
+    actions = ["s3:GetObject", "s3:GetObjectTagging"]
+    resources = [
+      "${var.cdn_bucket_arn}/404.html",
+      "${var.cdn_bucket_arn}/503.html",
+      "${var.cdn_bucket_arn}/lambda.zip",
+    ]
   }
 
   statement {
@@ -102,8 +106,15 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
-    actions   = ["iam:GetRole", "iam:GetRolePolicy", "iam:ListAttachedRolePolicies", "iam:ListRolePolicies"]
-    resources = [var.lambda_role_arn]
+    actions = [
+      "iam:DeleteRolePolicy",
+      "iam:GetRole",
+      "iam:GetRolePolicy",
+      "iam:ListAttachedRolePolicies",
+      "iam:ListRolePolicies",
+      "iam:PutRolePolicy",
+    ]
+    resources = [aws_iam_role.this.arn, var.lambda_role_arn]
   }
 
   statement {

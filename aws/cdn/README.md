@@ -44,7 +44,8 @@ tofu apply
 ```
 
 이 구성은 `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수를 생성합니다.
-Lambda 워크플로는 이 역할을 사용해 전체 CDN 구성을 갱신합니다.
+Lambda 워크플로는 이 역할을 사용해 기존 CDN의 Lambda·오류 페이지·CloudFront
+갱신과 연결된 inline policy 갱신만 수행합니다.
 
 ## GitHub Actions
 
@@ -53,6 +54,10 @@ Lambda 워크플로는 이 역할을 사용해 전체 CDN 구성을 갱신합니
 
 워크플로에는 `TOFU_GITHUB_APP_ID`, `TOFU_GITHUB_APP_INSTALLATION_ID`,
 `TOFU_GITHUB_APP_PEM` 자격 증명과 위 역할 변수가 필요합니다.
+
+S3 버킷, ACM 인증서, CloudFront 배포, IAM 역할, Route53 레코드의 생성·교체·삭제와
+IAM trust policy 변경은 워크플로 범위 밖입니다. 이런 OpenTofu 구성 변경은
+`ghilbut-platform` 프로필로 로컬에서 apply합니다.
 
 ## 호스트 추가
 
