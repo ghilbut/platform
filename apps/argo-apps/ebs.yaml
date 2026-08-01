@@ -34,7 +34,7 @@ spec:
     repoURL: https://openebs.github.io/lvm-localpv
     targetRevision: 1.9.1
     helm:
-      releaseName: openebs-lvm
+      releaseName: ebs
   destination:
     name: in-cluster
     namespace: ebs
