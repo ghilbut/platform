@@ -8,6 +8,8 @@
 
 ## 1. Root CA 생성
 
+> 실행 기록: [[pki/RUN-2026-08-01|Root 및 Intermediate CA 실행 기록]]
+
 ```shell
 ROOT_VALID_DAYS=3650
 ROOT_SUBJECT='/C=KR/O=Example/CN=Example Root CA'
@@ -36,6 +38,8 @@ chmod 444 pki/root-ca.crt.pem
 ```
 
 ## 2. Intermediate CA 생성
+
+> 실행 기록: [[pki/RUN-2026-08-01|Root 및 Intermediate CA 실행 기록]]
 
 ```shell
 INTERMEDIATE_VALID_DAYS=3650
@@ -78,29 +82,33 @@ chmod 444 pki/intermediate-ca.csr.pem pki/intermediate-ca.crt.pem
 
 ## 3. Issuing CA 생성
 
+> 실행 기록: [[apps/tofu/pki/RUN-2026-08-01|Tofu PKI 실행 기록]]
+
 ```shell
 ISSUING_CA_VALID_DAYS=3650
 ISSUING_CA_ID='service-issuing-ca'
 ISSUING_CA_SUBJECT='/C=KR/O=Example/OU=Platform/CN=Example Service Issuing CA'
-ISSUING_CA_DIR="pki/issuers/$ISSUING_CA_ID"
+APPLICATION_PKI_DIR='apps/example/pki'
+ISSUING_CA_DIR="$APPLICATION_PKI_DIR/issuers/$ISSUING_CA_ID"
+SECRET_DIR="$APPLICATION_PKI_DIR/.secrets"
 EXT_DIR='pki/.tmp'
 
-mkdir -p "$ISSUING_CA_DIR" pki/.secrets "$EXT_DIR"
-chmod 700 pki/.secrets
+mkdir -p "$ISSUING_CA_DIR" "$SECRET_DIR" "$EXT_DIR"
+chmod 700 "$SECRET_DIR"
 umask 077
 
 test ! -e "$ISSUING_CA_DIR/ca.key.pem"
 test ! -e "$ISSUING_CA_DIR/ca.crt.pem"
-openssl rand -base64 -out "pki/.secrets/$ISSUING_CA_ID.pass" 48
-chmod 600 "pki/.secrets/$ISSUING_CA_ID.pass"
+openssl rand -base64 -out "$SECRET_DIR/$ISSUING_CA_ID.pass" 48
+chmod 600 "$SECRET_DIR/$ISSUING_CA_ID.pass"
 
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 \
   -pkeyopt ec_param_enc:named_curve -aes-256-cbc \
-  -pass "file:pki/.secrets/$ISSUING_CA_ID.pass" -out "$ISSUING_CA_DIR/ca.key.pem"
+  -pass "file:$SECRET_DIR/$ISSUING_CA_ID.pass" -out "$ISSUING_CA_DIR/ca.key.pem"
 chmod 400 "$ISSUING_CA_DIR/ca.key.pem"
 
 openssl req -new -sha384 -key "$ISSUING_CA_DIR/ca.key.pem" \
-  -passin "file:pki/.secrets/$ISSUING_CA_ID.pass" \
+  -passin "file:$SECRET_DIR/$ISSUING_CA_ID.pass" \
   -out "$ISSUING_CA_DIR/ca.csr.pem" -subj "$ISSUING_CA_SUBJECT"
 
 ISSUING_CA_EXT="$EXT_DIR/$ISSUING_CA_ID.ext"
@@ -121,6 +129,8 @@ chmod 444 "$ISSUING_CA_DIR/ca.csr.pem" "$ISSUING_CA_DIR/ca.crt.pem"
 
 ## 4. Leaf 인증서 생성
 
+> 실행 기록: [[apps/tofu/pki/RUN-2026-08-01|Tofu PKI 실행 기록]]
+
 ```shell
 LEAF_VALID_DAYS=3650
 ISSUING_CA_ID='service-issuing-ca'
@@ -128,26 +138,28 @@ LEAF_ID='service-workload'
 LEAF_SUBJECT='/C=KR/O=Example/OU=Platform/CN=service-workload'
 LEAF_KEY_USAGE='digitalSignature'
 LEAF_EXTENDED_KEY_USAGE='clientAuth'
-ISSUING_CA_DIR="pki/issuers/$ISSUING_CA_ID"
-LEAF_DIR="pki/leaves/$LEAF_ID"
+APPLICATION_PKI_DIR='apps/example/pki'
+ISSUING_CA_DIR="$APPLICATION_PKI_DIR/issuers/$ISSUING_CA_ID"
+LEAF_DIR="$APPLICATION_PKI_DIR/leaves/$LEAF_ID"
+SECRET_DIR="$APPLICATION_PKI_DIR/.secrets"
 EXT_DIR='pki/.tmp'
 
-mkdir -p "$LEAF_DIR" pki/.secrets "$EXT_DIR"
-chmod 700 pki/.secrets
+mkdir -p "$LEAF_DIR" "$SECRET_DIR" "$EXT_DIR"
+chmod 700 "$SECRET_DIR"
 umask 077
 
 test ! -e "$LEAF_DIR/$LEAF_ID.key.pem"
 test ! -e "$LEAF_DIR/$LEAF_ID.crt.pem"
-openssl rand -base64 -out "pki/.secrets/$LEAF_ID.pass" 48
-chmod 600 "pki/.secrets/$LEAF_ID.pass"
+openssl rand -base64 -out "$SECRET_DIR/$LEAF_ID.pass" 48
+chmod 600 "$SECRET_DIR/$LEAF_ID.pass"
 
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 \
   -pkeyopt ec_param_enc:named_curve -aes-256-cbc \
-  -pass "file:pki/.secrets/$LEAF_ID.pass" -out "$LEAF_DIR/$LEAF_ID.key.pem"
+  -pass "file:$SECRET_DIR/$LEAF_ID.pass" -out "$LEAF_DIR/$LEAF_ID.key.pem"
 chmod 400 "$LEAF_DIR/$LEAF_ID.key.pem"
 
 openssl req -new -sha384 -key "$LEAF_DIR/$LEAF_ID.key.pem" \
-  -passin "file:pki/.secrets/$LEAF_ID.pass" \
+  -passin "file:$SECRET_DIR/$LEAF_ID.pass" \
   -out "$LEAF_DIR/$LEAF_ID.csr.pem" -subj "$LEAF_SUBJECT"
 
 LEAF_EXT="$EXT_DIR/$LEAF_ID.ext"
@@ -160,7 +172,7 @@ printf '%s\n' \
 
 openssl x509 -req -sha384 -days "$LEAF_VALID_DAYS" -in "$LEAF_DIR/$LEAF_ID.csr.pem" \
   -CA "$ISSUING_CA_DIR/ca.crt.pem" -CAkey "$ISSUING_CA_DIR/ca.key.pem" \
-  -passin "file:pki/.secrets/$ISSUING_CA_ID.pass" -CAcreateserial \
+  -passin "file:$SECRET_DIR/$ISSUING_CA_ID.pass" -CAcreateserial \
   -CAserial "$ISSUING_CA_DIR/ca.srl" -out "$LEAF_DIR/$LEAF_ID.crt.pem" \
   -extfile "$LEAF_EXT"
 rm -f "$LEAF_EXT"
@@ -172,8 +184,10 @@ chmod 444 "$LEAF_DIR/$LEAF_ID.csr.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
 ```shell
 ISSUING_CA_ID='service-issuing-ca'
 LEAF_ID='service-workload'
-ISSUING_CA_DIR="pki/issuers/$ISSUING_CA_ID"
-LEAF_DIR="pki/leaves/$LEAF_ID"
+APPLICATION_PKI_DIR='apps/example/pki'
+ISSUING_CA_DIR="$APPLICATION_PKI_DIR/issuers/$ISSUING_CA_ID"
+LEAF_DIR="$APPLICATION_PKI_DIR/leaves/$LEAF_ID"
+SECRET_DIR="$APPLICATION_PKI_DIR/.secrets"
 
 openssl verify -CAfile pki/root-ca.crt.pem pki/intermediate-ca.crt.pem
 openssl verify -CAfile pki/root-ca.crt.pem \
@@ -183,7 +197,7 @@ openssl verify -CAfile pki/root-ca.crt.pem \
   -untrusted "$ISSUING_CA_DIR/ca.crt.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
 
 CERT_PUBLIC_KEY_SHA256="$(openssl x509 -in "$LEAF_DIR/$LEAF_ID.crt.pem" -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256)"
-KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in "$LEAF_DIR/$LEAF_ID.key.pem" -passin "file:pki/.secrets/$LEAF_ID.pass" -pubout -outform DER | openssl dgst -sha256)"
+KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in "$LEAF_DIR/$LEAF_ID.key.pem" -passin "file:$SECRET_DIR/$LEAF_ID.pass" -pubout -outform DER | openssl dgst -sha256)"
 test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
 ```
 
@@ -191,4 +205,4 @@ test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
 
 ## 6. 실행 기록
 
-이 런북을 실제로 수행한 날마다 `pki/RUN-YYYY-mm-dd.md`를 만든다. 기록에는 수행 시각, 발급 대상, subject, issuer, serial, SHA-256 fingerprint, 체인·키 일치 검증 결과, 배포 여부와 후속 조치를 포함한다. 개인 키와 passphrase는 기록하지 않는다.
+이 런북을 실제로 수행한 날마다 해당 CA 또는 application PKI 디렉터리에 `RUN-YYYY-mm-dd.md`를 만든다. 기록에는 수행 시각, 발급 대상, subject, issuer, serial, SHA-256 fingerprint, 체인·키 일치 검증 결과, 배포 여부와 후속 조치를 포함한다. 개인 키와 passphrase는 기록하지 않는다.
