@@ -18,6 +18,12 @@ Lambda는 루트 `pnpm-workspace.yaml`에 등록된 `@ghilbut/cdn-lambda` 워크
 기본 호스트는 파일 모드의 `oidc.k3s.ghilbut.com`입니다. 객체는
 `s3://ghilbut-cloudfront-cdn/oidc.k3s.ghilbut.com/` 아래에 업로드합니다.
 
+`tofu/k3s.tf`는 `cpa` kubectl 컨텍스트의 OIDC 문서를 다음 S3 객체로 동기화합니다.
+discovery 문서의 `issuer`와 `jwks_uri`는 공개 CDN URL로 재작성됩니다.
+
+- `oidc.k3s.ghilbut.com/cpa/openid/v1/jwks`
+- `oidc.k3s.ghilbut.com/cpa/.well-known/openid-configuration`
+
 ## 배포 전 준비
 
 오류 페이지와 Lambda 아티팩트를 먼저 S3에 업로드해야 첫 `tofu apply`가

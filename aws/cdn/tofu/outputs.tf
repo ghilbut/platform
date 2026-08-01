@@ -32,3 +32,8 @@ output "github_actions_role_arn" {
   description = "IAM role ARN for CDN GitHub Actions uploads"
   value       = aws_iam_role.github.arn
 }
+
+output "cpa_oidc_issuer" {
+  description = "Public OIDC issuer URL for the cpa K3S cluster"
+  value       = module.cpa.issuer
+}
