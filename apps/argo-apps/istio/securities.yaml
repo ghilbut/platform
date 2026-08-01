@@ -1,0 +1,19 @@
+# AuthorizationPolicy should be applied to ingress instance directly
+# You can't apply to Gateway manifest
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: ultary-core-non-internet-facing
+  namespace: istio-gateways
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            ipBlocks:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16

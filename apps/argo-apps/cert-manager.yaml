@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
+    argocd.argoproj.io/sync-wave: "-1"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argo
+spec:
+  project: default
+  sources:
+    - chart: cert-manager
+      repoURL: https://charts.jetstack.io
+      targetRevision: v1.21.1
+      helm:
+        releaseName: cert-manager
+        valueFiles:
+          - values.yaml
+        values: |
+          # NOTE: https://github.com/jetstack/cert-manager//deploy/charts/cert-manager/
+          fullnameOverride: cert-manager
+          global:
+            logLevel: 1
+          crds:
+            enabled: true
+          extraArgs:
+            - --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
+            - --dns01-recursive-nameservers-only=true
+          prometheus:
+            enabled: false
+          #webhook:
+          #  podLabels:
+          #    sidecar.istio.io/inject: "false"
+          #startupapicheck:
+          #  podLabels:
+          #    sidecar.istio.io/inject: "false"
+        version: v3
+    - path: apps/argo-apps/cert-manager
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
+  destination:
+    name: in-cluster
+    namespace: cert-manager
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true

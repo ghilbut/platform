@@ -1,0 +1,37 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: aws-route53
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  acme:
+    email: ghilbut@gmail.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+      - selector:
+          dnsZones:
+            - dokevy.com
+            - dokevy.in
+            - dokevy.io
+            - dockey.net
+            - polykube.com
+            - polykube.guide
+            - polykube.in
+            - polykube.io
+            - polykube.net
+            - ultary.co
+            - ultary.guide
+            - ultary.in
+            - ultary.io
+        dns01:
+          route53:
+            region: us-east-1
+            accessKeyIDSecretRef:
+              name: aws-iam-user-k3s
+              key:  AWS_ACCESS_KEY_ID
+            secretAccessKeySecretRef:
+              name: aws-iam-user-k3s
+              key:  AWS_SECRET_ACCESS_KEY

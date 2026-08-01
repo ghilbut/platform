@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-apps
+  namespace: argo
+spec:
+  project: default
+  source:
+    path: apps/argo-apps/
+    repoURL: https://github.com/ghilbut/platform.git
+    targetRevision: main
+  destination:
+    name: in-cluster
+    namespace: argo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true

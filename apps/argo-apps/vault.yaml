@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argo
+spec:
+  project: default
+  source:
+    path: apps/argo-apps/vault
+    repoURL: https://github.com/ghilbut/platform.git
+    targetRevision: main
+  destination:
+    name: in-cluster
+    namespace: vault
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true
+---

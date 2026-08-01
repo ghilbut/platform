@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  namespace: argo
+spec:
+  project: default
+  source:
+    path: apps/argo-apps/keycloak
+    repoURL: https://github.com/ghilbut/platform.git
+    targetRevision: main
+  destination:
+    name: in-cluster
+    namespace: keycloak
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true
+---

@@ -1,0 +1,44 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ultary-core-keycloak-v-service
+spec:
+  hosts:
+    - kc.ultary.co
+  gateways:
+    - istio-gateways/ultary-core
+  http:
+    - route:
+        - destination:
+            host: keycloak.core.ultary.external
+            port:
+              number: 8080
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ultary-core-keycloak-d-rule
+spec:
+  host: keycloak.core.ultary.external
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: ultary-core-keycloak-s-entry
+spec:
+  hosts:
+    - keycloak.core.ultary.external
+  location: MESH_EXTERNAL
+  resolution: STATIC
+  endpoints:
+    - address: 192.168.254.3
+      ports:
+        http: 8080
+  ports:
+    - number: 8080
+      name: http
+      protocol: HTTP
+---

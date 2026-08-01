@@ -1,0 +1,44 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: ultary-core-vault-v-service
+spec:
+  hosts:
+    - vault.ultary.co
+  gateways:
+    - istio-gateways/ultary-core
+  http:
+    - route:
+        - destination:
+            host: vault.core.ultary.external
+            port:
+              number: 8200
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: ultary-core-vault-d-rule
+spec:
+  host: vault.core.ultary.external
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: ultary-core-vault-s-entry
+spec:
+  hosts:
+    - vault.core.ultary.external
+  location: MESH_EXTERNAL
+  resolution: STATIC
+  endpoints:
+    - address: 192.168.254.3
+      ports:
+        http: 8200
+  ports:
+    - number: 8200
+      name: http
+      protocol: HTTP
+---
