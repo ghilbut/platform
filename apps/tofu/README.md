@@ -15,4 +15,4 @@ IAM 역할은 Issuing CA가 발급하고 Common Name이 `awsra-for-k3s-cpa`인 �
 
 `tofu init`과 `tofu plan`을 실행한다. Vault AWS KMS seal key는 이 루트가 생성한다.
 
-출력된 `awsra_profile_arn`, `awsra_role_arn`, `awsra_trust_anchor_arn`을 `apps/argo-apps/vault/awsra.yaml`의 같은 이름 환경 변수에 설정한다. `vault_kms_key_arn`은 Vault의 `VAULT_AWSKMS_SEAL_KEY_ID`에 설정한다. leaf 인증서와 개인 키 및 passphrase는 Kubernetes Secret 등 배포 환경의 비밀 저장소로 전달한다.
+`tofu apply`는 생성된 IAM Roles Anywhere ARN, Vault KMS key ARN, PKCS#8 passphrase를 사용해 `apps/argo-apps/vault/awsra.yaml`을 생성한다. 이 파일은 Git에서 제외되며 권한은 `0600`이다. leaf 인증서와 개인 키는 Kubernetes Secret 등 배포 환경의 비밀 저장소로 별도로 전달한다.
