@@ -8,8 +8,6 @@
 
 ## 1. Root CA 생성
 
-> 실행 기록: [[pki/RUN-2026-08-01|Root 및 Intermediate CA 실행 기록]]
-
 ```shell
 ROOT_VALID_DAYS=3650
 ROOT_SUBJECT='/C=KR/O=Example/CN=Example Root CA'
@@ -38,8 +36,6 @@ chmod 444 pki/root-ca.crt.pem
 ```
 
 ## 2. Intermediate CA 생성
-
-> 실행 기록: [[pki/RUN-2026-08-01|Root 및 Intermediate CA 실행 기록]]
 
 ```shell
 INTERMEDIATE_VALID_DAYS=3650
@@ -81,8 +77,6 @@ chmod 444 pki/intermediate-ca.csr.pem pki/intermediate-ca.crt.pem
 ```
 
 ## 3. Issuing CA 생성
-
-> 실행 기록: [[apps/tofu/pki/RUN-2026-08-01|Tofu PKI 실행 기록]]
 
 ```shell
 ISSUING_CA_VALID_DAYS=3650
@@ -128,8 +122,6 @@ chmod 444 "$ISSUING_CA_DIR/ca.csr.pem" "$ISSUING_CA_DIR/ca.crt.pem"
 ```
 
 ## 4. Leaf 인증서 생성
-
-> 실행 기록: [[apps/tofu/pki/RUN-2026-08-01|Tofu PKI 실행 기록]]
 
 ```shell
 LEAF_VALID_DAYS=3650
