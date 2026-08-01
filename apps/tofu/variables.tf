@@ -9,3 +9,9 @@ variable "aws_region" {
   description = "AWS Region for platform application resources."
   default     = "us-east-1"
 }
+
+variable "name" {
+  type        = string
+  description = "Name prefix for platform application resources."
+  default     = "platform"
+}

@@ -13,11 +13,6 @@ variable "certificate_subject_common_name" {
   description = "Common Name of the leaf certificate permitted to assume the role."
 }
 
-variable "vault_kms_key_arn" {
-  type        = string
-  description = "ARN of the KMS key used by Vault's AWS KMS seal."
-}
-
 variable "session_duration_seconds" {
   type        = number
   description = "Lifetime of credentials issued by the IAM Roles Anywhere profile."

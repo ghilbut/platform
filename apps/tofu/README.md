@@ -4,7 +4,7 @@
 
 ## 구성
 
-- `modules/awsra/`: Vault용 IAM Roles Anywhere trust anchor, IAM role, profile을 만든다.
+- `modules/awsra/`: IAM Roles Anywhere trust anchor, IAM role, profile을 만든다.
 - `vault.tf`: Vault AWS KMS seal key와 alias를 만든다. 키 rotation을 활성화하고 삭제를 막는다.
 - `pki/issuers/awsra-issuing-ca/ca.crt.pem`: trust anchor에 등록할 Issuing CA 인증서다.
 - `pki/leaves/awsra-for-k3s-cpa/`: `awsra-for-k3s-cpa` leaf 인증서와 개인 키를 보관한다. OpenTofu는 이 개인 키를 읽지 않는다.

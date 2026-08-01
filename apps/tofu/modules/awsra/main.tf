@@ -1,6 +1,6 @@
 data "aws_caller_identity" "current" {}
 
-resource "aws_rolesanywhere_trust_anchor" "vault" {
+resource "aws_rolesanywhere_trust_anchor" "awsra" {
   name    = "${var.name}-awsra"
   enabled = true
 
@@ -12,7 +12,7 @@ resource "aws_rolesanywhere_trust_anchor" "vault" {
   }
 }
 
-resource "aws_iam_role" "vault" {
+resource "aws_iam_role" "awsra" {
   name = "${var.name}-awsra"
 
   assume_role_policy = jsonencode({
@@ -30,7 +30,7 @@ resource "aws_iam_role" "vault" {
         }
         Condition = {
           ArnEquals = {
-            "aws:SourceArn" = aws_rolesanywhere_trust_anchor.vault.arn
+            "aws:SourceArn" = aws_rolesanywhere_trust_anchor.awsra.arn
           }
           StringEquals = {
             "aws:SourceAccount"  = data.aws_caller_identity.current.account_id
@@ -42,31 +42,10 @@ resource "aws_iam_role" "vault" {
   })
 }
 
-resource "aws_iam_role_policy" "vault_kms_seal" {
-  name = "${var.name}-vault-kms-seal"
-  role = aws_iam_role.vault.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "UseVaultKmsSealKey"
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt",
-          "kms:DescribeKey",
-          "kms:Encrypt",
-        ]
-        Resource = var.vault_kms_key_arn
-      },
-    ]
-  })
-}
-
-resource "aws_rolesanywhere_profile" "vault" {
+resource "aws_rolesanywhere_profile" "awsra" {
   name                        = "${var.name}-awsra"
   enabled                     = true
-  role_arns                   = [aws_iam_role.vault.arn]
+  role_arns                   = [aws_iam_role.awsra.arn]
   duration_seconds            = var.session_duration_seconds
   accept_role_session_name    = false
   require_instance_properties = false
