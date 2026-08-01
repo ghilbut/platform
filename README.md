@@ -20,6 +20,8 @@ $ ANTHROPIC_MODEL=claude-opus-4-8 \
 
 ### AWS
 
+SSO Start URL: https://ghilbut.awsapps.com/start
+
 | ID           | Name           | Email                          |
 |--------------|----------------|--------------------------------|
 | 384959722788 | management     | aws@ghilbut.com                |
