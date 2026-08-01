@@ -35,6 +35,9 @@ spec:
     targetRevision: 1.9.1
     helm:
       releaseName: ebs
+      values: |
+        analytics:
+          enabled: false
   destination:
     name: in-cluster
     namespace: ebs
