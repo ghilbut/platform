@@ -10,6 +10,8 @@ apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
   name: openebs-lvm
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 provisioner: local.csi.openebs.io
 allowVolumeExpansion: true
 parameters:
@@ -23,6 +25,8 @@ kind: Application
 metadata:
   name: openebs-lvm-localpv
   namespace: argo
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   project: default
   source:
