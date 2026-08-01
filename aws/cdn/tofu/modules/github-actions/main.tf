@@ -1,5 +1,8 @@
-data "aws_iam_openid_connect_provider" "github" {
-  url = "https://token.actions.githubusercontent.com"
+locals {
+  default_tags = merge(var.default_tags, {
+    "opentofu/module/repo" = var.repo
+    "opentofu/module/path" = "aws/cdn/tofu/modules/github-actions/"
+  })
 }
 
 resource "aws_iam_role" "this" {
@@ -9,7 +12,7 @@ resource "aws_iam_role" "this" {
     Statement = [{
       Action    = "sts:AssumeRoleWithWebIdentity"
       Effect    = "Allow"
-      Principal = { Federated = data.aws_iam_openid_connect_provider.github.arn }
+      Principal = { Federated = var.github_actions_oidc_provider_arn }
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
@@ -18,7 +21,7 @@ resource "aws_iam_role" "this" {
       }
     }]
   })
-  tags = { Name = "ghilbut-platform-github-actions-cdn" }
+  tags = merge(local.default_tags, { Name = "ghilbut-platform-github-actions-cdn" })
 }
 
 data "aws_iam_policy_document" "upload" {
@@ -55,6 +58,11 @@ data "aws_iam_policy_document" "apply" {
       "arn:aws:s3:::${var.state_bucket}/${var.state_key}",
       "arn:aws:s3:::${var.state_bucket}/${var.state_key}.tflock",
     ]
+  }
+
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["arn:aws:s3:::${var.state_bucket}/${var.github_state_key}"]
   }
 
   statement {
@@ -119,7 +127,7 @@ data "aws_iam_policy_document" "apply" {
 
   statement {
     actions   = ["iam:GetOpenIDConnectProvider"]
-    resources = [data.aws_iam_openid_connect_provider.github.arn]
+    resources = [var.github_actions_oidc_provider_arn]
   }
 
   statement {

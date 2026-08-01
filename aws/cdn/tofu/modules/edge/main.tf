@@ -1,3 +1,10 @@
+locals {
+  default_tags = merge(var.default_tags, {
+    "opentofu/module/repo" = var.repo
+    "opentofu/module/path" = "aws/cdn/tofu/modules/edge/"
+  })
+}
+
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -11,7 +18,7 @@ data "aws_iam_policy_document" "lambda_assume" {
 resource "aws_iam_role" "lambda" {
   name               = "${var.name}-cdn-lambda"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
-  tags               = { Name = "${var.name}-cdn-lambda" }
+  tags               = merge(local.default_tags, { Name = "${var.name}-cdn-lambda" })
 }
 
 resource "aws_iam_role_policy_attachment" "lambda_basic" {
@@ -43,6 +50,7 @@ resource "aws_s3_object" "lambda_zip" {
   key         = "lambda.zip"
   source      = data.archive_file.lambda.output_path
   source_hash = data.archive_file.lambda.output_base64sha256
+  tags        = local.default_tags
 }
 
 resource "aws_lambda_function" "this" {
@@ -55,7 +63,7 @@ resource "aws_lambda_function" "this" {
   s3_bucket        = var.bucket_name
   s3_key           = aws_s3_object.lambda_zip.key
   source_code_hash = data.archive_file.lambda.output_base64sha256
-  tags             = { Name = "${var.name}-cdn" }
+  tags             = merge(local.default_tags, { Name = "${var.name}-cdn" })
 }
 
 resource "aws_cloudfront_function" "viewer_request" {
@@ -68,4 +76,5 @@ resource "aws_cloudfront_function" "viewer_request" {
     redirect_map = var.redirect_map
     spa_hosts    = var.spa_hosts
   })
+  tags = local.default_tags
 }

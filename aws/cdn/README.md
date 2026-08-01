@@ -31,9 +31,16 @@ Lambda 번들만 빌드하면 됩니다.
 
 로컬에서 실행할 때는 `ghilbut-platform` AWS 프로필과 GitHub App 자격 증명이
 필요합니다. GitHub App은 `ghilbut/platform`의 Actions variables를 수정할 수
-있어야 합니다.
+있어야 합니다. 첫 배포 전에는 공유 GitHub Actions OIDC provider를
+[`github/tofu/`](../../github/tofu/)에서 먼저 적용해야 합니다. CDN 구성은
+`platform/github.tfstate`의 `github_actions_oidc_provider_arn` 출력을 참조합니다.
 
 ```sh
+cd github/tofu
+tofu init
+tofu apply
+
+cd ../..
 pnpm --filter @ghilbut/cdn-lambda build
 cd aws/cdn/tofu
 export GITHUB_APP_ID=...

@@ -11,6 +11,11 @@ data "aws_route53_zone" "acm_domain" {
 }
 
 locals {
+  default_tags = merge(var.default_tags, {
+    "opentofu/module/repo" = var.repo
+    "opentofu/module/path" = "aws/cdn/tofu/modules/certificate/"
+  })
+
   zone_id_by_root = merge(
     { for zone, value in data.aws_route53_zone.zones : zone => value.zone_id },
     { (var.acm_domain_name) = data.aws_route53_zone.acm_domain.zone_id },
@@ -24,7 +29,7 @@ resource "aws_acm_certificate" "this" {
 
   lifecycle { create_before_destroy = true }
 
-  tags = { Name = "${var.name}-cdn-certificate" }
+  tags = merge(local.default_tags, { Name = "${var.name}-cdn-certificate" })
 }
 
 resource "aws_route53_record" "validation" {

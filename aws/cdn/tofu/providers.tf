@@ -8,18 +8,6 @@ provider "aws" {
   profile = "ghilbut-platform"
   region  = "us-east-1"
 
-  default_tags {
-    tags = merge(var.default_tags, {
-      created_by      = "opentofu"
-      managed_by      = "opentofu"
-      org             = var.org
-      project         = var.project
-      service         = var.service
-      component       = var.component
-      "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/cdn/tofu/"
-    })
-  }
 }
 
 ################################################################

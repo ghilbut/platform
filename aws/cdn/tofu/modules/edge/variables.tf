@@ -1,7 +1,9 @@
 variable "allowlist" { type = list(string) }
 variable "bucket_arn" { type = string }
 variable "bucket_name" { type = string }
+variable "default_tags" { type = map(string) }
 variable "name" { type = string }
 variable "redirect_map" { type = map(string) }
+variable "repo" { type = string }
 variable "spa_hosts" { type = list(string) }
 variable "lambda_source_file" { type = string }

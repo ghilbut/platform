@@ -1,3 +1,10 @@
+locals {
+  default_tags = merge(var.default_tags, {
+    "opentofu/module/repo" = var.repo
+    "opentofu/module/path" = "aws/cdn/tofu/modules/cloudfront/"
+  })
+}
+
 resource "aws_cloudfront_origin_access_control" "this" {
   name                              = "${var.name}-cdn-oac"
   description                       = "OAC for ${var.name} CDN S3 origin"
@@ -71,5 +78,5 @@ resource "aws_cloudfront_distribution" "this" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  tags = { Name = "${var.name}-cdn" }
+  tags = merge(local.default_tags, { Name = "${var.name}-cdn" })
 }
