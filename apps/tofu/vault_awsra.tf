@@ -20,7 +20,6 @@ resource "local_sensitive_file" "vault_awsra" {
       AWS_ROLESANYWHERE_PROFILE_ARN      = module.awsra.profile_arn
       AWS_ROLESANYWHERE_ROLE_ARN         = module.awsra.role_arn
       AWS_ROLESANYWHERE_TRUST_ANCHOR_ARN = module.awsra.trust_anchor_arn
-      VAULT_AWSKMS_SEAL_KEY_ID           = module.vault.kms_key_arn
     }
   })
 
@@ -30,4 +29,22 @@ resource "local_sensitive_file" "vault_awsra" {
       error_message = "apps/tofu/pki/.secrets/awsra-for-k3s-cpa.pass is required to generate apps/argo-apps/vault/awsra.yaml."
     }
   }
+}
+
+resource "local_file" "vault_configuration" {
+  filename        = "${path.module}/../argo-apps/vault/vault.yaml"
+  file_permission = "0600"
+
+  content = yamlencode({
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata = {
+      name      = "vault"
+      namespace = "vault"
+    }
+    type = "Opaque"
+    stringData = {
+      VAULT_AWSKMS_SEAL_KEY_ID = module.vault.kms_key_arn
+    }
+  })
 }
