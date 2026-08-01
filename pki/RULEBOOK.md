@@ -29,7 +29,7 @@ Leaf 인증서는 CA가 아니며 다른 인증서를 서명할 수 없다. 각 
 - 기본 유효 기간은 3,650일이다. 더 짧은 유효 기간이 서비스 또는 보안 요구사항에 필요하면 그 요구사항을 우선한다.
 - Root CA, Intermediate CA, Issuing CA의 Basic Constraints는 각각 `pathlen:2`, `pathlen:1`, `pathlen:0`이다.
 - AWS Roles Anywhere leaf는 `CA:FALSE`, `digitalSignature`, `clientAuth`를 사용한다.
-- workload의 CN은 대상과 용도를 식별할 수 있게 정한다. 현재 대상은 `awsra-for-ds1621plus`다.
+- workload의 CN은 대상과 용도를 식별할 수 있게 정한다. 각 leaf의 구체적인 식별자는 해당 발급 실행 기록에 남긴다.
 
 ## 비밀 보관과 배포
 

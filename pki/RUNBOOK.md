@@ -96,32 +96,32 @@ chmod 444 pki/awsra/issuing-ca.csr.pem pki/awsra/issuing-ca.crt.pem
 ## 4. AWS Roles Anywhere leaf 인증서 생성
 
 ```shell
-test ! -e pki/awsra/synology-awsra.key.pem
-test ! -e pki/awsra/synology-awsra.crt.pem
-openssl rand -base64 -out pki/.secrets/synology-awsra.pass 48
-chmod 600 pki/.secrets/synology-awsra.pass
+test ! -e pki/awsra/awsra-for-k3s-cpa.key.pem
+test ! -e pki/awsra/awsra-for-k3s-cpa.crt.pem
+openssl rand -base64 -out pki/.secrets/awsra-for-k3s-cpa.pass 48
+chmod 600 pki/.secrets/awsra-for-k3s-cpa.pass
 
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 \
   -pkeyopt ec_param_enc:named_curve -aes-256-cbc \
-  -pass file:pki/.secrets/synology-awsra.pass -out pki/awsra/synology-awsra.key.pem
-chmod 400 pki/awsra/synology-awsra.key.pem
+  -pass file:pki/.secrets/awsra-for-k3s-cpa.pass -out pki/awsra/awsra-for-k3s-cpa.key.pem
+chmod 400 pki/awsra/awsra-for-k3s-cpa.key.pem
 
-openssl req -new -sha384 -key pki/awsra/synology-awsra.key.pem \
-  -passin file:pki/.secrets/synology-awsra.pass \
-  -out pki/awsra/synology-awsra.csr.pem \
-  -subj '/C=KR/O=Ghilbut/OU=Platform/OU=AWS Roles Anywhere/CN=awsra-for-ds1621plus'
+openssl req -new -sha384 -key pki/awsra/awsra-for-k3s-cpa.key.pem \
+  -passin file:pki/.secrets/awsra-for-k3s-cpa.pass \
+  -out pki/awsra/awsra-for-k3s-cpa.csr.pem \
+  -subj '/C=KR/O=Ghilbut/OU=Platform/OU=AWS Roles Anywhere/CN=awsra-for-k3s-cpa'
 
-openssl x509 -req -sha384 -days 3650 -in pki/awsra/synology-awsra.csr.pem \
+openssl x509 -req -sha384 -days 3650 -in pki/awsra/awsra-for-k3s-cpa.csr.pem \
   -CA pki/awsra/issuing-ca.crt.pem -CAkey pki/awsra/issuing-ca.key.pem \
   -passin file:pki/.secrets/awsra-issuing-ca.pass -CAcreateserial \
-  -CAserial pki/awsra/issuing-ca.srl -out pki/awsra/synology-awsra.crt.pem \
+  -CAserial pki/awsra/issuing-ca.srl -out pki/awsra/awsra-for-k3s-cpa.crt.pem \
   -extfile <(printf '%s\n' \
     'basicConstraints=critical,CA:FALSE' \
     'keyUsage=critical,digitalSignature' \
     'extendedKeyUsage=critical,clientAuth' \
     'subjectKeyIdentifier=hash' \
     'authorityKeyIdentifier=keyid:always,issuer')
-chmod 444 pki/awsra/synology-awsra.csr.pem pki/awsra/synology-awsra.crt.pem
+chmod 444 pki/awsra/awsra-for-k3s-cpa.csr.pem pki/awsra/awsra-for-k3s-cpa.crt.pem
 ```
 
 ## 5. 검증과 배치
@@ -132,10 +132,10 @@ openssl verify -CAfile pki/root-ca.crt.pem \
   -untrusted pki/intermediate-ca.crt.pem pki/awsra/issuing-ca.crt.pem
 openssl verify -purpose sslclient -CAfile pki/root-ca.crt.pem \
   -untrusted pki/intermediate-ca.crt.pem \
-  -untrusted pki/awsra/issuing-ca.crt.pem pki/awsra/synology-awsra.crt.pem
+  -untrusted pki/awsra/issuing-ca.crt.pem pki/awsra/awsra-for-k3s-cpa.crt.pem
 
-CERT_PUBLIC_KEY_SHA256="$(openssl x509 -in pki/awsra/synology-awsra.crt.pem -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256)"
-KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in pki/awsra/synology-awsra.key.pem -passin file:pki/.secrets/synology-awsra.pass -pubout -outform DER | openssl dgst -sha256)"
+CERT_PUBLIC_KEY_SHA256="$(openssl x509 -in pki/awsra/awsra-for-k3s-cpa.crt.pem -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256)"
+KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in pki/awsra/awsra-for-k3s-cpa.key.pem -passin file:pki/.secrets/awsra-for-k3s-cpa.pass -pubout -outform DER | openssl dgst -sha256)"
 test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
 ```
 
@@ -143,10 +143,10 @@ test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
 
 ```shell
 install -d -m 700 "$ULTARY_REPO_ROOT/platform/core/docker/.pki"
-install -m 0444 pki/awsra/synology-awsra.crt.pem \
-  "$ULTARY_REPO_ROOT/platform/core/docker/.pki/synology-awsra.crt.pem"
-install -m 0400 pki/awsra/synology-awsra.key.pem \
-  "$ULTARY_REPO_ROOT/platform/core/docker/.pki/synology-awsra.key.pem"
+install -m 0444 pki/awsra/awsra-for-k3s-cpa.crt.pem \
+  "$ULTARY_REPO_ROOT/platform/core/docker/.pki/awsra-for-k3s-cpa.crt.pem"
+install -m 0400 pki/awsra/awsra-for-k3s-cpa.key.pem \
+  "$ULTARY_REPO_ROOT/platform/core/docker/.pki/awsra-for-k3s-cpa.key.pem"
 ```
 
 배치 후에는 `RUN-YYYY-mm-dd.md`에 발급과 검증 결과를 기록한다. `.env` 생성과 OpenTofu 리소스 작성은 이 런북의 범위가 아니다.
