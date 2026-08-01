@@ -2,7 +2,7 @@
 
 ## 목적과 입력값
 
-이 런북은 Root CA부터 leaf 인증서까지 체인을 생성하고 검증하는 공통 절차다. 적용 원칙은 [RULEBOOK.md](RULEBOOK.md)를 따른다. 명령은 저장소 루트에서 `zsh`로 실행한다. 기존 파일은 덮어쓰지 않는다.
+이 런북은 Root CA부터 leaf 인증서까지 체인을 생성하고 검증하는 공통 절차다. 적용 원칙은 [RULEBOOK.md](RULEBOOK.md)를 따른다. 명령은 POSIX 호환 `sh`에서 저장소 루트를 기준으로 실행한다. 기존 파일은 덮어쓰지 않는다.
 
 발급 전에 아래 값을 발급 프로파일에 맞게 정한다. 식별자에는 소문자·숫자·하이픈만 사용한다.
 
@@ -19,12 +19,13 @@ LEAF_EXTENDED_KEY_USAGE='clientAuth'
 
 ISSUING_CA_DIR="pki/issuers/$ISSUING_CA_ID"
 LEAF_DIR="pki/leaves/$LEAF_ID"
+EXT_DIR='pki/.tmp'
 ```
 
 `LEAF_KEY_USAGE`와 `LEAF_EXTENDED_KEY_USAGE`는 대상 프로토콜에 맞게 정한다. 이 예시는 클라이언트 인증용 leaf 프로파일이다.
 
 ```shell
-mkdir -p "$ISSUING_CA_DIR" "$LEAF_DIR" pki/.secrets
+mkdir -p "$ISSUING_CA_DIR" "$LEAF_DIR" pki/.secrets "$EXT_DIR"
 chmod 700 pki/.secrets
 umask 077
 ```
@@ -68,15 +69,19 @@ openssl req -new -sha384 -key pki/intermediate-ca.key.pem \
   -passin file:pki/.secrets/intermediate-ca.pass \
   -out pki/intermediate-ca.csr.pem -subj "$INTERMEDIATE_SUBJECT"
 
+INTERMEDIATE_EXT="$EXT_DIR/intermediate-ca.ext"
+printf '%s\n' \
+  'basicConstraints=critical,CA:TRUE,pathlen:1' \
+  'keyUsage=critical,keyCertSign,cRLSign' \
+  'subjectKeyIdentifier=hash' \
+  'authorityKeyIdentifier=keyid:always,issuer' > "$INTERMEDIATE_EXT"
+
 openssl x509 -req -sha384 -days "$VALID_DAYS" -in pki/intermediate-ca.csr.pem \
   -CA pki/root-ca.crt.pem -CAkey pki/root-ca.key.pem \
   -passin file:pki/.secrets/root-ca.pass -CAcreateserial \
   -CAserial pki/root-ca.srl -out pki/intermediate-ca.crt.pem \
-  -extfile <(printf '%s\n' \
-    'basicConstraints=critical,CA:TRUE,pathlen:1' \
-    'keyUsage=critical,keyCertSign,cRLSign' \
-    'subjectKeyIdentifier=hash' \
-    'authorityKeyIdentifier=keyid:always,issuer')
+  -extfile "$INTERMEDIATE_EXT"
+rm -f "$INTERMEDIATE_EXT"
 chmod 444 pki/intermediate-ca.csr.pem pki/intermediate-ca.crt.pem
 ```
 
@@ -97,15 +102,19 @@ openssl req -new -sha384 -key "$ISSUING_CA_DIR/ca.key.pem" \
   -passin "file:pki/.secrets/$ISSUING_CA_ID.pass" \
   -out "$ISSUING_CA_DIR/ca.csr.pem" -subj "$ISSUING_CA_SUBJECT"
 
+ISSUING_CA_EXT="$EXT_DIR/$ISSUING_CA_ID.ext"
+printf '%s\n' \
+  'basicConstraints=critical,CA:TRUE,pathlen:0' \
+  'keyUsage=critical,keyCertSign,cRLSign' \
+  'subjectKeyIdentifier=hash' \
+  'authorityKeyIdentifier=keyid:always,issuer' > "$ISSUING_CA_EXT"
+
 openssl x509 -req -sha384 -days "$VALID_DAYS" -in "$ISSUING_CA_DIR/ca.csr.pem" \
   -CA pki/intermediate-ca.crt.pem -CAkey pki/intermediate-ca.key.pem \
   -passin file:pki/.secrets/intermediate-ca.pass -CAcreateserial \
   -CAserial pki/intermediate-ca.srl -out "$ISSUING_CA_DIR/ca.crt.pem" \
-  -extfile <(printf '%s\n' \
-    'basicConstraints=critical,CA:TRUE,pathlen:0' \
-    'keyUsage=critical,keyCertSign,cRLSign' \
-    'subjectKeyIdentifier=hash' \
-    'authorityKeyIdentifier=keyid:always,issuer')
+  -extfile "$ISSUING_CA_EXT"
+rm -f "$ISSUING_CA_EXT"
 chmod 444 "$ISSUING_CA_DIR/ca.csr.pem" "$ISSUING_CA_DIR/ca.crt.pem"
 ```
 
@@ -126,16 +135,20 @@ openssl req -new -sha384 -key "$LEAF_DIR/$LEAF_ID.key.pem" \
   -passin "file:pki/.secrets/$LEAF_ID.pass" \
   -out "$LEAF_DIR/$LEAF_ID.csr.pem" -subj "$LEAF_SUBJECT"
 
+LEAF_EXT="$EXT_DIR/$LEAF_ID.ext"
+printf '%s\n' \
+  'basicConstraints=critical,CA:FALSE' \
+  "keyUsage=critical,$LEAF_KEY_USAGE" \
+  "extendedKeyUsage=critical,$LEAF_EXTENDED_KEY_USAGE" \
+  'subjectKeyIdentifier=hash' \
+  'authorityKeyIdentifier=keyid:always,issuer' > "$LEAF_EXT"
+
 openssl x509 -req -sha384 -days "$VALID_DAYS" -in "$LEAF_DIR/$LEAF_ID.csr.pem" \
   -CA "$ISSUING_CA_DIR/ca.crt.pem" -CAkey "$ISSUING_CA_DIR/ca.key.pem" \
   -passin "file:pki/.secrets/$ISSUING_CA_ID.pass" -CAcreateserial \
   -CAserial "$ISSUING_CA_DIR/ca.srl" -out "$LEAF_DIR/$LEAF_ID.crt.pem" \
-  -extfile <(printf '%s\n' \
-    'basicConstraints=critical,CA:FALSE' \
-    "keyUsage=critical,$LEAF_KEY_USAGE" \
-    "extendedKeyUsage=critical,$LEAF_EXTENDED_KEY_USAGE" \
-    'subjectKeyIdentifier=hash' \
-    'authorityKeyIdentifier=keyid:always,issuer')
+  -extfile "$LEAF_EXT"
+rm -f "$LEAF_EXT"
 chmod 444 "$LEAF_DIR/$LEAF_ID.csr.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
 ```
 
