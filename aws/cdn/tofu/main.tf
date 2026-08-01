@@ -32,12 +32,14 @@ locals {
 module "s3" {
   source = "./modules/s3"
 
-  bucket_name  = "${var.name}-cloudfront-cdn"
+  # S3 bucket names share a global namespace, so include the repository owner.
+  bucket_name  = "${var.github_owner}-${var.github_repository}-${var.name}"
   default_tags = local.default_tags
   error_page_files = {
     "404.html" = "${path.root}/../404.html"
     "503.html" = "${path.root}/../503.html"
   }
+  name = var.name
   repo = local.repo
 }
 
@@ -113,6 +115,7 @@ module "github_actions" {
   github_state_key                 = local.github_state_key
   lambda_function_arn              = module.edge.lambda_function_arn
   lambda_role_arn                  = module.edge.lambda_role_arn
+  name                             = var.name
   repository_full_name             = "${var.github_owner}/${var.github_repository}"
   repo                             = local.repo
   state_bucket                     = "ghilbut-tfstates"

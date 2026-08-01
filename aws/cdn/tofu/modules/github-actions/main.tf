@@ -6,7 +6,7 @@ locals {
 }
 
 resource "aws_iam_role" "this" {
-  name = "ghilbut-platform-github-actions-cdn"
+  name = "${var.name}-github-actions"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
@@ -21,7 +21,7 @@ resource "aws_iam_role" "this" {
       }
     }]
   })
-  tags = merge(local.default_tags, { Name = "ghilbut-platform-github-actions-cdn" })
+  tags = merge(local.default_tags, { Name = "${var.name}-github-actions" })
 }
 
 data "aws_iam_policy_document" "upload" {

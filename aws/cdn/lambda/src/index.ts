@@ -1,7 +1,7 @@
 import { S3Client, HeadObjectCommand } from "@aws-sdk/client-s3";
 import type { CloudFrontRequestEvent, CloudFrontResultResponse } from "aws-lambda";
 
-const BUCKET = "ghilbut-cloudfront-cdn";
+const BUCKET = "ghilbut-platform-cdn";
 const s3 = new S3Client({ region: "us-east-1" });
 
 async function headObject(key: string): Promise<boolean> {

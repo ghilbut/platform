@@ -32,8 +32,8 @@ variable "github_repository" {
 
 variable "name" {
   type        = string
-  description = "Name prefix for all resources"
-  default     = "ghilbut"
+  description = "Short CDN identifier used in resource names and Name tags"
+  default     = "cdn"
 }
 
 variable "default_tags" {

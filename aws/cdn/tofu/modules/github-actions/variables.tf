@@ -7,6 +7,7 @@ variable "github_repository" { type = string }
 variable "github_state_key" { type = string }
 variable "lambda_function_arn" { type = string }
 variable "lambda_role_arn" { type = string }
+variable "name" { type = string }
 variable "repository_full_name" { type = string }
 variable "repo" { type = string }
 variable "state_bucket" { type = string }

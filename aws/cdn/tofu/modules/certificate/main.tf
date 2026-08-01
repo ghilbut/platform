@@ -29,7 +29,7 @@ resource "aws_acm_certificate" "this" {
 
   lifecycle { create_before_destroy = true }
 
-  tags = merge(local.default_tags, { Name = "${var.name}-cdn-certificate" })
+  tags = merge(local.default_tags, { Name = "${var.name}-certificate" })
 }
 
 resource "aws_route53_record" "validation" {

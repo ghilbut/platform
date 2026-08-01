@@ -6,8 +6,8 @@ locals {
 }
 
 resource "aws_cloudfront_origin_access_control" "this" {
-  name                              = "${var.name}-cdn-oac"
-  description                       = "OAC for ${var.name} CDN S3 origin"
+  name                              = "${var.name}-oac"
+  description                       = "CDN S3 origin access"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
@@ -18,7 +18,7 @@ resource "aws_cloudfront_distribution" "this" {
   is_ipv6_enabled     = true
   price_class         = "PriceClass_100"
   aliases             = var.fqdns
-  comment             = "${var.name} CDN"
+  comment             = "CDN"
   wait_for_deployment = false
 
   origin {
@@ -78,5 +78,5 @@ resource "aws_cloudfront_distribution" "this" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  tags = merge(local.default_tags, { Name = "${var.name}-cdn" })
+  tags = merge(local.default_tags, { Name = var.name })
 }
