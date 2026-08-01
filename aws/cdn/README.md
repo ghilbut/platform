@@ -11,6 +11,10 @@
 - Lambda@Edge: S3 객체 존재 여부 확인 및 SPA의 `index.html` 폴백
 - CloudFront Function: 허용 호스트 검증, 리디렉션, URI 접두사 처리
 
+Lambda는 루트 `pnpm-workspace.yaml`에 등록된 `@ghilbut/cdn-lambda` 워크스페이스
+패키지입니다. 의존성 설치와 검사는 저장소 루트에서 `pnpm --filter
+@ghilbut/cdn-lambda <script>`로 실행합니다.
+
 기본 호스트는 파일 모드의 `oidc.k3s.ghilbut.com`입니다. 객체는
 `s3://ghilbut-cloudfront-cdn/oidc.k3s.ghilbut.com/` 아래에 업로드합니다.
 

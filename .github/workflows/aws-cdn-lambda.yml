@@ -36,29 +36,28 @@ jobs:
         with:
           node-version: 24
 
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.33.2 --activate
+
       - name: Install dependencies
-        run: npm ci
-        working-directory: aws/cdn/lambda
+        run: pnpm install --frozen-lockfile
 
       - name: Format check
-        run: npm run format:check
-        working-directory: aws/cdn/lambda
+        run: pnpm --filter @ghilbut/cdn-lambda format:check
 
       - name: Lint
-        run: npm run lint
-        working-directory: aws/cdn/lambda
+        run: pnpm --filter @ghilbut/cdn-lambda lint
 
       - name: Type check
-        run: npm run typecheck
-        working-directory: aws/cdn/lambda
+        run: pnpm --filter @ghilbut/cdn-lambda typecheck
 
       - name: Test
-        run: npm test
-        working-directory: aws/cdn/lambda
+        run: pnpm --filter @ghilbut/cdn-lambda test
 
       - name: Build
-        run: npm run build
-        working-directory: aws/cdn/lambda
+        run: pnpm --filter @ghilbut/cdn-lambda build
 
       - name: Create zip
         run: zip lambda.zip index.mjs

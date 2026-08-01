@@ -18,6 +18,9 @@
 ## temporary directory
 .tmp
 
+## Node.js
+node_modules/
+
 ## Obsidian local workspace state
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
