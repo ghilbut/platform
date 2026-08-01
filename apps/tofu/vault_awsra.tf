@@ -30,21 +30,3 @@ resource "local_sensitive_file" "vault_awsra" {
     }
   }
 }
-
-resource "local_file" "vault_configuration" {
-  filename        = "${path.module}/../argo-apps/vault/vault.yaml"
-  file_permission = "0600"
-
-  content = yamlencode({
-    apiVersion = "v1"
-    kind       = "Secret"
-    metadata = {
-      name      = "vault"
-      namespace = "vault"
-    }
-    type = "Opaque"
-    stringData = {
-      VAULT_AWSKMS_SEAL_KEY_ID = module.vault.kms_key_arn
-    }
-  })
-}
