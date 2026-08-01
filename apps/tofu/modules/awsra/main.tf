@@ -55,30 +55,42 @@ resource "aws_rolesanywhere_profile" "awsra" {
   require_instance_properties = false
 }
 
-resource "local_sensitive_file" "manifest" {
-  filename        = var.manifest_file_path
-  file_permission = "0600"
+resource "kubernetes_secret_v1" "awsra" {
+  metadata {
+    name      = "awsra"
+    namespace = "vault"
+  }
+
+  data_wo = {
+    AWS_ROLESANYWHERE_PKCS8_PASSWORD = local.pkcs8_password
+  }
+
+  data_wo_revision = var.pkcs8_password_revision
+
+  type = "Opaque"
+
+  lifecycle {
+    precondition {
+      condition     = local.pkcs8_password != null
+      error_message = "The PKCS#8 passphrase file is required to apply the AWS Roles Anywhere Secret."
+    }
+  }
+}
+
+resource "local_file" "config_map_manifest" {
+  filename = "${var.manifest_directory_path}/awsra-cm.yaml"
 
   content = yamlencode({
     apiVersion = "v1"
-    kind       = "Secret"
+    kind       = "ConfigMap"
     metadata = {
       name      = "awsra"
       namespace = "vault"
     }
-    type = "Opaque"
-    stringData = {
-      AWS_ROLESANYWHERE_PKCS8_PASSWORD   = local.pkcs8_password
+    data = {
       AWS_ROLESANYWHERE_PROFILE_ARN      = aws_rolesanywhere_profile.awsra.arn
       AWS_ROLESANYWHERE_ROLE_ARN         = aws_iam_role.awsra.arn
       AWS_ROLESANYWHERE_TRUST_ANCHOR_ARN = aws_rolesanywhere_trust_anchor.awsra.arn
     }
   })
-
-  lifecycle {
-    precondition {
-      condition     = local.pkcs8_password != null
-      error_message = "The PKCS#8 passphrase file is required to generate the AWS Roles Anywhere Secret manifest."
-    }
-  }
 }

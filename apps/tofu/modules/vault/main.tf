@@ -35,7 +35,7 @@ resource "aws_iam_role_policy" "kms_seal" {
 }
 
 resource "local_file" "manifest" {
-  filename = var.manifest_file_path
+  filename = "${var.manifest_directory_path}/vault-cm.yaml"
 
   content = yamlencode({
     apiVersion = "v1"

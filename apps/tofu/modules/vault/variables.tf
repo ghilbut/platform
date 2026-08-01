@@ -8,7 +8,7 @@ variable "awsra_role_name" {
   description = "IAM Roles Anywhere role name allowed to use the Vault KMS seal key."
 }
 
-variable "manifest_file_path" {
+variable "manifest_directory_path" {
   type        = string
-  description = "Path where the generated Vault ConfigMap manifest is written."
+  description = "Directory where the generated Vault ConfigMap manifest is written."
 }
