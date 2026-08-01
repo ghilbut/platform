@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: openebs
+  name: ebs
   annotations:
     argocd.argoproj.io/sync-options: Delete=false,Prune=false
     argocd.argoproj.io/sync-wave: "-1"
@@ -23,7 +23,7 @@ volumeBindingMode: WaitForFirstConsumer
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: openebs-lvm-localpv
+  name: ebs
   namespace: argo
   annotations:
     argocd.argoproj.io/sync-wave: "0"
@@ -37,7 +37,7 @@ spec:
       releaseName: openebs-lvm
   destination:
     name: in-cluster
-    namespace: openebs
+    namespace: ebs
   syncPolicy:
     syncOptions:
       - ApplyOutOfSyncOnly=true
