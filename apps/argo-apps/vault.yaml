@@ -5,10 +5,74 @@ metadata:
   namespace: argo
 spec:
   project: default
-  source:
-    path: apps/argo-apps/vault
-    repoURL: https://github.com/ghilbut/platform.git
-    targetRevision: main
+  sources:
+    - chart: vault
+      repoURL: https://helm.releases.hashicorp.com
+      targetRevision: 0.34.0
+      helm:
+        releaseName: vault
+        values: |
+          global:
+            tlsDisable: true
+          injector:
+            enabled: false
+          server:
+            ha:
+              enabled: true
+              replicas: 1
+              raft:
+                enabled: true
+                setNodeId: true
+            dataStorage:
+              enabled: true
+              size: 10Gi
+            extraEnvironmentVars:
+              AWS_EC2_METADATA_SERVICE_ENDPOINT: http://127.0.0.1:9911
+              AWS_REGION: us-east-1
+              VAULT_AWSKMS_SEAL_KEY_ID: alias/platform-vault
+              VAULT_SEAL_TYPE: awskms
+            volumes:
+              - name: awsra
+                secret:
+                  defaultMode: 256
+                  secretName: awsra
+            extraContainers:
+              - name: awsra-credential-helper
+                image: public.ecr.aws/rolesanywhere/credential-helper:latest
+                args:
+                  - serve
+                  - --certificate
+                  - /var/run/awsra/certificate.pem
+                  - --pkcs8-password
+                  - $(AWS_ROLESANYWHERE_PKCS8_PASSWORD)
+                  - --private-key
+                  - /var/run/awsra/private-key.pem
+                  - --profile-arn
+                  - $(AWS_ROLESANYWHERE_PROFILE_ARN)
+                  - --region
+                  - us-east-1
+                  - --role-arn
+                  - $(AWS_ROLESANYWHERE_ROLE_ARN)
+                  - --trust-anchor-arn
+                  - $(AWS_ROLESANYWHERE_TRUST_ANCHOR_ARN)
+                env:
+                  - name: AWS_ROLESANYWHERE_PKCS8_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        key: AWS_ROLESANYWHERE_PKCS8_PASSWORD
+                        name: awsra
+                envFrom:
+                  - configMapRef:
+                      name: awsra
+                volumeMounts:
+                  - mountPath: /var/run/awsra
+                    name: awsra
+                    readOnly: true
+    - path: apps/argo-apps/vault
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
+      directory:
+        recurse: true
   destination:
     name: in-cluster
     namespace: vault

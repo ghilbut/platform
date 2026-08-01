@@ -28,6 +28,16 @@ variable "pkcs8_password_revision" {
   description = "Revision number incremented when the PKCS#8 passphrase changes."
 }
 
+variable "leaf_certificate_path" {
+  type        = string
+  description = "Path to the PEM-encoded leaf certificate used by the credential helper."
+}
+
+variable "leaf_private_key_path" {
+  type        = string
+  description = "Path to the PEM-encoded encrypted leaf private key used by the credential helper."
+}
+
 variable "session_duration_seconds" {
   type        = number
   description = "Lifetime of credentials issued by the IAM Roles Anywhere profile."

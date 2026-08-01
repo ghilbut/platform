@@ -43,6 +43,9 @@ resource "local_file" "manifest" {
     metadata = {
       name      = "vault"
       namespace = "vault"
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "-1"
+      }
     }
     data = {
       VAULT_AWSKMS_SEAL_KEY_ID = aws_kms_alias.seal.name

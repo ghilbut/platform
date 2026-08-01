@@ -11,6 +11,8 @@ module "awsra" {
   manifest_directory_path         = local.vault_manifest_directory_path
   pkcs8_password_file_path        = "${path.module}/pki/.secrets/awsra-for-k3s-cpa.pass"
   pkcs8_password_revision         = var.awsra_pkcs8_password_revision
+  leaf_certificate_path           = "${path.module}/pki/leaves/awsra-for-k3s-cpa/awsra-for-k3s-cpa.crt.pem"
+  leaf_private_key_path           = "${path.module}/pki/leaves/awsra-for-k3s-cpa/awsra-for-k3s-cpa.key.pem"
 }
 
 module "vault" {

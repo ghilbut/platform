@@ -1,7 +1,9 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  pkcs8_password = fileexists(var.pkcs8_password_file_path) ? sensitive(trimspace(file(var.pkcs8_password_file_path))) : null
+  leaf_certificate = fileexists(var.leaf_certificate_path) ? file(var.leaf_certificate_path) : null
+  leaf_private_key = fileexists(var.leaf_private_key_path) ? sensitive(file(var.leaf_private_key_path)) : null
+  pkcs8_password   = fileexists(var.pkcs8_password_file_path) ? sensitive(trimspace(file(var.pkcs8_password_file_path))) : null
 }
 
 resource "aws_rolesanywhere_trust_anchor" "awsra" {
@@ -63,6 +65,8 @@ resource "kubernetes_secret_v1" "awsra" {
 
   data_wo = {
     AWS_ROLESANYWHERE_PKCS8_PASSWORD = local.pkcs8_password
+    "certificate.pem"                = local.leaf_certificate
+    "private-key.pem"                = local.leaf_private_key
   }
 
   data_wo_revision = var.pkcs8_password_revision
@@ -71,8 +75,8 @@ resource "kubernetes_secret_v1" "awsra" {
 
   lifecycle {
     precondition {
-      condition     = local.pkcs8_password != null
-      error_message = "The PKCS#8 passphrase file is required to apply the AWS Roles Anywhere Secret."
+      condition     = local.leaf_certificate != null && local.leaf_private_key != null && local.pkcs8_password != null
+      error_message = "The AWS Roles Anywhere leaf certificate, private key, and PKCS#8 passphrase files are required to apply the Secret."
     }
   }
 }
@@ -86,6 +90,9 @@ resource "local_file" "config_map_manifest" {
     metadata = {
       name      = "awsra"
       namespace = "vault"
+      annotations = {
+        "argocd.argoproj.io/sync-wave" = "-1"
+      }
     }
     data = {
       AWS_ROLESANYWHERE_PROFILE_ARN      = aws_rolesanywhere_profile.awsra.arn
