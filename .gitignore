@@ -18,6 +18,11 @@
 ## temporary directory
 .tmp
 
+## Obsidian local workspace state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+
 
 ################################################################
 ##  Credentials
@@ -30,6 +35,15 @@
 *.key
 *.pem
 *.srl
+
+# Generated PKI material
+/pki/.secrets/
+/pki/**/*.crt.pem
+/pki/**/*.csr.pem
+/pki/**/*.key.pem
+/pki/**/*.srl
+/pki/**/*.pass
+/apps/tofu/pki/.secrets/
 
 
 ################################################################

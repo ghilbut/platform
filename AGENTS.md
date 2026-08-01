@@ -7,3 +7,7 @@
 ## GitHub
 
 * Branch 작업은 `.worktrees/` 디렉터리에서 한다.
+
+## Documentation
+
+* Obsidian을 이용하여 문서를 관리한다.
