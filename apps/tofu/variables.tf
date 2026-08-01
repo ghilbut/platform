@@ -1,7 +1,7 @@
 variable "aws_profile" {
   type        = string
   description = "AWS CLI profile for the account that hosts Vault."
-  default     = "ultary-domains"
+  default     = "ghilbut-platform"
 }
 
 variable "aws_region" {
