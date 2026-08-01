@@ -2,7 +2,7 @@
 
 ## 목적과 적용 범위
 
-이 룰북은 사설 PKI와 AWS IAM Roles Anywhere용 인증서에 적용한다. 절차와 명령은 [RUNBOOK.md](RUNBOOK.md)를, 각 실제 수행 결과는 `RUN-YYYY-mm-dd.md`를 따른다.
+이 룰북은 사설 PKI의 CA와 leaf 인증서 전반에 적용한다. 절차와 명령은 [RUNBOOK.md](RUNBOOK.md)를, 각 실제 수행 결과는 `RUN-YYYY-mm-dd.md`를 따른다.
 
 ## 인증서 계층과 권한
 
