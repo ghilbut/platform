@@ -26,6 +26,7 @@ spec:
             dataStorage:
               enabled: true
               size: 10Gi
+              storageClass: openebs-lvm
             extraEnvironmentVars:
               AWS_EC2_METADATA_SERVICE_ENDPOINT: http://127.0.0.1:9911
               AWS_REGION: us-east-1
