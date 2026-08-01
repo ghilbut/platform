@@ -1,0 +1,85 @@
+name: Build and deploy CDN Lambda@Edge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/aws-cdn-lambda.yml
+      - aws/cdn/404.html
+      - aws/cdn/503.html
+      - aws/cdn/lambda/**
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+
+concurrency:
+  group: cdn-lambda-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Test, build, and deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GITHUB_APP_ID: ${{ vars.TOFU_GITHUB_APP_ID }}
+      GITHUB_APP_INSTALLATION_ID: ${{ vars.TOFU_GITHUB_APP_INSTALLATION_ID }}
+      GITHUB_APP_PEM_FILE: ${{ secrets.TOFU_GITHUB_APP_PEM }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format check
+        run: pnpm --filter @ghilbut/cdn-lambda format:check
+
+      - name: Lint
+        run: pnpm --filter @ghilbut/cdn-lambda lint
+
+      - name: Type check
+        run: pnpm --filter @ghilbut/cdn-lambda typecheck
+
+      - name: Test
+        run: pnpm --filter @ghilbut/cdn-lambda test
+
+      - name: Build
+        run: pnpm --filter @ghilbut/cdn-lambda build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN }}
+          disable-retry: true
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+          tofu_version: 1.12.4
+
+      - name: OpenTofu init
+        run: tofu init
+        working-directory: aws/cdn/tofu
+
+      - name: OpenTofu apply
+        run: tofu apply -auto-approve
+        working-directory: aws/cdn/tofu

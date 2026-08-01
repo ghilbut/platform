@@ -1,0 +1,5 @@
+packages:
+  - "aws/cdn/lambda"
+
+onlyBuiltDependencies:
+  - esbuild

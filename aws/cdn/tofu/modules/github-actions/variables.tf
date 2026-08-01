@@ -1,0 +1,10 @@
+variable "acm_certificate_arn" { type = string }
+variable "cdn_bucket_arn" { type = string }
+variable "cloudfront_distribution_arn" { type = string }
+variable "github_repository" { type = string }
+variable "lambda_function_arn" { type = string }
+variable "lambda_role_arn" { type = string }
+variable "repository_full_name" { type = string }
+variable "state_bucket" { type = string }
+variable "state_key" { type = string }
+variable "zone_ids" { type = map(string) }
