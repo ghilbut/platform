@@ -1,11 +1,30 @@
 # PKI 런북
 
-## 목적과 선행 조건
+## 목적과 입력값
 
-이 런북은 Root CA부터 AWS IAM Roles Anywhere leaf 인증서까지 한 체인을 생성·검증·배치하는 반복 절차다. 적용 원칙은 [RULEBOOK.md](RULEBOOK.md)를 따른다. 명령은 저장소 루트에서 `zsh`로 실행한다. 기존 인증서 또는 키가 있으면 해당 발급 기록을 확인하고, 명시적인 교체 작업 없이 덮어쓰지 않는다.
+이 런북은 Root CA부터 leaf 인증서까지 체인을 생성하고 검증하는 공통 절차다. 적용 원칙은 [RULEBOOK.md](RULEBOOK.md)를 따른다. 명령은 저장소 루트에서 `zsh`로 실행한다. 기존 파일은 덮어쓰지 않는다.
+
+발급 전에 아래 값을 발급 프로파일에 맞게 정한다. 식별자에는 소문자·숫자·하이픈만 사용한다.
 
 ```shell
-mkdir -p pki/awsra pki/.secrets
+VALID_DAYS=3650
+ROOT_SUBJECT='/C=KR/O=Example/CN=Example Root CA'
+INTERMEDIATE_SUBJECT='/C=KR/O=Example/CN=Example Intermediate CA'
+ISSUING_CA_ID='service-issuing-ca'
+ISSUING_CA_SUBJECT='/C=KR/O=Example/OU=Platform/CN=Example Service Issuing CA'
+LEAF_ID='service-workload'
+LEAF_SUBJECT='/C=KR/O=Example/OU=Platform/CN=service-workload'
+LEAF_KEY_USAGE='digitalSignature'
+LEAF_EXTENDED_KEY_USAGE='clientAuth'
+
+ISSUING_CA_DIR="pki/issuers/$ISSUING_CA_ID"
+LEAF_DIR="pki/leaves/$LEAF_ID"
+```
+
+`LEAF_KEY_USAGE`와 `LEAF_EXTENDED_KEY_USAGE`는 대상 프로토콜에 맞게 정한다. 이 예시는 클라이언트 인증용 leaf 프로파일이다.
+
+```shell
+mkdir -p "$ISSUING_CA_DIR" "$LEAF_DIR" pki/.secrets
 chmod 700 pki/.secrets
 umask 077
 ```
@@ -23,10 +42,9 @@ openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 \
   -pass file:pki/.secrets/root-ca.pass -out pki/root-ca.key.pem
 chmod 400 pki/root-ca.key.pem
 
-openssl req -x509 -new -sha384 -days 3650 \
+openssl req -x509 -new -sha384 -days "$VALID_DAYS" \
   -key pki/root-ca.key.pem -passin file:pki/.secrets/root-ca.pass \
-  -out pki/root-ca.crt.pem \
-  -subj '/C=KR/O=Ghilbut/CN=Ghilbut Root CA' \
+  -out pki/root-ca.crt.pem -subj "$ROOT_SUBJECT" \
   -addext 'basicConstraints=critical,CA:TRUE,pathlen:2' \
   -addext 'keyUsage=critical,keyCertSign,cRLSign' \
   -addext 'subjectKeyIdentifier=hash'
@@ -48,10 +66,9 @@ chmod 400 pki/intermediate-ca.key.pem
 
 openssl req -new -sha384 -key pki/intermediate-ca.key.pem \
   -passin file:pki/.secrets/intermediate-ca.pass \
-  -out pki/intermediate-ca.csr.pem \
-  -subj '/C=KR/O=Ghilbut/CN=Ghilbut Intermediate CA'
+  -out pki/intermediate-ca.csr.pem -subj "$INTERMEDIATE_SUBJECT"
 
-openssl x509 -req -sha384 -days 3650 -in pki/intermediate-ca.csr.pem \
+openssl x509 -req -sha384 -days "$VALID_DAYS" -in pki/intermediate-ca.csr.pem \
   -CA pki/root-ca.crt.pem -CAkey pki/root-ca.key.pem \
   -passin file:pki/.secrets/root-ca.pass -CAcreateserial \
   -CAserial pki/root-ca.srl -out pki/intermediate-ca.crt.pem \
@@ -63,90 +80,78 @@ openssl x509 -req -sha384 -days 3650 -in pki/intermediate-ca.csr.pem \
 chmod 444 pki/intermediate-ca.csr.pem pki/intermediate-ca.crt.pem
 ```
 
-## 3. AWS Roles Anywhere Issuing CA 생성
+## 3. Issuing CA 생성
 
 ```shell
-test ! -e pki/awsra/issuing-ca.key.pem
-test ! -e pki/awsra/issuing-ca.crt.pem
-openssl rand -base64 -out pki/.secrets/awsra-issuing-ca.pass 48
-chmod 600 pki/.secrets/awsra-issuing-ca.pass
+test ! -e "$ISSUING_CA_DIR/ca.key.pem"
+test ! -e "$ISSUING_CA_DIR/ca.crt.pem"
+openssl rand -base64 -out "pki/.secrets/$ISSUING_CA_ID.pass" 48
+chmod 600 "pki/.secrets/$ISSUING_CA_ID.pass"
 
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 \
   -pkeyopt ec_param_enc:named_curve -aes-256-cbc \
-  -pass file:pki/.secrets/awsra-issuing-ca.pass -out pki/awsra/issuing-ca.key.pem
-chmod 400 pki/awsra/issuing-ca.key.pem
+  -pass "file:pki/.secrets/$ISSUING_CA_ID.pass" -out "$ISSUING_CA_DIR/ca.key.pem"
+chmod 400 "$ISSUING_CA_DIR/ca.key.pem"
 
-openssl req -new -sha384 -key pki/awsra/issuing-ca.key.pem \
-  -passin file:pki/.secrets/awsra-issuing-ca.pass \
-  -out pki/awsra/issuing-ca.csr.pem \
-  -subj '/C=KR/O=Ghilbut/OU=Platform/OU=AWS Roles Anywhere/CN=Ghilbut AWS Roles Anywhere Issuing CA'
+openssl req -new -sha384 -key "$ISSUING_CA_DIR/ca.key.pem" \
+  -passin "file:pki/.secrets/$ISSUING_CA_ID.pass" \
+  -out "$ISSUING_CA_DIR/ca.csr.pem" -subj "$ISSUING_CA_SUBJECT"
 
-openssl x509 -req -sha384 -days 3650 -in pki/awsra/issuing-ca.csr.pem \
+openssl x509 -req -sha384 -days "$VALID_DAYS" -in "$ISSUING_CA_DIR/ca.csr.pem" \
   -CA pki/intermediate-ca.crt.pem -CAkey pki/intermediate-ca.key.pem \
   -passin file:pki/.secrets/intermediate-ca.pass -CAcreateserial \
-  -CAserial pki/intermediate-ca.srl -out pki/awsra/issuing-ca.crt.pem \
+  -CAserial pki/intermediate-ca.srl -out "$ISSUING_CA_DIR/ca.crt.pem" \
   -extfile <(printf '%s\n' \
     'basicConstraints=critical,CA:TRUE,pathlen:0' \
     'keyUsage=critical,keyCertSign,cRLSign' \
     'subjectKeyIdentifier=hash' \
     'authorityKeyIdentifier=keyid:always,issuer')
-chmod 444 pki/awsra/issuing-ca.csr.pem pki/awsra/issuing-ca.crt.pem
+chmod 444 "$ISSUING_CA_DIR/ca.csr.pem" "$ISSUING_CA_DIR/ca.crt.pem"
 ```
 
-## 4. AWS Roles Anywhere leaf 인증서 생성
+## 4. Leaf 인증서 생성
 
 ```shell
-test ! -e pki/awsra/awsra-for-k3s-cpa.key.pem
-test ! -e pki/awsra/awsra-for-k3s-cpa.crt.pem
-openssl rand -base64 -out pki/.secrets/awsra-for-k3s-cpa.pass 48
-chmod 600 pki/.secrets/awsra-for-k3s-cpa.pass
+test ! -e "$LEAF_DIR/$LEAF_ID.key.pem"
+test ! -e "$LEAF_DIR/$LEAF_ID.crt.pem"
+openssl rand -base64 -out "pki/.secrets/$LEAF_ID.pass" 48
+chmod 600 "pki/.secrets/$LEAF_ID.pass"
 
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:P-384 \
   -pkeyopt ec_param_enc:named_curve -aes-256-cbc \
-  -pass file:pki/.secrets/awsra-for-k3s-cpa.pass -out pki/awsra/awsra-for-k3s-cpa.key.pem
-chmod 400 pki/awsra/awsra-for-k3s-cpa.key.pem
+  -pass "file:pki/.secrets/$LEAF_ID.pass" -out "$LEAF_DIR/$LEAF_ID.key.pem"
+chmod 400 "$LEAF_DIR/$LEAF_ID.key.pem"
 
-openssl req -new -sha384 -key pki/awsra/awsra-for-k3s-cpa.key.pem \
-  -passin file:pki/.secrets/awsra-for-k3s-cpa.pass \
-  -out pki/awsra/awsra-for-k3s-cpa.csr.pem \
-  -subj '/C=KR/O=Ghilbut/OU=Platform/OU=AWS Roles Anywhere/CN=awsra-for-k3s-cpa'
+openssl req -new -sha384 -key "$LEAF_DIR/$LEAF_ID.key.pem" \
+  -passin "file:pki/.secrets/$LEAF_ID.pass" \
+  -out "$LEAF_DIR/$LEAF_ID.csr.pem" -subj "$LEAF_SUBJECT"
 
-openssl x509 -req -sha384 -days 3650 -in pki/awsra/awsra-for-k3s-cpa.csr.pem \
-  -CA pki/awsra/issuing-ca.crt.pem -CAkey pki/awsra/issuing-ca.key.pem \
-  -passin file:pki/.secrets/awsra-issuing-ca.pass -CAcreateserial \
-  -CAserial pki/awsra/issuing-ca.srl -out pki/awsra/awsra-for-k3s-cpa.crt.pem \
+openssl x509 -req -sha384 -days "$VALID_DAYS" -in "$LEAF_DIR/$LEAF_ID.csr.pem" \
+  -CA "$ISSUING_CA_DIR/ca.crt.pem" -CAkey "$ISSUING_CA_DIR/ca.key.pem" \
+  -passin "file:pki/.secrets/$ISSUING_CA_ID.pass" -CAcreateserial \
+  -CAserial "$ISSUING_CA_DIR/ca.srl" -out "$LEAF_DIR/$LEAF_ID.crt.pem" \
   -extfile <(printf '%s\n' \
     'basicConstraints=critical,CA:FALSE' \
-    'keyUsage=critical,digitalSignature' \
-    'extendedKeyUsage=critical,clientAuth' \
+    "keyUsage=critical,$LEAF_KEY_USAGE" \
+    "extendedKeyUsage=critical,$LEAF_EXTENDED_KEY_USAGE" \
     'subjectKeyIdentifier=hash' \
     'authorityKeyIdentifier=keyid:always,issuer')
-chmod 444 pki/awsra/awsra-for-k3s-cpa.csr.pem pki/awsra/awsra-for-k3s-cpa.crt.pem
+chmod 444 "$LEAF_DIR/$LEAF_ID.csr.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
 ```
 
-## 5. 검증과 배치
+## 5. 체인과 키 일치 검증
 
 ```shell
 openssl verify -CAfile pki/root-ca.crt.pem pki/intermediate-ca.crt.pem
 openssl verify -CAfile pki/root-ca.crt.pem \
-  -untrusted pki/intermediate-ca.crt.pem pki/awsra/issuing-ca.crt.pem
-openssl verify -purpose sslclient -CAfile pki/root-ca.crt.pem \
+  -untrusted pki/intermediate-ca.crt.pem "$ISSUING_CA_DIR/ca.crt.pem"
+openssl verify -CAfile pki/root-ca.crt.pem \
   -untrusted pki/intermediate-ca.crt.pem \
-  -untrusted pki/awsra/issuing-ca.crt.pem pki/awsra/awsra-for-k3s-cpa.crt.pem
+  -untrusted "$ISSUING_CA_DIR/ca.crt.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
 
-CERT_PUBLIC_KEY_SHA256="$(openssl x509 -in pki/awsra/awsra-for-k3s-cpa.crt.pem -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256)"
-KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in pki/awsra/awsra-for-k3s-cpa.key.pem -passin file:pki/.secrets/awsra-for-k3s-cpa.pass -pubout -outform DER | openssl dgst -sha256)"
+CERT_PUBLIC_KEY_SHA256="$(openssl x509 -in "$LEAF_DIR/$LEAF_ID.crt.pem" -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256)"
+KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in "$LEAF_DIR/$LEAF_ID.key.pem" -passin "file:pki/.secrets/$LEAF_ID.pass" -pubout -outform DER | openssl dgst -sha256)"
 test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
 ```
 
-검증이 끝나면 Root CA와 Intermediate CA의 개인 키 및 passphrase를 오프라인 저장소로 옮긴다. 후속 OpenTofu 작업에서 `pki/awsra/issuing-ca.crt.pem`을 trust anchor로 등록한다. Docker Compose가 있는 `ultaryinc/ultary` 저장소에는 leaf 두 파일만 다음 위치에 배치한다.
-
-```shell
-install -d -m 700 "$ULTARY_REPO_ROOT/platform/core/docker/.pki"
-install -m 0444 pki/awsra/awsra-for-k3s-cpa.crt.pem \
-  "$ULTARY_REPO_ROOT/platform/core/docker/.pki/awsra-for-k3s-cpa.crt.pem"
-install -m 0400 pki/awsra/awsra-for-k3s-cpa.key.pem \
-  "$ULTARY_REPO_ROOT/platform/core/docker/.pki/awsra-for-k3s-cpa.key.pem"
-```
-
-배치 후에는 `RUN-YYYY-mm-dd.md`에 발급과 검증 결과를 기록한다. `.env` 생성과 OpenTofu 리소스 작성은 이 런북의 범위가 아니다.
+검증이 끝나면 Root CA와 Intermediate CA의 개인 키 및 passphrase를 오프라인 저장소로 옮긴다. 발급한 인증서의 배포와 신뢰 설정은 서비스별 문서를 따른다. 실행 결과는 `RUN-YYYY-mm-dd.md`에 기록한다.
