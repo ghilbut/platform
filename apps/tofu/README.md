@@ -1,10 +1,10 @@
 # Applications OpenTofu
 
-이 루트는 Vault가 AWS IAM Roles Anywhere를 통해 AWS KMS seal key를 사용할 수 있게 구성한다.
+이 루트는 플랫폼 애플리케이션의 AWS 인프라를 관리한다. 현재는 Vault가 AWS IAM Roles Anywhere를 통해 AWS KMS seal key를 사용할 수 있도록 `awsra` 모듈을 구성한다.
 
 ## 구성
 
-- `modules/awsra/`: IAM Roles Anywhere trust anchor, IAM role, profile을 만든다.
+- `modules/awsra/`: Vault용 IAM Roles Anywhere trust anchor, IAM role, profile을 만든다.
 - `pki/issuers/awsra-issuing-ca/ca.crt.pem`: trust anchor에 등록할 Issuing CA 인증서다.
 - `pki/leaves/awsra-for-k3s-cpa/`: `awsra-for-k3s-cpa` leaf 인증서와 개인 키를 보관한다. OpenTofu는 이 개인 키를 읽지 않는다.
 
