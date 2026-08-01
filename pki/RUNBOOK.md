@@ -154,4 +154,8 @@ KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in "$LEAF_DIR/$LEAF_ID.key.pem" -passin "
 test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
 ```
 
-검증이 끝나면 Root CA와 Intermediate CA의 개인 키 및 passphrase를 오프라인 저장소로 옮긴다. 발급한 인증서의 배포와 신뢰 설정은 서비스별 문서를 따른다. 실행 결과는 `RUN-YYYY-mm-dd.md`에 기록한다.
+검증이 끝나면 Root CA와 Intermediate CA의 개인 키 및 passphrase를 오프라인 저장소로 옮긴다. 발급한 인증서의 배포와 신뢰 설정은 서비스별 문서를 따른다.
+
+## 6. 실행 기록
+
+이 런북을 실제로 수행한 날마다 `pki/RUN-YYYY-mm-dd.md`를 만든다. 기록에는 수행 시각, 발급 대상, subject, issuer, serial, SHA-256 fingerprint, 체인·키 일치 검증 결과, 배포 여부와 후속 조치를 포함한다. 개인 키와 passphrase는 기록하지 않는다.
