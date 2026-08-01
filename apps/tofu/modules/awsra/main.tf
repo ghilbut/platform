@@ -1,5 +1,9 @@
 data "aws_caller_identity" "current" {}
 
+locals {
+  pkcs8_password = fileexists(var.pkcs8_password_file_path) ? sensitive(trimspace(file(var.pkcs8_password_file_path))) : null
+}
+
 resource "aws_rolesanywhere_trust_anchor" "awsra" {
   name    = "${var.name}-awsra"
   enabled = true
@@ -49,4 +53,32 @@ resource "aws_rolesanywhere_profile" "awsra" {
   duration_seconds            = var.session_duration_seconds
   accept_role_session_name    = false
   require_instance_properties = false
+}
+
+resource "local_sensitive_file" "manifest" {
+  filename        = var.manifest_file_path
+  file_permission = "0600"
+
+  content = yamlencode({
+    apiVersion = "v1"
+    kind       = "Secret"
+    metadata = {
+      name      = "awsra"
+      namespace = "vault"
+    }
+    type = "Opaque"
+    stringData = {
+      AWS_ROLESANYWHERE_PKCS8_PASSWORD   = local.pkcs8_password
+      AWS_ROLESANYWHERE_PROFILE_ARN      = aws_rolesanywhere_profile.awsra.arn
+      AWS_ROLESANYWHERE_ROLE_ARN         = aws_iam_role.awsra.arn
+      AWS_ROLESANYWHERE_TRUST_ANCHOR_ARN = aws_rolesanywhere_trust_anchor.awsra.arn
+    }
+  })
+
+  lifecycle {
+    precondition {
+      condition     = local.pkcs8_password != null
+      error_message = "The PKCS#8 passphrase file is required to generate the AWS Roles Anywhere Secret manifest."
+    }
+  }
 }

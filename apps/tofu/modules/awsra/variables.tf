@@ -13,6 +13,16 @@ variable "certificate_subject_common_name" {
   description = "Common Name of the leaf certificate permitted to assume the role."
 }
 
+variable "manifest_file_path" {
+  type        = string
+  description = "Path where the generated AWS Roles Anywhere Secret manifest is written."
+}
+
+variable "pkcs8_password_file_path" {
+  type        = string
+  description = "Path to the PKCS#8 private-key passphrase file."
+}
+
 variable "session_duration_seconds" {
   type        = number
   description = "Lifetime of credentials issued by the IAM Roles Anywhere profile."

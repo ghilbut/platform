@@ -33,3 +33,19 @@ resource "aws_iam_role_policy" "kms_seal" {
     ]
   })
 }
+
+resource "local_file" "manifest" {
+  filename = var.manifest_file_path
+
+  content = yamlencode({
+    apiVersion = "v1"
+    kind       = "ConfigMap"
+    metadata = {
+      name      = "vault"
+      namespace = "vault"
+    }
+    data = {
+      VAULT_AWSKMS_SEAL_KEY_ID = aws_kms_alias.seal.name
+    }
+  })
+}
