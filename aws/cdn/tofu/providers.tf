@@ -9,7 +9,7 @@ provider "aws" {
   region  = "us-east-1"
 
   default_tags {
-    tags = {
+    tags = merge(var.default_tags, {
       created_by      = "opentofu"
       managed_by      = "opentofu"
       org             = var.org
@@ -18,7 +18,7 @@ provider "aws" {
       component       = var.component
       "opentofu/repo" = "https://github.com/ghilbut/platform"
       "opentofu/path" = "aws/cdn/tofu/"
-    }
+    })
   }
 }
 
