@@ -36,6 +36,14 @@
 *.pem
 *.srl
 
+# Generated PKI material
+/pki/.secrets/
+/pki/**/*.crt.pem
+/pki/**/*.csr.pem
+/pki/**/*.key.pem
+/pki/**/*.srl
+/pki/**/*.pass
+
 
 ################################################################
 ##  Terraform (OpenTofu)
