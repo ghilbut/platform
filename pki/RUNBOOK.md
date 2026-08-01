@@ -33,6 +33,9 @@ openssl req -x509 -new -sha384 -days "$ROOT_VALID_DAYS" \
   -addext 'keyUsage=critical,keyCertSign,cRLSign' \
   -addext 'subjectKeyIdentifier=hash'
 chmod 444 pki/root-ca.crt.pem
+
+openssl verify -CAfile pki/root-ca.crt.pem pki/root-ca.crt.pem
+openssl x509 -in pki/root-ca.crt.pem -noout -subject -issuer -serial -dates
 ```
 
 ## 2. Intermediate CA 생성
@@ -74,6 +77,9 @@ openssl x509 -req -sha384 -days "$INTERMEDIATE_VALID_DAYS" -in pki/intermediate-
   -extfile "$INTERMEDIATE_EXT"
 rm -f "$INTERMEDIATE_EXT"
 chmod 444 pki/intermediate-ca.csr.pem pki/intermediate-ca.crt.pem
+
+openssl verify -CAfile pki/root-ca.crt.pem pki/intermediate-ca.crt.pem
+openssl x509 -in pki/intermediate-ca.crt.pem -noout -subject -issuer -serial -dates
 ```
 
 ## 3. Issuing CA 생성
@@ -119,6 +125,10 @@ openssl x509 -req -sha384 -days "$ISSUING_CA_VALID_DAYS" -in "$ISSUING_CA_DIR/ca
   -extfile "$ISSUING_CA_EXT"
 rm -f "$ISSUING_CA_EXT"
 chmod 444 "$ISSUING_CA_DIR/ca.csr.pem" "$ISSUING_CA_DIR/ca.crt.pem"
+
+openssl verify -CAfile pki/root-ca.crt.pem \
+  -untrusted pki/intermediate-ca.crt.pem "$ISSUING_CA_DIR/ca.crt.pem"
+openssl x509 -in "$ISSUING_CA_DIR/ca.crt.pem" -noout -subject -issuer -serial -dates
 ```
 
 ## 4. Leaf 인증서 생성
@@ -169,21 +179,7 @@ openssl x509 -req -sha384 -days "$LEAF_VALID_DAYS" -in "$LEAF_DIR/$LEAF_ID.csr.p
   -extfile "$LEAF_EXT"
 rm -f "$LEAF_EXT"
 chmod 444 "$LEAF_DIR/$LEAF_ID.csr.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
-```
 
-## 5. 체인과 키 일치 검증
-
-```shell
-ISSUING_CA_ID='service-issuing-ca'
-LEAF_ID='service-workload'
-APPLICATION_PKI_DIR='apps/example/pki'
-ISSUING_CA_DIR="$APPLICATION_PKI_DIR/issuers/$ISSUING_CA_ID"
-LEAF_DIR="$APPLICATION_PKI_DIR/leaves/$LEAF_ID"
-SECRET_DIR="$APPLICATION_PKI_DIR/.secrets"
-
-openssl verify -CAfile pki/root-ca.crt.pem pki/intermediate-ca.crt.pem
-openssl verify -CAfile pki/root-ca.crt.pem \
-  -untrusted pki/intermediate-ca.crt.pem "$ISSUING_CA_DIR/ca.crt.pem"
 openssl verify -CAfile pki/root-ca.crt.pem \
   -untrusted pki/intermediate-ca.crt.pem \
   -untrusted "$ISSUING_CA_DIR/ca.crt.pem" "$LEAF_DIR/$LEAF_ID.crt.pem"
@@ -191,10 +187,11 @@ openssl verify -CAfile pki/root-ca.crt.pem \
 CERT_PUBLIC_KEY_SHA256="$(openssl x509 -in "$LEAF_DIR/$LEAF_ID.crt.pem" -pubkey -noout | openssl pkey -pubin -outform DER | openssl dgst -sha256)"
 KEY_PUBLIC_KEY_SHA256="$(openssl pkey -in "$LEAF_DIR/$LEAF_ID.key.pem" -passin "file:$SECRET_DIR/$LEAF_ID.pass" -pubout -outform DER | openssl dgst -sha256)"
 test "$CERT_PUBLIC_KEY_SHA256" = "$KEY_PUBLIC_KEY_SHA256"
+openssl x509 -in "$LEAF_DIR/$LEAF_ID.crt.pem" -noout -subject -issuer -serial -dates
 ```
 
 검증이 끝나면 Root CA와 Intermediate CA의 개인 키 및 passphrase를 오프라인 저장소로 옮긴다. 발급한 인증서의 배포와 신뢰 설정은 서비스별 문서를 따른다.
 
-## 6. 실행 기록
+## 5. 실행 기록
 
 이 런북을 실제로 수행한 날마다 해당 CA 또는 application PKI 디렉터리에 `RUN-YYYY-mm-dd.md`를 만든다. 기록에는 수행 시각, 발급 대상, subject, issuer, serial, SHA-256 fingerprint, 체인·키 일치 검증 결과, 배포 여부와 후속 조치를 포함한다. 개인 키와 passphrase는 기록하지 않는다.
