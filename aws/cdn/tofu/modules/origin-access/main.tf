@@ -1,7 +1,3 @@
-variable "bucket_arn" { type = string }
-variable "bucket_name" { type = string }
-variable "cloudfront_distribution_arn" { type = string }
-
 data "aws_iam_policy_document" "this" {
   statement {
     actions   = ["s3:GetObject"]

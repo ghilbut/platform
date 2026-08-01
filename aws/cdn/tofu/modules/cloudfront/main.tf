@@ -1,10 +1,3 @@
-variable "bucket_regional_domain_name" { type = string }
-variable "certificate_arn" { type = string }
-variable "fqdns" { type = list(string) }
-variable "lambda_function_arn" { type = string }
-variable "name" { type = string }
-variable "viewer_request_function_arn" { type = string }
-
 resource "aws_cloudfront_origin_access_control" "this" {
   name                              = "${var.name}-cdn-oac"
   description                       = "OAC for ${var.name} CDN S3 origin"
@@ -80,8 +73,3 @@ resource "aws_cloudfront_distribution" "this" {
 
   tags = { Name = "${var.name}-cdn" }
 }
-
-output "arn" { value = aws_cloudfront_distribution.this.arn }
-output "domain_name" { value = aws_cloudfront_distribution.this.domain_name }
-output "hosted_zone_id" { value = aws_cloudfront_distribution.this.hosted_zone_id }
-output "id" { value = aws_cloudfront_distribution.this.id }

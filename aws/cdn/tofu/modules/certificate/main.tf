@@ -1,8 +1,3 @@
-variable "acm_domain_name" { type = string }
-variable "fqdns" { type = list(string) }
-variable "name" { type = string }
-variable "zones" { type = map(map(any)) }
-
 data "aws_route53_zone" "zones" {
   for_each = var.zones
 
@@ -57,7 +52,3 @@ resource "aws_acm_certificate_validation" "this" {
   certificate_arn         = aws_acm_certificate.this.arn
   validation_record_fqdns = [for record in aws_route53_record.validation : record.fqdn]
 }
-
-output "arn" { value = aws_acm_certificate.this.arn }
-output "validation" { value = aws_acm_certificate_validation.this.id }
-output "zone_ids" { value = local.zone_id_by_root }

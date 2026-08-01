@@ -1,10 +1,3 @@
-variable "bucket_arn" { type = string }
-variable "bucket_name" { type = string }
-variable "name" { type = string }
-variable "allowlist" { type = list(string) }
-variable "redirect_map" { type = map(string) }
-variable "spa_hosts" { type = list(string) }
-
 data "aws_iam_policy_document" "lambda_assume" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -73,7 +66,3 @@ resource "aws_cloudfront_function" "viewer_request" {
     spa_hosts    = var.spa_hosts
   })
 }
-
-output "lambda_function_arn" { value = aws_lambda_function.this.qualified_arn }
-output "lambda_role_arn" { value = aws_iam_role.lambda.arn }
-output "viewer_request_function_arn" { value = aws_cloudfront_function.viewer_request.arn }

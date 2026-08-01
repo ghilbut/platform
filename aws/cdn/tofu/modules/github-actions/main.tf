@@ -1,14 +1,3 @@
-variable "acm_certificate_arn" { type = string }
-variable "cdn_bucket_arn" { type = string }
-variable "cloudfront_distribution_arn" { type = string }
-variable "github_repository" { type = string }
-variable "lambda_function_arn" { type = string }
-variable "lambda_role_arn" { type = string }
-variable "repository_full_name" { type = string }
-variable "state_bucket" { type = string }
-variable "state_key" { type = string }
-variable "zone_ids" { type = map(string) }
-
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -143,5 +132,3 @@ resource "github_actions_variable" "cdn_role_arn" {
   variable_name = "AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN"
   value         = aws_iam_role.this.arn
 }
-
-output "role_arn" { value = aws_iam_role.this.arn }
