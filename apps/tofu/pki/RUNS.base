@@ -1,0 +1,16 @@
+filters:
+  and:
+    - 'file.inFolder("apps/tofu/pki")'
+    - 'type == "run"'
+properties:
+  status:
+    displayName: Status
+  completed_at:
+    displayName: Completed at
+views:
+  - type: table
+    name: RUN
+    order:
+      - file.name
+      - status
+      - completed_at
