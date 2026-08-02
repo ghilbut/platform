@@ -29,6 +29,8 @@ Vault 구성과 관련 경로는 [Vault README](README.md)에서 확인한다. �
 | AWS 인증 | CPA ServiceAccount OIDC federation, `platform-vault` 역할 |
 | recovery key | 3개 생성, 2개 필요 |
 
+일반적인 recovery key quorum은 5개 생성·3개 필요이다. 이 Vault는 단일 운영자가 관리하는 소규모 환경이므로, 서로 다른 보관 위치 세 곳에 분산할 수 있는 3개 생성·2개 필요 구성을 사용한다.
+
 Raft snapshot은 Vault 데이터 전체를 포함한다. 파일은 암호화된 백업 저장소에만 보관하고 일반 파일 공유, CI artifact, Git에 넣지 않는다.
 
 ## 설치

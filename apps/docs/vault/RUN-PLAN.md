@@ -10,7 +10,7 @@ completed_at:
 
 # Vault 설치 RUN-PLAN
 
-PR이 `main`에 병합된 뒤 실행한다. 반복 운영은 [Vault 운영 RUNBOOK](RUNBOOK.md), 복구와 이전은 [Vault 복구 PLAYBOOK](PLAYBOOK.md)을 따른다.
+PR이 `main`에 병합된 뒤 실행한다. 일반적인 5개 생성·3개 필요 대신, 단일 운영자의 소규모 환경에 맞춰 recovery key 3개 생성·2개 필요 구성을 사용한다. 반복 운영은 [Vault 운영 RUNBOOK](RUNBOOK.md), 복구와 이전은 [Vault 복구 PLAYBOOK](PLAYBOOK.md)을 따른다.
 
 ## 실행 값
 
