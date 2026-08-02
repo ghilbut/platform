@@ -58,7 +58,7 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
    kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
    argocd app sync vault
    kubectl --context cpa -n vault get serviceaccount,pvc,pod
-   kubectl --context cpa -n vault wait --for=condition=Ready pod/vault-0 --timeout=10m
+   kubectl --context cpa -n vault wait --for=jsonpath='{.status.phase}'=Running pod/vault-0 --timeout=10m
    kubectl --context cpa -n vault exec vault-0 -- vault status
    ```
 

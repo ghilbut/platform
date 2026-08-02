@@ -57,14 +57,14 @@ tofu apply
 
 ### Argo CD 배포와 확인
 
-Argo CD에 Vault Application을 등록하고 수동 동기화한다. 이 Application에는 자동 동기화 정책이 없으므로 `argocd app sync` 또는 Argo CD UI에서 명시적으로 동기화해야 한다. Argo CD는 namespace와 `data-vault-0` PVC를 Helm StatefulSet보다 먼저 생성한다. Vault StatefulSet은 `OnDelete` update strategy를 사용하므로 rollout status 대신 Pod readiness를 확인한다.
+Argo CD에 Vault Application을 등록하고 수동 동기화한다. 이 Application에는 자동 동기화 정책이 없으므로 `argocd app sync` 또는 Argo CD UI에서 명시적으로 동기화해야 한다. Argo CD는 namespace와 `data-vault-0` PVC를 Helm StatefulSet보다 먼저 생성한다. Vault StatefulSet은 `OnDelete` update strategy를 사용한다. 초기화 전에는 sealed 상태라 readiness probe가 실패하므로 container `Running`과 `vault status`를 확인한다.
 
 ```sh
 kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
 argocd app sync vault
 kubectl --context cpa get namespace vault
 kubectl --context cpa -n vault get serviceaccount,pvc,pod
-kubectl --context cpa -n vault wait --for=condition=Ready pod/vault-0 --timeout=10m
+kubectl --context cpa -n vault wait --for=jsonpath='{.status.phase}'=Running pod/vault-0 --timeout=10m
 kubectl --context cpa -n vault exec vault-0 -- vault status
 ```
 
