@@ -23,7 +23,7 @@ variable "github_repository" {
 variable "name" {
   type        = string
   description = "Short CDN identifier used in resource names and Name tags"
-  default     = "cdn"
+  default     = "platform-cdn"
 }
 
 variable "acm_domain_name" {

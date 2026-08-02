@@ -24,7 +24,7 @@ module "s3" {
   source = "./modules/s3"
 
   # S3 bucket names share a global namespace, so include the repository owner.
-  bucket_name = "${var.github_owner}-${var.github_repository}-${var.name}"
+  bucket_name = "${var.github_owner}-${var.name}"
   error_page_files = {
     "404.html" = "${path.root}/../404.html"
     "503.html" = "${path.root}/../503.html"
