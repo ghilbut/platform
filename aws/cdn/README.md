@@ -9,7 +9,7 @@
 - ACM 인증서: `ghilbut.com` 및 CDN 호스트의 SAN
 - CloudFront: OAC를 통한 비공개 S3 원본
 
-S3 객체는 최대 10개 태그를 지원합니다. 현재 기본·모듈 출처 태그 6개를 적용합니다.
+S3 객체는 최대 10개 태그를 지원합니다. 현재 기본·루트·모듈 출처 태그 8개를 적용합니다.
 - Lambda@Edge: S3 객체 존재 여부 확인 및 SPA의 `index.html` 폴백
 - CloudFront Function: 허용 호스트 검증, 리디렉션, URI 접두사 처리
 
