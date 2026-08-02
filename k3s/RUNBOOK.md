@@ -30,6 +30,8 @@ area: k3s
 | K3S_VERSION | 설치 후 k3s --version으로 기록하는 참고 값. 설치 시 지정하지 않음 |
 | CILIUM_VERSION | Helm chart 버전 |
 
+AWS IAM federation에 사용하는 OIDC issuer의 공개 범위, 검증 절차, 애플리케이션 역할 분리는 [OIDC](OIDC.md)를 따른다.
+
 다음을 확인한다. 값 표의 모든 값을 실행 기록에 채운 뒤, 아래 명령의 꺾쇠괄호 값을 해당 값으로 바꾼다.
 
 - SERVER_IP:6443에 관리자 컴퓨터와 모든 agent가 연결할 수 있다.
