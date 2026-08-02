@@ -3,8 +3,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: data-etcd-0
   namespace: coredns
-  annotations:
-    argocd.argoproj.io/sync-options: Delete=false,Prune=false
   labels:
     app.kubernetes.io/component: datastore
     app.kubernetes.io/name: coredns
