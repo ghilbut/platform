@@ -1,7 +1,6 @@
 resource "aws_account_region" "opt_in" {
   for_each = var.disabled_opt_in_regions
 
-  account_id  = var.management_account_id
   region_name = each.value
   enabled     = false
 }

@@ -1,7 +1,6 @@
 module "management" {
   source = "./modules/management"
 
-  management_account_id = aws_organizations_account.management.id
   disabled_opt_in_regions = toset([
     "af-south-1",
     "ap-east-1",
