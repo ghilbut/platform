@@ -8,8 +8,8 @@ provider "aws" {
       managed_by      = "opentofu"
       org             = "ghilbut"
       project         = "platform"
-      service         = "identity"
-      component       = "aws"
+      service         = "foundation"
+      component       = "identity"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
       "opentofu/path" = "aws/foundation/identity/tofu/"
     }
