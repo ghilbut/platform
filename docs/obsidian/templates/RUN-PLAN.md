@@ -5,6 +5,9 @@ cluster:
 application:
 status: planned
 planned_at: "{{date:YYYY-MM-DD}}"
+paused_at:
+paused_step:
+paused_reason:
 completed_at:
 ---
 
