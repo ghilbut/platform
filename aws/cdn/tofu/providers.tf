@@ -18,13 +18,3 @@ provider "aws" {
     }
   }
 }
-
-################################################################
-##  GitHub provider
-##
-##  Used to manage repository Actions variables for CDN workflows.
-################################################################
-
-provider "github" {
-  owner = var.github_owner
-}

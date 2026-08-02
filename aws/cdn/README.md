@@ -5,7 +5,7 @@
 ## 구성
 
 - S3 버킷: `ghilbut-platform-cdn` (`us-east-1`)
-- 상태 파일: `s3://ghilbut-tfstates/aws/cdn.tfstate`
+- 상태 파일: `s3://ghilbut-tfstates/platform/aws/cdn.tfstate`
 - ACM 인증서: `ghilbut.com` 및 CDN 호스트의 SAN
 - CloudFront: OAC를 통한 비공개 S3 원본
 
@@ -31,41 +31,41 @@ discovery 문서의 `issuer`와 `jwks_uri`는 공개 CDN URL로 재작성됩니�
 오류 페이지와 Lambda ZIP은 OpenTofu가 S3 객체로 관리합니다. 로컬 첫 배포 전에는
 Lambda 번들만 빌드하면 됩니다.
 
-로컬에서 실행할 때는 `ghilbut-platform` AWS 프로필과 `GH_TOKEN` fine-grained
-PAT가 필요합니다. PAT에는 `ghilbut/platform`의 Variables 읽기·쓰기 권한이
-필요합니다. 첫 배포 전에는 공유 GitHub Actions OIDC provider를
-[`github/tofu/`](../../github/tofu/)에서 먼저 적용해야 합니다. CDN 구성은
-`platform/github.tfstate`의 `github_actions_oidc_provider_arn` 출력을 참조합니다.
+로컬 인프라 적용에는 `ghilbut-platform` AWS 프로필이 필요합니다. 공유 GitHub
+Actions OIDC provider를 먼저 적용하고, CDN 역할이 생성된 다음 GitHub repository
+variable을 적용합니다. GitHub 적용에는 `GH_TOKEN` fine-grained PAT와
+`ghilbut/platform`의 Actions variables 읽기·쓰기 권한이 필요합니다.
 
 ```sh
 cd github/tofu
 tofu init
-tofu apply
+tofu apply -target=aws_iam_openid_connect_provider.github_actions
 
 cd ../..
 pnpm --filter @ghilbut/cdn-lambda build
 cd aws/cdn/tofu
 export AWS_PROFILE=ghilbut-platform
-export GITHUB_TOKEN="$GH_TOKEN"
 tofu init
+tofu apply
+
+cd ../../../github/tofu
+export GITHUB_TOKEN="$GH_TOKEN"
 tofu apply
 ```
 
-이 구성은 `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수를 생성합니다.
-Lambda 워크플로는 이 역할을 사용해 기존 CDN의 Lambda·오류 페이지·CloudFront
-갱신과 연결된 inline policy 갱신만 수행합니다.
+마지막 적용은 `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수를 생성합니다.
 
 ## GitHub Actions
 
 - `aws-cdn-lambda.yml`: Lambda를 검사·빌드한 뒤 오류 페이지, Lambda ZIP, Lambda,
-  CloudFront Function, CloudFront 배포를 OpenTofu로 갱신합니다.
+  CloudFront 배포를 OpenTofu 대상으로 갱신합니다.
 
-워크플로는 GitHub가 발급하는 `GITHUB_TOKEN`으로 repository variable을 관리하며,
-`actions: write` 권한과 위 역할 변수가 필요합니다.
+워크플로의 GitHub 권한은 checkout용 `contents: read`와 AWS OIDC 토큰 발급용
+`id-token: write`뿐입니다. GitHub API를 호출하지 않습니다.
 
-S3 버킷, ACM 인증서, CloudFront 배포, IAM 역할, Route53 레코드의 생성·교체·삭제와
-IAM trust policy 변경은 워크플로 범위 밖입니다. 이런 OpenTofu 구성 변경은
-`ghilbut-platform` 프로필로 로컬에서 apply합니다.
+S3 버킷, ACM 인증서, CloudFront Function, IAM 역할, Route53 레코드의
+생성·교체·삭제와 IAM trust policy 변경은 워크플로 범위 밖입니다. 이런 OpenTofu
+구성 변경은 `ghilbut-platform` 프로필로 로컬에서 apply합니다.
 
 ## 호스트 추가
 

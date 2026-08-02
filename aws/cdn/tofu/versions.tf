@@ -5,7 +5,7 @@ terraform {
   backend "s3" {
     bucket       = "ghilbut-tfstates"
     encrypt      = true
-    key          = "aws/cdn.tfstate"
+    key          = "platform/aws/cdn.tfstate"
     region       = "us-east-1"
     use_lockfile = true
   }
@@ -14,10 +14,6 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.50"
-    }
-    github = {
-      source  = "integrations/github"
-      version = "~> 6.0"
     }
     archive = {
       source  = "hashicorp/archive"

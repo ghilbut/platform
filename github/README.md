@@ -16,7 +16,10 @@ AWS 계정에서는 같은 OIDC provider URL을 하나만 등록할 수 있습�
 
 - 필요한 AWS 권한만 포함한 정책
 - `repository`, `branch`, `tag`, `environment` 등으로 제한한 trust policy 조건
-- GitHub Actions가 참조하는 저장소 변수
+
+`AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수도 여기에서 관리합니다. CDN 배포
+workflow는 AWS OIDC 역할만 사용하므로, GitHub API 권한이 필요한 저장소 변수 관리는
+개발자 PAT로 실행하는 이 구성을 통해 분리합니다.
 
 이 분리는 CDN을 변경하거나 제거해도 다른 서비스의 GitHub Actions 신뢰 기반에 영향을
 주지 않게 합니다.
