@@ -18,6 +18,7 @@ spec:
       helm:
         releaseName: coredns
         values: |
+          fullnameOverride: coredns-dns
           image:
             tag: 1.14.2
           replicaCount: 1
