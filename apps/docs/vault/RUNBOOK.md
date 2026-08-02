@@ -116,7 +116,7 @@ kubectl --context cpa -n vault exec vault-0 -- vault status
 
 ## 초기 설정과 root token 폐기
 
-운영자 identity는 사람이 Keycloak에서 인증한 뒤 Vault policy를 받는 주체다. 이 구성에서는 Keycloak 사용자 `ghilbut`의 `preferred_username` claim을 Vault `vault-operator` policy에 연결한다. Kubernetes ServiceAccount, IAM 역할, root token은 운영자 identity가 아니다.
+운영자 identity는 사람이 Keycloak에서 인증한 뒤 Vault policy를 받는 주체다. 이 구성에서는 Keycloak `ghilbut` realm의 사용자 `ghilbut`가 가진 `preferred_username` claim을 Vault `vault-operator` policy에 연결한다. Kubernetes ServiceAccount, IAM 역할, root token은 운영자 identity가 아니다.
 
 [Keycloak Vault OIDC 실행 계획](../keycloak/RUN-KEYCLOAK-2026-08-02-PLAN.md#vault-operator-oidc)을 먼저 완료한 뒤 [Vault 설치 실행 계획의 OIDC 설정·검증·폐기 절차](RUN-VAULT-2026-08-02-PLAN.md#keycloak-oidc-운영자-인증과-root-token-폐기)를 순서대로 실행한다.
 

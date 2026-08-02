@@ -5,6 +5,9 @@ application: vault
 cluster: cpa
 status: planned
 planned_at: 2026-08-02
+paused_at:
+paused_step:
+paused_reason:
 completed_at:
 ---
 
@@ -86,7 +89,7 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
    kubectl --context cpa -n vault port-forward pod/vault-0 8200:8200
    ```
 
-   둘째 터미널에서 root token을 화면에 표시하지 않고 입력한다. `<KEYCLOAK_ISSUER>`에는 Keycloak 실행 계획의 issuer URL을 넣는다. client secret도 비밀 보관소에서 직접 입력한다.
+   둘째 터미널에서 root token을 화면에 표시하지 않고 입력한다. OIDC issuer는 Keycloak `ghilbut` realm이다. client secret도 비밀 보관소에서 직접 입력한다.
 
    ```sh
    export VAULT_ADDR='http://127.0.0.1:8200'
@@ -123,7 +126,7 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
    read -rs KEYCLOAK_CLIENT_SECRET
    export KEYCLOAK_CLIENT_SECRET
    vault write auth/oidc/config \
-     oidc_discovery_url='<KEYCLOAK_ISSUER>' \
+     oidc_discovery_url='https://kc.ultary.co/realms/ghilbut' \
      oidc_client_id='vault' \
      oidc_client_secret="$KEYCLOAK_CLIENT_SECRET" \
      default_role='vault-operator'

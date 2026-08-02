@@ -6,7 +6,7 @@ application: keycloak
 
 # Keycloak
 
-Vault 운영자 OIDC 인증에 사용하는 identity provider이다.
+Vault 운영자 `ghilbut`의 OIDC 인증에 사용하는 identity provider이다. Vault OIDC realm과 username은 모두 `ghilbut`이다.
 
 ## 연결
 
