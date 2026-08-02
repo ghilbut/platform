@@ -15,7 +15,7 @@ cluster: cpa
 - [일상 확인](#일상-확인)
 - [복구와 이전](#복구와-이전)
 
-Vault 구성과 관련 경로는 [Vault README](README.md)에서 확인한다. 문서 작성 규칙은 [Applications Documents RULEBOOK](../RULEBOOK.md)을 따른다. snapshot 복원과 다른 workload 이전은 [Vault 복구 PLAYBOOK](PLAYBOOK.md)을 따른다.
+Vault 구성과 관련 경로는 [Vault README](README.md)에서 확인한다. 설치 실행 계획은 [Vault 설치 RUN-PLAN](RUN-VAULT-2026-08-02-PLAN.md)에서 확인한다. 문서 작성 규칙은 [Applications Documents RULEBOOK](../RULEBOOK.md)과 [Documentation RULEBOOK RUNBOOK](../../../docs/RULEBOOK.md#runbook)을 따른다. snapshot 복원과 다른 workload 이전은 [Vault 복구 PLAYBOOK](PLAYBOOK.md)을 따른다.
 
 ## 현재 구성
 

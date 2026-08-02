@@ -1,6 +1,8 @@
 ---
 type: run
+area:
 cluster:
+application:
 status: planned
 planned_at: "{{date:YYYY-MM-DD}}"
 completed_at:

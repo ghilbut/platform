@@ -23,6 +23,6 @@ Markdown 문서는 YAML frontmatter에 type과 area를 기록한다.
 
 ## E. Templates and Bases
 
-Templates는 [docs/obsidian/templates](obsidian/templates/) 폴더의 템플릿을 사용한다. 반복 실행 문서는 [RUN-PLAN](obsidian/templates/RUN-PLAN.md) 템플릿으로 만든다.
+Templates는 [docs/obsidian/templates](obsidian/templates/) 폴더의 템플릿을 사용한다. 반복 실행 문서는 [RUN_PLAN](obsidian/templates/RUN_PLAN.md) 템플릿으로 만든다.
 
 Bases는 Markdown Properties를 조회한다. 각 영역은 필요한 경우 해당 영역의 .base 파일로 문서 상태를 조회한다.
