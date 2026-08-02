@@ -35,4 +35,4 @@ Vault AWS KMS seal key에는 `kms:Encrypt`, `kms:Decrypt`, `kms:DescribeKey`만 
 
 추가 workload는 공용 IAM OIDC provider를 재사용하되, 역할을 공유하지 않는다. cert-manager, external-dns, 백업 workload는 각각의 namespace·ServiceAccount subject와 필요한 Route 53, S3 또는 기타 권한만 가진 별도 module을 추가한다.
 
-Vault chart는 Raft storage용 10Gi PVC를 생성한다. CPA cluster에는 기본 StorageClass가 있어야 한다. Argo CD가 `vault` namespace를 먼저 생성한 뒤 이 root를 적용한다.
+Vault chart의 StatefulSet은 `data-vault-0` PVC를 사용한다. PVC는 chart보다 앞선 sync wave에서 생성되며, Vault Application 삭제와 Git prune에서 제외된다. CPA cluster에는 `openebs-lvm` StorageClass가 있어야 한다.

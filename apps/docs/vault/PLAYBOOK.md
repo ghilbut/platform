@@ -40,8 +40,9 @@ snapshot 복원은 snapshot 생성 이후의 Vault 데이터와 설정을 되돌
 1. 대상 namespace, Helm release, ServiceAccount 이름을 정한다. source와 같은 cluster에서 병행 검증하면 source와 다른 이름을 사용한다.
 2. 대상 ServiceAccount subject만 신뢰하는 IAM 역할을 만든다. 다른 cluster라면 대상 cluster issuer의 IAM OIDC provider와 역할 trust policy를 추가한다.
 3. 대상 역할에 source AWS KMS key의 `kms:Encrypt`, `kms:Decrypt`, `kms:DescribeKey` 권한을 부여한다. KMS alias가 source key를 가리키는지 확인한다.
-4. source와 같은 Vault chart version 및 Raft storage 설정으로 대상 workload를 배포한다. 대상 PVC는 비어 있어야 한다.
-5. 대상 Pod가 `Running`이고 `vault status`의 `Initialized`가 `false`인지 확인한다.
+4. 대상 Helm release 이름으로 `data-<release-name>-0` PVC를 먼저 만든다. source와 같은 storage class와 10 GiB 요청량을 사용하고, `Delete=false,Prune=false`와 Helm보다 이른 sync wave를 설정한다. 대상 PVC는 비어 있어야 한다.
+5. source와 같은 Vault chart version 및 Raft storage 설정으로 대상 workload를 배포한다.
+6. 대상 Pod가 `Running`이고 `vault status`의 `Initialized`가 `false`인지 확인한다.
 
 대상 초기화는 source 운영 상태를 만들기 위한 것이 아니라 force restore API를 인증하기 위한 임시 bootstrap이다. 반드시 사람이 실행하고 이 단계에서 나온 임시 root token과 recovery key를 수령한다.
 

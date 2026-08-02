@@ -30,6 +30,9 @@ spec:
               enabled: true
               size: 10Gi
               storageClass: openebs-lvm
+            persistentVolumeClaimRetentionPolicy:
+              whenDeleted: Retain
+              whenScaled: Retain
             extraEnvironmentVars:
               AWS_EC2_METADATA_DISABLED: "true"
               AWS_REGION: us-east-1

@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: vault
   annotations:
+    argocd.argoproj.io/sync-options: Delete=false,Prune=false
     argocd.argoproj.io/sync-wave: "-2"
   labels:
     istio-injection: disabled
