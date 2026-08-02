@@ -28,6 +28,7 @@ Vault 구성과 관련 경로는 [Vault README](README.md)에서 확인한다. �
 | storage | Integrated Raft, `data-vault-0` 10 GiB PVC |
 | seal | AWS KMS `alias/platform-vault` |
 | AWS 인증 | CPA ServiceAccount OIDC federation, `platform-vault` 역할 |
+| Kubernetes API 인증 | HA Kubernetes service registration용 기본 ServiceAccount token 자동 mount |
 | recovery key | 3개 생성, 2개 필요 |
 
 일반적인 recovery key quorum은 5개 생성·3개 필요이다. 이 Vault는 단일 운영자가 관리하는 소규모 환경이므로, 서로 다른 보관 위치 세 곳에 분산할 수 있는 3개 생성·2개 필요 구성을 사용한다.
@@ -56,20 +57,22 @@ tofu apply
 
 ### Argo CD 배포와 확인
 
-Argo CD에 Vault Application을 등록하고 수동 동기화한다. 이 Application에는 자동 동기화 정책이 없으므로 `argocd app sync` 또는 Argo CD UI에서 명시적으로 동기화해야 한다. Argo CD는 namespace와 `data-vault-0` PVC를 Helm StatefulSet보다 먼저 생성한다.
+Argo CD에 Vault Application을 등록하고 수동 동기화한다. 이 Application에는 자동 동기화 정책이 없으므로 `argocd app sync` 또는 Argo CD UI에서 명시적으로 동기화해야 한다. Argo CD는 namespace와 `data-vault-0` PVC를 Helm StatefulSet보다 먼저 생성한다. Vault StatefulSet은 `OnDelete` update strategy를 사용하므로 rollout status 대신 Pod readiness를 확인한다.
 
 ```sh
 kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
 argocd app sync vault
 kubectl --context cpa get namespace vault
 kubectl --context cpa -n vault get serviceaccount,pvc,pod
-kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+kubectl --context cpa -n vault wait --for=condition=Ready pod/vault-0 --timeout=10m
 kubectl --context cpa -n vault exec vault-0 -- vault status
 ```
 
 마지막 명령은 `Seal Type: awskms`, `Initialized: false`를 보여야 한다. `Initialized: true`이면 새로 초기화하지 않고 기존 Vault 상태를 확인한다. OpenTofu와 Argo CD는 Vault 초기화를 수행하지 않는다.
 
-`data-vault-0` PVC와 namespace에는 `Delete=false,Prune=false`가 설정되어 있다. Vault Application을 삭제하거나 Git에서 해당 manifest를 제거해도 Argo CD는 이를 삭제하지 않는다. PV는 이 PVC가 소비될 때 OpenEBS가 동적으로 생성하며, `claimRef`로 PVC를 추적한다. PVC 또는 PV의 수동 삭제는 데이터 폐기 작업이므로 snapshot을 확인하고 승인된 변경 절차로만 수행한다.
+`data-vault-0` PVC와 namespace에는 `Delete=false,Prune=false`가 설정되어 있다. Vault Application을 삭제하거나 Git에서 해당 manifest를 제거해도 Argo CD는 이를 삭제하지 않는다. `openebs-lvm`은 `Immediate` binding을 사용하므로 PV는 PVC 생성 시 OpenEBS가 동적으로 생성하며, `claimRef`로 PVC를 추적한다. PVC 또는 PV의 수동 삭제는 데이터 폐기 작업이므로 snapshot을 확인하고 승인된 변경 절차로만 수행한다.
+
+Vault HA의 Kubernetes service registration은 active·standby Service selector에 쓸 Pod label을 갱신한다. 이를 위해 기본 ServiceAccount token을 mount하며, Role은 같은 namespace의 Pod에 대한 `get`, `list`, `watch`, `update`, `patch`로 제한한다. AWS STS federation은 별도의 `sts.amazonaws.com` audience token을 사용한다.
 
 ## 초기화
 
@@ -135,7 +138,7 @@ StatefulSet, namespace, PVC, PV를 삭제하지 않고 Pod만 삭제한다.
 
 ```sh
 kubectl --context cpa -n vault delete pod vault-0
-kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+kubectl --context cpa -n vault wait --for=condition=Ready pod/vault-0 --timeout=10m
 kubectl --context cpa -n vault exec vault-0 -- vault status
 ```
 

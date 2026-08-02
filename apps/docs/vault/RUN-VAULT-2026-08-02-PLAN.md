@@ -6,8 +6,8 @@ cluster: cpa
 status: paused
 planned_at: 2026-08-02
 paused_at: 2026-08-02
-paused_step: "4단계: Vault Argo CD 동기화"
-paused_reason: "openebs-lvm의 WaitForFirstConsumer와 data-vault-0의 sync wave -1이 StatefulSet 생성을 막아 PVC가 Pending 상태로 남았다. StorageClass의 명시적 volumeBindingMode를 제거한 PR #20 병합과 EBS Application 동기화가 필요하다."
+paused_step: "4단계: Vault Pod 준비 확인"
+paused_reason: "Vault HA Kubernetes service registration은 기본 ServiceAccount token으로 Pod label을 갱신한다. vault ServiceAccount의 automountServiceAccountToken이 false여서 Vault가 시작하지 못했다. ServiceAccount token automount를 활성화한 변경의 병합과 Vault Application 동기화가 필요하다."
 completed_at:
 ---
 
@@ -58,7 +58,7 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
    kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
    argocd app sync vault
    kubectl --context cpa -n vault get serviceaccount,pvc,pod
-   kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+   kubectl --context cpa -n vault wait --for=condition=Ready pod/vault-0 --timeout=10m
    kubectl --context cpa -n vault exec vault-0 -- vault status
    ```
 
@@ -77,7 +77,7 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
 
    ```sh
    kubectl --context cpa -n vault delete pod vault-0
-   kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+   kubectl --context cpa -n vault wait --for=condition=Ready pod/vault-0 --timeout=10m
    kubectl --context cpa -n vault exec vault-0 -- vault status
    ```
 
@@ -187,3 +187,4 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
 - Keycloak OIDC 로그인과 `vault-operator` policy 확인:
 - Vault 내부 root token revoke와 외부 사본 제거 확인:
 - 중단 이력: 4단계에서 `data-vault-0` PVC가 `WaitForFirstConsumer`로 `Pending` 상태였다. namespace와 ServiceAccount는 생성됐고, StatefulSet은 생성되지 않았다.
+- 중단 이력: `openebs-lvm`을 `Immediate`로 재생성한 뒤 PVC와 PV는 Bound됐으나, `automountServiceAccountToken: false` 때문에 Vault HA Kubernetes service registration이 기본 ServiceAccount token을 찾지 못해 Pod가 시작하지 못했다.
