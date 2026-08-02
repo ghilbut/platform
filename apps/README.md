@@ -17,6 +17,7 @@ CPA 초기 설치에서는 [Cilium](argo-apps/cilium.yaml), [Istio system](argo-
 | --- | --- | --- | --- | --- | --- |
 | [Argo CD](argo-apps/argo.yaml) | — | — | — | — | — |
 | [Cilium](argo-apps/cilium.yaml) | — | — | — | — | — |
+| [CoreDNS](argo-apps/coredns.yaml) | [README](docs/coredns/README.md) | — | [RUN-PLAN](docs/coredns/RUN-COREDNS-2026-08-03-PLAN.md) | [RUNBOOK](docs/coredns/RUNBOOK.md) | — |
 | [OpenEBS](argo-apps/ebs.yaml) | — | — | — | — | — |
 | [cert-manager](argo-apps/cert-manager.yaml) | [README](docs/cert-manager/README.md) | — | [RUN-PLAN](docs/cert-manager/RUN-CERT-MANAGER-2026-08-02-PLAN.md) | — | — |
 | [external-dns](argo-apps/external-dns.yaml) | [README](docs/external-dns/README.md) | — | [RUN-PLAN](docs/external-dns/RUN-EXTERNAL-DNS-2026-08-03-PLAN.md) | — | — |

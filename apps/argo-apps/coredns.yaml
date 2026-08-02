@@ -1,0 +1,136 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: coredns
+  namespace: argo
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/etcd-io/etcd-operator.git
+      targetRevision: v0.2.0
+      path: config/default
+      kustomize:
+        images:
+          - etcd-operator=gcr.io/etcd-development/etcd-operator:v0.2.0
+    - chart: coredns
+      repoURL: https://coredns.github.io/helm
+      targetRevision: 1.47.0
+      helm:
+        releaseName: coredns
+        values: |
+          image:
+            tag: 1.14.2
+          replicaCount: 1
+          serviceAccount:
+            create: true
+            name: coredns
+          rbac:
+            create: false
+          isClusterService: true
+          automountServiceAccountToken: false
+          nodeSelector:
+            kubernetes.io/hostname: cpa
+          podSecurityContext:
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          deployment:
+            dnsPolicy: ClusterFirst
+          customAnnotations:
+            argocd.argoproj.io/sync-wave: "3"
+          servers:
+            - zones:
+                - zone: .
+                  use_tcp: true
+              port: 53
+              hostPort: 53
+              plugins:
+                - name: errors
+                - name: health
+                  configBlock: |-
+                    lameduck 10s
+                - name: ready
+                - name: prometheus
+                  parameters: 0.0.0.0:9153
+                - name: cache
+                  parameters: 60
+                - name: forward
+                  parameters: . 1.1.1.1:53 1.0.0.1:53 8.8.8.8:53 8.8.4.4:53
+                  configBlock: |-
+                    policy random
+                    health_check 5s
+                    max_fails 2
+                    max_concurrent 1000
+                    failover SERVFAIL REFUSED
+                    failfast_all_unhealthy_upstreams
+            - zones:
+                - zone: ghilbut.com
+                  use_tcp: true
+              port: 53
+              plugins:
+                - name: errors
+                - name: cache
+                  parameters: 60
+                - name: etcd
+                  parameters: ghilbut.com
+                  configBlock: |-
+                    endpoint http://coredns-0.coredns.coredns.svc.cluster.local:2379
+                    path /skydns
+                    fallthrough
+                - name: forward
+                  parameters: . 1.1.1.1:53 1.0.0.1:53 8.8.8.8:53 8.8.4.4:53
+                  configBlock: |-
+                    policy random
+                    health_check 5s
+                    max_fails 2
+                    max_concurrent 1000
+                    failover SERVFAIL REFUSED
+                    failfast_all_unhealthy_upstreams
+            - zones:
+                - zone: ghilbut.net
+                  use_tcp: true
+              port: 53
+              plugins:
+                - name: errors
+                - name: cache
+                  parameters: 60
+                - name: etcd
+                  parameters: ghilbut.net
+                  configBlock: |-
+                    endpoint http://coredns-0.coredns.coredns.svc.cluster.local:2379
+                    path /skydns
+                    fallthrough
+                - name: forward
+                  parameters: . 1.1.1.1:53 1.0.0.1:53 8.8.8.8:53 8.8.4.4:53
+                  configBlock: |-
+                    policy random
+                    health_check 5s
+                    max_fails 2
+                    max_concurrent 1000
+                    failover SERVFAIL REFUSED
+                    failfast_all_unhealthy_upstreams
+    - path: apps/argo-apps/coredns
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
+      directory:
+        recurse: true
+  destination:
+    name: in-cluster
+    namespace: coredns
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - SkipDryRunOnMissingResource=true
+      - Validate=true

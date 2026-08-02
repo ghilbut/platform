@@ -1,0 +1,16 @@
+apiVersion: operator.etcd.io/v1alpha1
+kind: EtcdCluster
+metadata:
+  name: coredns
+  namespace: coredns
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  imageRegistry: quay.io/coreos/etcd
+  size: 1
+  storageSpec:
+    accessModes: ReadWriteOnce
+    storageClassName: openebs-lvm
+    volumeSizeLimit: 1Gi
+    volumeSizeRequest: 1Gi
+  version: v3.6.10
