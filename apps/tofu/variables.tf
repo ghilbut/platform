@@ -39,3 +39,24 @@ variable "cert_manager_clusters" {
     error_message = "Each cert_manager_clusters OIDC issuer must be an HTTPS URL with a path."
   }
 }
+
+variable "external_dns_clusters" {
+  type = map(object({
+    hosted_zone_names         = set(string)
+    oidc_issuer               = string
+    record_names              = set(string)
+    service_account_name      = string
+    service_account_namespace = string
+    txt_prefix                = string
+  }))
+  description = "Additional clusters that use the external-dns module. The cpa entry is defined by this root."
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for cluster in values(var.external_dns_clusters) :
+      can(regex("^https://[^/]+/.+", cluster.oidc_issuer))
+    ])
+    error_message = "Each external_dns_clusters OIDC issuer must be an HTTPS URL with a path."
+  }
+}
