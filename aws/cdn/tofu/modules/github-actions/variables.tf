@@ -3,6 +3,7 @@ variable "cdn_bucket_arn" { type = string }
 variable "cloudfront_distribution_arn" { type = string }
 variable "cloudfront_function_arn" { type = string }
 variable "github_actions_oidc_provider_arn" { type = string }
+variable "github_repository" { type = string }
 variable "lambda_function_arn" { type = string }
 variable "lambda_role_arn" { type = string }
 variable "name" { type = string }

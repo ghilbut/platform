@@ -31,29 +31,25 @@ discovery 문서의 `issuer`와 `jwks_uri`는 공개 CDN URL로 재작성됩니�
 오류 페이지와 Lambda ZIP은 OpenTofu가 S3 객체로 관리합니다. 로컬 첫 배포 전에는
 Lambda 번들만 빌드하면 됩니다.
 
-로컬 인프라 적용에는 `ghilbut-platform` AWS 프로필이 필요합니다. 공유 GitHub
-Actions OIDC provider를 먼저 적용하고, CDN 역할이 생성된 다음 GitHub repository
-variable을 적용합니다. GitHub 적용에는 `GH_TOKEN` fine-grained PAT와
-`ghilbut/platform`의 Actions variables 읽기·쓰기 권한이 필요합니다.
+로컬 인프라 적용에는 `ghilbut-platform` AWS 프로필과 `GH_TOKEN` fine-grained PAT가
+필요합니다. PAT에는 `ghilbut/platform`의 Actions variables 읽기·쓰기 권한이
+필요합니다. 공유 GitHub Actions OIDC provider를 먼저 적용합니다.
 
 ```sh
 cd github/tofu
 tofu init
-tofu apply -target=aws_iam_openid_connect_provider.github_actions
+tofu apply
 
 cd ../..
 pnpm --filter @ghilbut/cdn-lambda build
 cd aws/cdn/tofu
 export AWS_PROFILE=ghilbut-platform
-tofu init
-tofu apply
-
-cd ../../../github/tofu
 export GITHUB_TOKEN="$GH_TOKEN"
+tofu init
 tofu apply
 ```
 
-마지막 적용은 `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수를 생성합니다.
+CDN 적용은 `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수를 생성합니다.
 
 ## GitHub Actions
 
