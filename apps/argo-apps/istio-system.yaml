@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-system
+  namespace: argo
+spec:
+  project: default
+  sources:
+    - chart: base
+      repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: 1.30.3
+      helm:
+        releaseName: istio-base
+        values: |
+          defaultRevision: default
+    - chart: istiod
+      repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: 1.30.3
+      helm:
+        releaseName: istiod
+        values: |
+          autoscaleEnabled: false
+          replicaCount: 1
+          seccompProfile:
+            type: RuntimeDefault
+          sidecarInjectorWebhook:
+            enableNamespacesByDefault: false
+    - path: apps/argo-apps/istio-system
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
+  destination:
+    name: in-cluster
+    namespace: istio-system
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istio-validator-istio-system
+      jsonPointers:
+        - /webhooks/0/failurePolicy
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      name: istiod-default-validator
+      jsonPointers:
+        - /webhooks/0/failurePolicy

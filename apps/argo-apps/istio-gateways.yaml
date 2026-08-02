@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: istio-gateways
+  namespace: argo
+spec:
+  project: default
+  sources:
+    - chart: gateway
+      repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: 1.30.3
+      helm:
+        releaseName: istio-ingressgateway
+        values: |
+          name: istio-ingressgateway
+          labels:
+            app: istio-ingressgateway
+            istio: ingressgateway
+          autoscaling:
+            enabled: false
+          replicaCount: 1
+          service:
+            externalTrafficPolicy: Local
+            type: LoadBalancer
+          securityContext:
+            sysctls:
+              - name: net.ipv4.ip_unprivileged_port_start
+                value: "0"
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+    - path: apps/argo-apps/istio-gateways
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
+      directory:
+        recurse: true
+  destination:
+    name: in-cluster
+    namespace: istio-gateways
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true
