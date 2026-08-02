@@ -12,11 +12,11 @@ area: apps
 | 애플리케이션 | README | RULEBOOK | RUN-PLAN | RUNBOOK | PLAYBOOK |
 | --- | --- | --- | --- | --- | --- |
 | [Argo CD](argo-apps/argo.yaml) | — | — | — | — | — |
-| [Cilium](argo-apps/cilium.yaml) | — | — | — | — | — |
+| [Cilium](argo-apps/bootstrap.yaml) | — | — | — | — | — |
 | [OpenEBS](argo-apps/ebs.yaml) | — | — | — | — | — |
 | [cert-manager](argo-apps/cert-manager.yaml) | — | — | — | — | — |
 | [external-dns](argo-apps/external-dns.yaml) | — | — | — | — | — |
-| [Istio](argo-apps/istio.yaml) | — | — | — | — | — |
+| [Istio system](argo-apps/bootstrap.yaml), [Istio gateways](argo-apps/bootstrap.yaml) | [README](docs/istio/README.md) | — | [RUN-PLAN](docs/istio/RUN-ISTIO-2026-08-02-PLAN.md) | — | — |
 | [Keycloak](argo-apps/keycloak.yaml) | [README](docs/keycloak/README.md) | — | [RUN-PLAN](docs/keycloak/RUN-KEYCLOAK-2026-08-02-PLAN.md) | — | — |
 | [Vault](argo-apps/vault.yaml) | [README](docs/vault/README.md) | — | [RUN-PLAN](docs/vault/RUN-VAULT-2026-08-02-PLAN.md) | [RUNBOOK](docs/vault/RUNBOOK.md) | [PLAYBOOK](docs/vault/PLAYBOOK.md) |
 

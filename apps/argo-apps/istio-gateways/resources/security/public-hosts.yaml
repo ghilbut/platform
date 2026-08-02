@@ -1,0 +1,20 @@
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: public-hosts
+  namespace: istio-gateways
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    matchLabels:
+      istio: ingressgateway
+  action: ALLOW
+  rules:
+    - to:
+        - operation:
+            hosts:
+              - id.ghilbut.com
+              - id.ghilbut.com:*
+              - vault.ghilbut.com
+              - vault.ghilbut.com:*
