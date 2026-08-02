@@ -13,12 +13,22 @@ AWS Foundation은 AWS 계정 수명 주기, IAM Identity Center 접근 권한, A
 | `identity/tofu/` | IAM Identity Center 권한 세트와 계정 할당 | `platform/aws/foundation/identity.tfstate` |
 | `organizations/tofu/` | OU, SCP, delegated administrator | `platform/aws/foundation/organizations.tfstate` |
 
-현재는 `accounts/tofu/`만 존재한다. `identity/tofu/`와 `organizations/tofu/`는 Foundation
+`accounts/tofu/`와 `identity/tofu/`가 현재 존재한다. `organizations/tofu/`는 Foundation
 전환 작업에 따라 추가한다.
 
 `accounts/tofu/modules/management/`는 management 계정 자체의 opt-in 리전만 관리한다.
 따라서 Account Management API를 standalone context로 호출하며, AWS Organizations의
 Account Management trusted access를 활성화하지 않는다.
+
+`identity/tofu/`는 IAM Identity Center permission set, AWS 관리형 정책 연결, 계정 할당을
+관리한다. Identity Store의 사용자와 그룹은 외부 IdP 또는 IAM Identity Center의 소유이며,
+이 state에서 생성하거나 삭제하지 않는다.
+
+## Identity state import
+
+기존 `platform/aws/identity.tfstate` key는 존재하지 않는다. `identity/tofu/`의 import
+선언은 기존 IAM Identity Center 리소스를 `platform/aws/foundation/identity.tfstate`에
+등록한다. 초기 적용은 import만 수행하며 원격 리소스를 생성·변경·삭제하지 않는다.
 
 ## Accounts state migration
 
