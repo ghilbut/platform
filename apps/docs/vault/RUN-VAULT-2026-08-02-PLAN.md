@@ -6,8 +6,8 @@ cluster: cpa
 status: paused
 planned_at: 2026-08-02
 paused_at: 2026-08-02
-paused_step: "5단계: Vault 수동 초기화와 비밀 수령"
-paused_reason: "Vault가 AWS KMS seal로 실행 중이며 Initialized: false를 확인했다. root token과 recovery key를 채팅이나 자동화에 노출하지 않기 위해 지정된 운영자가 직접 초기화해야 한다."
+paused_step: "7단계: Keycloak Vault operator OIDC"
+paused_reason: "Vault 수동 초기화와 AWS KMS auto-unseal 검증을 완료했다. Keycloak master realm 관리자 자격 증명과 Vault root token을 채팅이나 자동화에 노출하지 않기 위해 지정된 운영자가 CLI 절차를 수행해야 한다."
 completed_at:
 ---
 
@@ -183,9 +183,9 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
 - K3s OpenTofu 결과: CPA IAM OIDC provider 1개 생성
 - Applications OpenTofu 결과: Vault KMS key·alias, `platform-vault` IAM role·KMS policy 4개 생성
 - Argo CD 동기화 결과: `data-vault-0` PVC와 PV가 10 GiB로 Bound됐고 `vault-0`은 AWS KMS seal로 실행 중
-- 초기화·비밀 수령·auto-unseal 검증 확인: 수동 초기화 대기
+- 초기화·비밀 수령·auto-unseal 검증 확인: 수동 초기화 후 Pod를 재생성했다. 재생성된 `vault-0`에서 `Seal Type: awskms`, `Initialized: true`, `Sealed: false`, `HA Mode: active`를 확인했다.
 - Keycloak OIDC 로그인과 `vault-operator` policy 확인:
 - Vault 내부 root token revoke와 외부 사본 제거 확인:
 - 중단 이력: 4단계에서 `data-vault-0` PVC가 `WaitForFirstConsumer`로 `Pending` 상태였다. namespace와 ServiceAccount는 생성됐고, StatefulSet은 생성되지 않았다.
 - 중단 이력: `openebs-lvm`을 `Immediate`로 재생성한 뒤 PVC와 PV는 Bound됐으나, `automountServiceAccountToken: false` 때문에 Vault HA Kubernetes service registration이 기본 ServiceAccount token을 찾지 못해 Pod가 시작하지 못했다.
-- 현재 중단: `Seal Type: awskms`, `Initialized: false`, `Sealed: true`를 확인했다. 운영자가 수동 초기화와 비밀 수령을 완료할 때까지 5단계에서 멈춘다.
+- 현재 중단: 5·6단계를 완료했다. `kcadm.sh`는 관리자 환경에 있으며, 지정된 운영자가 Keycloak `master` realm 관리자 자격 증명을 사용해 7단계의 Keycloak CLI 절차를 수행할 때까지 멈춘다. client secret은 승인된 별도 보관소에만 저장한다.
