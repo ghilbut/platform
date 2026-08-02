@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "apply" {
 
   statement {
     actions = [
-      "s3:GetBucketAccelerateConfiguration",
+      "s3:GetAccelerateConfiguration",
       "s3:GetBucketAcl",
       "s3:GetBucketCors",
       "s3:GetBucketEncryption",
