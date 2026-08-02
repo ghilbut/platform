@@ -7,6 +7,7 @@
 | 경로 | 책임 | 소유하지 않는 것 |
 | --- | --- | --- |
 | `.github/workflows/` | 저장소 CI와 배포 절차 | 인프라의 영구 상태 |
+| `aws/accounts/tofu/` | AWS Organizations 계정 | 다른 AWS 서비스 리소스 |
 | `aws/cdn/` | CDN 애플리케이션 산출물과 CDN 인프라 | 계정 공용 GitHub OIDC provider |
 | `aws/cdn/tofu/` | CDN, 배포 역할, `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수 | 다른 서비스의 GitHub 변수와 역할 |
 | `github/tofu/` | AWS 계정 공용 GitHub Actions OIDC provider | 서비스별 IAM 역할, 저장소 변수, CDN 리소스 |

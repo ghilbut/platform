@@ -3,7 +3,7 @@ terraform {
 
   backend "s3" {
     bucket       = "ghilbut-tfstates"
-    key          = "platform/accounts.tfstate"
+    key          = "platform/aws/accounts.tfstate"
     profile      = "ghilbut-platform"
     region       = "us-east-1"
     encrypt      = true

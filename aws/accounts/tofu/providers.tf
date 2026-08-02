@@ -11,7 +11,7 @@ provider "aws" {
       service         = "accounts"
       component       = "aws"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "accounts/tofu/"
+      "opentofu/path" = "aws/accounts/tofu/"
     }
   }
 }
