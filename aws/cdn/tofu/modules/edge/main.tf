@@ -50,7 +50,7 @@ resource "aws_s3_object" "lambda_zip" {
   key         = "lambda.zip"
   source      = data.archive_file.lambda.output_path
   source_hash = data.archive_file.lambda.output_base64sha256
-  tags        = merge(local.default_tags, { Name = "${var.name}-lambda-archive" })
+  tags        = local.default_tags
 }
 
 resource "aws_lambda_function" "this" {

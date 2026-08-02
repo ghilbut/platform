@@ -38,9 +38,8 @@ variable "default_tags" {
       service                = ""
       "opentofu/module/repo" = ""
       "opentofu/module/path" = ""
-      Name                   = ""
     })) <= 10
-    error_message = "default_tags must leave room for the CDN module and Name tags; S3 objects support at most 10 tags."
+    error_message = "default_tags must leave room for CDN module tags; S3 objects support at most 10 tags."
   }
 }
 
