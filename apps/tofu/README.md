@@ -7,6 +7,8 @@ area: apps
 
 이 루트는 플랫폼 애플리케이션의 AWS 인프라를 관리한다. CPA ServiceAccount OIDC issuer를 IAM에 한 번 등록하고, 애플리케이션별 IAM 역할과 권한을 분리한다.
 
+애플리케이션 문서의 진입점은 [Applications](../README.md)다.
+
 CPA OIDC issuer의 공개와 Kubernetes 설정은 [K3s OIDC](../../k3s/OIDC.md)에서, CPA의 실제 설치 값은 [CPA 설치 기록](../../k3s/RUN-CPA-2026-05-18.md)에서 확인한다.
 
 ## IAM federation 경계
