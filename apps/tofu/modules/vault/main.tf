@@ -13,9 +13,34 @@ resource "aws_kms_alias" "seal" {
   target_key_id = aws_kms_key.seal.key_id
 }
 
+locals {
+  oidc_condition_prefix = trimprefix(var.oidc_issuer, "https://")
+}
+
+resource "aws_iam_role" "vault" {
+  name = "${var.name}-vault"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Action    = "sts:AssumeRoleWithWebIdentity"
+        Principal = { Federated = var.oidc_provider_arn }
+        Condition = {
+          StringEquals = {
+            "${local.oidc_condition_prefix}:aud" = "sts.amazonaws.com"
+            "${local.oidc_condition_prefix}:sub" = "system:serviceaccount:${var.service_account_namespace}:${var.service_account_name}"
+          }
+        }
+      },
+    ]
+  })
+}
+
 resource "aws_iam_role_policy" "kms_seal" {
   name = "${var.name}-vault-kms-seal"
-  role = var.awsra_role_name
+  role = aws_iam_role.vault.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -31,24 +56,5 @@ resource "aws_iam_role_policy" "kms_seal" {
         Resource = aws_kms_key.seal.arn
       },
     ]
-  })
-}
-
-resource "local_file" "manifest" {
-  filename = "${var.manifest_directory_path}/vault-cm.yaml"
-
-  content = yamlencode({
-    apiVersion = "v1"
-    kind       = "ConfigMap"
-    metadata = {
-      name      = "vault"
-      namespace = "vault"
-      annotations = {
-        "argocd.argoproj.io/sync-wave" = "-1"
-      }
-    }
-    data = {
-      VAULT_AWSKMS_SEAL_KEY_ID = aws_kms_alias.seal.name
-    }
   })
 }

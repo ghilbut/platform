@@ -1,26 +1,15 @@
-locals {
-  vault_manifest_directory_path = coalesce(var.vault_manifest_directory_path, "${path.module}/../argo-apps/vault")
-}
-
-module "awsra" {
-  source = "./modules/awsra"
-
-  name                            = var.name
-  trust_anchor_certificate_path   = "${path.module}/pki/issuers/awsra-issuing-ca/ca.crt.pem"
-  certificate_subject_common_name = "awsra-for-k3s-cpa"
-  manifest_directory_path         = local.vault_manifest_directory_path
-  pkcs8_password_file_path        = "${path.module}/pki/.secrets/awsra-for-k3s-cpa.pass"
-  pkcs8_password_revision         = var.awsra_pkcs8_password_revision
-  leaf_certificate_path           = "${path.module}/pki/leaves/awsra-for-k3s-cpa/awsra-for-k3s-cpa.crt.pem"
-  leaf_private_key_path           = "${path.module}/pki/leaves/awsra-for-k3s-cpa/awsra-for-k3s-cpa.key.pem"
+resource "aws_iam_openid_connect_provider" "cpa" {
+  url             = var.cpa_oidc_issuer
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [var.cpa_oidc_thumbprint]
 }
 
 module "vault" {
   source = "./modules/vault"
 
-  name                    = var.name
-  awsra_role_name         = "${var.name}-awsra"
-  manifest_directory_path = local.vault_manifest_directory_path
-
-  depends_on = [module.awsra]
+  name                      = "platform"
+  oidc_issuer               = var.cpa_oidc_issuer
+  oidc_provider_arn         = aws_iam_openid_connect_provider.cpa.arn
+  service_account_name      = "vault"
+  service_account_namespace = "vault"
 }

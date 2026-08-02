@@ -17,6 +17,9 @@ spec:
           injector:
             enabled: false
           server:
+            serviceAccount:
+              create: true
+              name: vault
             ha:
               enabled: true
               replicas: 1
@@ -28,47 +31,24 @@ spec:
               size: 10Gi
               storageClass: openebs-lvm
             extraEnvironmentVars:
-              AWS_EC2_METADATA_SERVICE_ENDPOINT: http://127.0.0.1:9911
+              AWS_EC2_METADATA_DISABLED: "true"
               AWS_REGION: us-east-1
+              AWS_ROLE_ARN: arn:aws:iam::869061964712:role/platform-vault
+              AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/aws-iam-token/token
               VAULT_AWSKMS_SEAL_KEY_ID: alias/platform-vault
               VAULT_SEAL_TYPE: awskms
             volumes:
-              - name: awsra
-                secret:
-                  defaultMode: 256
-                  secretName: awsra
-            extraContainers:
-              - name: awsra-credential-helper
-                image: public.ecr.aws/rolesanywhere/credential-helper:latest
-                args:
-                  - serve
-                  - --certificate
-                  - /var/run/awsra/certificate.pem
-                  - --pkcs8-password
-                  - $(AWS_ROLESANYWHERE_PKCS8_PASSWORD)
-                  - --private-key
-                  - /var/run/awsra/private-key.pem
-                  - --profile-arn
-                  - $(AWS_ROLESANYWHERE_PROFILE_ARN)
-                  - --region
-                  - us-east-1
-                  - --role-arn
-                  - $(AWS_ROLESANYWHERE_ROLE_ARN)
-                  - --trust-anchor-arn
-                  - $(AWS_ROLESANYWHERE_TRUST_ANCHOR_ARN)
-                env:
-                  - name: AWS_ROLESANYWHERE_PKCS8_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        key: AWS_ROLESANYWHERE_PKCS8_PASSWORD
-                        name: awsra
-                envFrom:
-                  - configMapRef:
-                      name: awsra
-                volumeMounts:
-                  - mountPath: /var/run/awsra
-                    name: awsra
-                    readOnly: true
+              - name: aws-iam-token
+                projected:
+                  sources:
+                    - serviceAccountToken:
+                        audience: sts.amazonaws.com
+                        expirationSeconds: 3600
+                        path: token
+            volumeMounts:
+              - mountPath: /var/run/secrets/aws-iam-token
+                name: aws-iam-token
+                readOnly: true
     - path: apps/argo-apps/vault
       repoURL: https://github.com/ghilbut/platform.git
       targetRevision: main

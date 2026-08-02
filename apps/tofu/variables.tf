@@ -10,33 +10,24 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
-variable "name" {
+variable "cpa_oidc_issuer" {
   type        = string
-  description = "Name prefix for platform application resources."
-  default     = "platform"
+  description = "Public CPA Kubernetes ServiceAccount OIDC issuer registered in IAM."
+  default     = "https://oidc.k3s.ghilbut.com/cpa"
+
+  validation {
+    condition     = can(regex("^https://[^/]+/.+", var.cpa_oidc_issuer))
+    error_message = "cpa_oidc_issuer must be an HTTPS URL with a path."
+  }
 }
 
-variable "kube_config_path" {
+variable "cpa_oidc_thumbprint" {
   type        = string
-  description = "Path to the kubeconfig file that contains the CPA context."
-  default     = "~/.kube/config"
-}
+  description = "SHA-1 thumbprint of the top intermediate CA for the CPA OIDC issuer TLS certificate."
+  default     = "e7b8b5a6743ce1b2f17b041de59558a41472d70c"
 
-variable "kube_context" {
-  type        = string
-  description = "Kubeconfig context for the CPA cluster."
-  default     = "cpa"
-}
-
-variable "vault_manifest_directory_path" {
-  type        = string
-  description = "Directory where the Vault Argo CD ConfigMap manifests are written."
-  default     = null
-  nullable    = true
-}
-
-variable "awsra_pkcs8_password_revision" {
-  type        = number
-  description = "Revision number incremented when the AWS Roles Anywhere PKCS#8 passphrase changes."
-  default     = 1
+  validation {
+    condition     = can(regex("^[0-9a-f]{40}$", var.cpa_oidc_thumbprint))
+    error_message = "cpa_oidc_thumbprint must be a lowercase 40-character SHA-1 value."
+  }
 }

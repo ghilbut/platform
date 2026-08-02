@@ -9,14 +9,9 @@ provider "aws" {
       org             = "ghilbut"
       project         = "platform"
       service         = "apps"
-      component       = "aws-roles-anywhere"
+      component       = "aws-iam-federation"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
       "opentofu/path" = "apps/tofu/"
     }
   }
-}
-
-provider "kubernetes" {
-  config_path    = pathexpand(var.kube_config_path)
-  config_context = var.kube_context
 }

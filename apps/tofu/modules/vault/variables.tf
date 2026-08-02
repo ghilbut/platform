@@ -3,12 +3,22 @@ variable "name" {
   description = "Name prefix for Vault resources."
 }
 
-variable "awsra_role_name" {
+variable "oidc_provider_arn" {
   type        = string
-  description = "IAM Roles Anywhere role name allowed to use the Vault KMS seal key."
+  description = "ARN of the IAM OIDC provider that verifies CPA ServiceAccount tokens."
 }
 
-variable "manifest_directory_path" {
+variable "oidc_issuer" {
   type        = string
-  description = "Directory where the generated Vault ConfigMap manifest is written."
+  description = "Public CPA Kubernetes ServiceAccount OIDC issuer URL."
+}
+
+variable "service_account_name" {
+  type        = string
+  description = "Name of the Vault ServiceAccount allowed to assume the role."
+}
+
+variable "service_account_namespace" {
+  type        = string
+  description = "Namespace of the Vault ServiceAccount allowed to assume the role."
 }
