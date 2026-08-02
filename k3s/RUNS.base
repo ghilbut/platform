@@ -1,0 +1,22 @@
+filters:
+  and:
+    - 'file.inFolder("k3s")'
+    - 'type == "run"'
+properties:
+  cluster:
+    displayName: Cluster
+  status:
+    displayName: Status
+  planned_at:
+    displayName: Planned at
+  completed_at:
+    displayName: Completed at
+views:
+  - type: table
+    name: RUN
+    order:
+      - file.name
+      - cluster
+      - status
+      - planned_at
+      - completed_at
