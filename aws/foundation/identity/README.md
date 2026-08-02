@@ -13,6 +13,9 @@ permission set은 새 역할별 permission set의 로그인을 검증할 때까�
 | `platform-operator` | platform | `ghilbut` 사용자 | 플랫폼 워크로드 인프라 관리 |
 | `ultary-domains-operator` | ultary-domains | `ghilbut` 사용자 | 도메인 등록과 Route 53 DNS 관리 |
 
+`platform-operator`는 플랫폼 리소스와 IAM 역할을 관리할 수 있지만, inline deny policy로
+Organizations, Billing, Account Management, IAM Identity Center 관리를 명시적으로 거부한다.
+
 ## CLI profile migration
 
 새 permission set을 적용한 뒤 기존 `tofu` profile을 유지한 상태에서 검증용 profile로 로그인을

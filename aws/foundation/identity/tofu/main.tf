@@ -92,6 +92,32 @@ module "platform" {
     "arn:aws:iam::aws:policy/IAMFullAccess",
     "arn:aws:iam::aws:policy/PowerUserAccess",
   ])
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "DenyCentralAdministration"
+      Effect = "Deny"
+      Action = [
+        "account:*",
+        "aws-portal:*",
+        "billing:*",
+        "budgets:*",
+        "ce:*",
+        "consolidatedbilling:*",
+        "cur:*",
+        "identitystore:*",
+        "identitystore-auth:*",
+        "identity-sync:*",
+        "invoicing:*",
+        "organizations:*",
+        "payments:*",
+        "purchase-orders:*",
+        "sso:*",
+        "sso-directory:*",
+      ]
+      Resource = "*"
+    }]
+  })
   account_assignments = {
     platform = {
       account_id     = "869061964712"
