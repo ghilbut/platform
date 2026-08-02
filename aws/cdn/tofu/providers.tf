@@ -9,7 +9,12 @@ provider "aws" {
   region  = "us-east-1"
 
   default_tags {
-    tags = local.default_tags
+    tags = {
+      created_by = "opentofu"
+      managed_by = "opentofu"
+      project    = "platform"
+      service    = "cdn"
+    }
   }
 }
 

@@ -1,13 +1,6 @@
 locals {
   repo = "https://github.com/ghilbut/platform"
 
-  default_tags = merge(var.default_tags, {
-    created_by = "opentofu"
-    managed_by = "opentofu"
-    project    = var.project
-    service    = var.service
-  })
-
   fqdn_hosts = merge([
     for zone, hosts in var.zones : {
       for host, config in hosts : "${host}.${zone}" => config
