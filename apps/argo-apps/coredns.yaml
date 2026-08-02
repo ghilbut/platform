@@ -6,19 +6,12 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://github.com/etcd-io/etcd-operator.git
-      targetRevision: v0.2.0
-      path: config/default
-      kustomize:
-        images:
-          - etcd-operator=gcr.io/etcd-development/etcd-operator:v0.2.0
     - chart: coredns
       repoURL: https://coredns.github.io/helm
       targetRevision: 1.47.0
       helm:
         releaseName: coredns
         values: |
-          fullnameOverride: coredns-dns
           image:
             tag: 1.14.2
           replicaCount: 1
@@ -85,7 +78,7 @@ spec:
                 - name: etcd
                   parameters: ghilbut.com
                   configBlock: |-
-                    endpoint http://coredns-0.coredns.coredns.svc.cluster.local:2379
+                    endpoint http://etcd-0.etcd.coredns.svc.cluster.local:2379
                     path /skydns
                     fallthrough
                 - name: forward
@@ -108,7 +101,7 @@ spec:
                 - name: etcd
                   parameters: ghilbut.net
                   configBlock: |-
-                    endpoint http://coredns-0.coredns.coredns.svc.cluster.local:2379
+                    endpoint http://etcd-0.etcd.coredns.svc.cluster.local:2379
                     path /skydns
                     fallthrough
                 - name: forward
@@ -133,5 +126,4 @@ spec:
       - ApplyOutOfSyncOnly=true
       - PruneLast=true
       - ServerSideApply=true
-      - SkipDryRunOnMissingResource=true
       - Validate=true

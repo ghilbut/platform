@@ -25,7 +25,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
 | Local zones | `ghilbut.com`, `ghilbut.net` |
 | Local record store | `coredns/etcd` Service |
 | Public resolvers | `1.1.1.1`, `1.0.0.1`, `8.8.8.8`, `8.8.4.4` |
-| etcd storage | `etcd-data-coredns-0`, `openebs-lvm`, `1Gi` |
+| etcd storage | `data-etcd-0`, `openebs-lvm`, `1Gi` |
 
 ## 실행 절차
 
@@ -47,7 +47,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
    ssh cpa 'sudo ufw allow in proto udp to 192.168.254.4 port 53'
    ```
 
-3. CoreDNS Application을 동기화하고 etcd-operator, etcd Cluster, PVC, DNS Deployment를 확인한다. etcd client port는 host에 노출하지 않는다.
+3. CoreDNS Application을 동기화하고 etcd PVC, StatefulSet, DNS Deployment를 확인한다. etcd client port는 host에 노출하지 않는다.
 
    ```sh
    kubectl --context cpa -n argo patch application coredns \
@@ -57,16 +57,13 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
      --for=jsonpath='{.status.operationState.phase}'=Succeeded \
      application/coredns \
      --timeout=15m
-   kubectl --context cpa -n etcd-operator-system wait \
-     --for=condition=Available deployment/etcd-operator-controller-manager \
-     --timeout=10m
    kubectl --context cpa -n coredns wait \
-     --for=condition=Ready statefulset/coredns \
+     --for=condition=Ready statefulset/etcd \
      --timeout=10m
    kubectl --context cpa -n coredns wait \
      --for=condition=Available deployment/coredns \
      --timeout=10m
-   kubectl --context cpa -n coredns get etcdcluster,pvc,service,statefulset,deployment
+   kubectl --context cpa -n coredns get pvc,service,statefulset,deployment
    ```
 
 4. CPA host address에서 TCP와 UDP DNS를 확인한다. local etcd record 작성과 제거는 [CoreDNS RUNBOOK](RUNBOOK.md)을 따른다. etcd에 record가 없는 name의 응답은 Cloudflare 또는 Google Public DNS 결과와 같아야 한다.
@@ -83,6 +80,6 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
 - 실행 일시:
 - 실행자:
 - 53/TCP·UDP host listener와 firewall 확인:
-- etcd-operator, PVC와 StatefulSet 확인:
+- etcd PVC와 StatefulSet 확인:
 - CoreDNS Deployment 확인:
 - local lookup과 public fallback 확인:
