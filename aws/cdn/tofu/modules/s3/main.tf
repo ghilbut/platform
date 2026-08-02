@@ -28,5 +28,5 @@ resource "aws_s3_object" "error_page" {
   source       = each.value
   source_hash  = filemd5(each.value)
   content_type = "text/html; charset=utf-8"
-  tags         = merge(local.default_tags, { Name = "${var.name}-${each.key}" })
+  tags         = merge(local.default_tags, { Name = "${var.name}-error-page" })
 }

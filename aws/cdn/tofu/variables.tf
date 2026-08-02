@@ -1,19 +1,9 @@
-variable "org" {
-  type    = string
-  default = "ghilbut"
-}
-
 variable "project" {
   type    = string
   default = "platform"
 }
 
 variable "service" {
-  type    = string
-  default = "cdn"
-}
-
-variable "component" {
   type    = string
   default = "cdn"
 }
@@ -39,6 +29,19 @@ variable "name" {
 variable "default_tags" {
   type    = map(string)
   default = {}
+
+  validation {
+    condition = length(merge(var.default_tags, {
+      created_by             = "opentofu"
+      managed_by             = "opentofu"
+      project                = ""
+      service                = ""
+      "opentofu/module/repo" = ""
+      "opentofu/module/path" = ""
+      Name                   = ""
+    })) <= 10
+    error_message = "default_tags must leave room for the CDN module and Name tags; S3 objects support at most 10 tags."
+  }
 }
 
 variable "acm_domain_name" {
