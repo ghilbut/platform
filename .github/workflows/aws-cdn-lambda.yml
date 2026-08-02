@@ -1,6 +1,8 @@
 name: Build and deploy CDN Lambda@Edge
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - main
