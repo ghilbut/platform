@@ -61,7 +61,7 @@ module "management" {
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
     "arn:aws:iam::aws:policy/AWSSSOMasterAccountAdministrator",
-    "arn:aws:iam::aws:policy/Billing",
+    "arn:aws:iam::aws:policy/job-function/Billing",
     "arn:aws:iam::aws:policy/IAMFullAccess",
   ])
   inline_policy = jsonencode({
