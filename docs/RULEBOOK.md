@@ -18,7 +18,7 @@ area: documentation
 
 ### 실행 문서 Properties
 
-실행 문서는 [RUN_PLAN](obsidian/templates/RUN_PLAN.md) 템플릿으로 시작하고 다음 Properties를 기록한다.
+실행 문서는 [RUN-PLAN](obsidian/templates/RUN-PLAN.md) 템플릿으로 시작하고 다음 Properties를 기록한다.
 
 | Property | 값 |
 | --- | --- |
