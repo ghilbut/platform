@@ -8,10 +8,10 @@ provider "aws" {
       managed_by      = "opentofu"
       org             = "ghilbut"
       project         = "platform"
-      service         = "identity"
+      service         = "accounts"
       component       = "aws"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/identity/tofu/"
+      "opentofu/path" = "accounts/tofu/"
     }
   }
 }
