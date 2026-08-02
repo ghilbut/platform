@@ -1,0 +1,186 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: coredns
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    app.kubernetes.io/component: dns
+    app.kubernetes.io/name: coredns
+data:
+  Corefile: |-
+    .:53 {
+        bind 192.168.254.4
+        errors
+        health 127.0.0.1:8080 {
+            lameduck 10s
+        }
+        ready 127.0.0.1:8181
+        prometheus 127.0.0.1:9153
+        cache 60
+        forward . 1.1.1.1 1.0.0.1 8.8.8.8 8.8.4.4 {
+            policy random
+            health_check 5s
+            max_fails 2
+            max_concurrent 1000
+            failover SERVFAIL REFUSED
+            failfast_all_unhealthy_upstreams
+        }
+    }
+
+    ghilbut.com:53 {
+        bind 192.168.254.4
+        errors
+        cache 60
+        etcd ghilbut.com {
+            endpoint http://etcd-0.etcd.coredns.svc.cluster.local:2379
+            path /skydns
+            fallthrough
+        }
+        forward . 1.1.1.1 1.0.0.1 8.8.8.8 8.8.4.4 {
+            policy random
+            health_check 5s
+            max_fails 2
+            max_concurrent 1000
+            failover SERVFAIL REFUSED
+            failfast_all_unhealthy_upstreams
+        }
+    }
+
+    ghilbut.net:53 {
+        bind 192.168.254.4
+        errors
+        cache 60
+        etcd ghilbut.net {
+            endpoint http://etcd-0.etcd.coredns.svc.cluster.local:2379
+            path /skydns
+            fallthrough
+        }
+        forward . 1.1.1.1 1.0.0.1 8.8.8.8 8.8.4.4 {
+            policy random
+            health_check 5s
+            max_fails 2
+            max_concurrent 1000
+            failover SERVFAIL REFUSED
+            failfast_all_unhealthy_upstreams
+        }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coredns
+  namespace: coredns
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    app.kubernetes.io/component: dns
+    app.kubernetes.io/name: coredns
+spec:
+  ports:
+    - name: dns-tcp
+      port: 53
+      protocol: TCP
+      targetPort: dns-tcp
+    - name: dns-udp
+      port: 53
+      protocol: UDP
+      targetPort: dns-udp
+  selector:
+    app.kubernetes.io/component: dns
+    app.kubernetes.io/name: coredns
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coredns
+  namespace: coredns
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  labels:
+    app.kubernetes.io/component: dns
+    app.kubernetes.io/name: coredns
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: dns
+      app.kubernetes.io/name: coredns
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+        app.kubernetes.io/component: dns
+        app.kubernetes.io/name: coredns
+    spec:
+      automountServiceAccountToken: false
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      nodeSelector:
+        kubernetes.io/hostname: cpa
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: coredns
+          image: coredns/coredns:1.14.2
+          args:
+            - -conf
+            - /etc/coredns/Corefile
+          ports:
+            - name: dns-tcp
+              containerPort: 53
+              hostPort: 53
+              protocol: TCP
+            - name: dns-udp
+              containerPort: 53
+              hostPort: 53
+              protocol: UDP
+          readinessProbe:
+            httpGet:
+              host: 127.0.0.1
+              path: /ready
+              port: 8181
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              host: 127.0.0.1
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 70Mi
+            limits:
+              cpu: 500m
+              memory: 170Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              add:
+                - NET_BIND_SERVICE
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: config
+              mountPath: /etc/coredns
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: coredns
+        - name: tmp
+          emptyDir: {}

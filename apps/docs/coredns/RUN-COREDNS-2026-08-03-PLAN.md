@@ -22,6 +22,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
 | Kubernetes context | `cpa` |
 | Namespace | `coredns` |
 | DNS listen address | `192.168.254.4:53` TCP, UDP |
+| Cluster DNS endpoint | `coredns.coredns.svc.cluster.local:53` TCP, UDP |
 | Local zones | `ghilbut.com`, `ghilbut.net` |
 | Local record store | `coredns/etcd` Service |
 | Public resolvers | `1.1.1.1`, `1.0.0.1`, `8.8.8.8`, `8.8.4.4` |
@@ -29,13 +30,9 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
 
 ## 실행 절차
 
-1. CPA node IP와 host DNS listener를 확인한다. CoreDNS Helm chart는 `hostPort: 53`을 사용하므로 `systemd-resolved` stub listener를 끄고 host resolver를 `/run/systemd/resolve/resolv.conf`로 전환한다. 이 변경 뒤 `192.168.254.4:53`과 loopback 53을 사용하는 프로세스가 없어야 한다.
+1. CPA node IP와 DNS listener를 확인한다. CoreDNS는 `hostNetwork: true`에서 `192.168.254.4:53`만 bind한다. 따라서 `systemd-resolved`의 loopback stub listener는 그대로 유지한다. 배포 전에 CPA node IP의 TCP·UDP 53을 사용하는 프로세스가 없어야 한다.
 
    ```sh
-   ssh cpa 'sudo install -d -m 755 /etc/systemd/resolved.conf.d'
-   ssh cpa 'printf "[Resolve]\\nDNSStubListener=no\\n" | sudo tee /etc/systemd/resolved.conf.d/coredns.conf >/dev/null'
-   ssh cpa 'sudo ln -sfn /run/systemd/resolve/resolv.conf /etc/resolv.conf'
-   ssh cpa 'sudo systemctl restart systemd-resolved'
    ssh cpa 'ip -brief address show; sudo ss -lntup | grep -E "(:53|:2379|:2380)\\b" || true; resolvectl status'
    ```
 
@@ -47,7 +44,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
    ssh cpa 'sudo ufw allow in proto udp to 192.168.254.4 port 53'
    ```
 
-3. CoreDNS Application을 동기화하고 etcd PVC, StatefulSet, DNS Deployment를 확인한다. etcd client port는 host에 노출하지 않는다.
+3. CoreDNS Application을 동기화하고 etcd PVC, StatefulSet, CoreDNS Deployment와 ClusterIP Service를 확인한다. etcd client port는 host에 노출하지 않는다.
 
    ```sh
    kubectl --context cpa -n argo patch application coredns \
@@ -66,20 +63,25 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [CoreDNS README](RE
    kubectl --context cpa -n coredns get pvc,service,statefulset,deployment
    ```
 
-4. CPA host address에서 TCP와 UDP DNS를 확인한다. local etcd record 작성과 제거는 [CoreDNS RUNBOOK](RUNBOOK.md)을 따른다. etcd에 record가 없는 name의 응답은 Cloudflare 또는 Google Public DNS 결과와 같아야 한다.
+4. CPA host address와 cluster 내부 Service에서 TCP와 UDP DNS를 확인한다. local etcd record 작성과 제거는 [CoreDNS RUNBOOK](RUNBOOK.md)을 따른다. etcd에 record가 없는 name의 응답은 Cloudflare 또는 Google Public DNS 결과와 같아야 한다.
 
    ```sh
    dig @192.168.254.4 ghilbut.com A
    dig +tcp @192.168.254.4 ghilbut.com A
    dig @1.1.1.1 ghilbut.com A
    dig @8.8.8.8 ghilbut.com A
+   kubectl --context cpa -n coredns run dns-check \
+     --image=busybox:1.37 \
+     --restart=Never \
+     --rm -it \
+     -- nslookup ghilbut.com coredns.coredns.svc.cluster.local
    ```
 
 ## 결과
 
 - 실행 일시:
 - 실행자:
-- 53/TCP·UDP host listener와 firewall 확인:
+- 53/TCP·UDP host listener, ClusterIP Service와 firewall 확인:
 - etcd PVC와 StatefulSet 확인:
 - CoreDNS Deployment 확인:
 - local lookup과 public fallback 확인:
