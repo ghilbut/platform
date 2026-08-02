@@ -19,3 +19,5 @@ area: apps
 | [Istio](argo-apps/istio.yaml) | — | — | — | — |
 | [Keycloak](argo-apps/keycloak.yaml) | — | — | — | — |
 | [Vault](argo-apps/vault.yaml) | [README](docs/vault/README.md) | — | [RUNBOOK](docs/vault/RUNBOOK.md) | [PLAYBOOK](docs/vault/PLAYBOOK.md) |
+
+Kubernetes workload 보안 기준은 [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)를 따른다.
