@@ -97,6 +97,7 @@ module "github_actions" {
   cdn_bucket_arn                   = module.s3.arn
   cloudfront_distribution_arn      = module.cloudfront.arn
   cloudfront_function_arn          = module.edge.viewer_request_function_arn
+  github_repository                = var.github_repository
   github_actions_oidc_provider_arn = data.terraform_remote_state.github.outputs.github_actions_oidc_provider_arn
   lambda_function_arn              = module.edge.lambda_function_base_arn
   lambda_role_arn                  = module.edge.lambda_role_arn
