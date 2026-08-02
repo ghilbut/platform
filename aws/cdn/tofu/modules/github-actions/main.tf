@@ -24,23 +24,6 @@ resource "aws_iam_role" "this" {
   tags = merge(local.default_tags, { Name = "${var.name}-github-actions" })
 }
 
-data "aws_iam_policy_document" "upload" {
-  statement {
-    actions = ["s3:PutObject", "s3:DeleteObject"]
-    resources = [
-      "${var.cdn_bucket_arn}/404.html",
-      "${var.cdn_bucket_arn}/503.html",
-      "${var.cdn_bucket_arn}/lambda.zip",
-    ]
-  }
-}
-
-resource "aws_iam_role_policy" "upload" {
-  name   = "upload-s3-objects"
-  role   = aws_iam_role.this.name
-  policy = data.aws_iam_policy_document.upload.json
-}
-
 data "aws_iam_policy_document" "apply" {
   statement {
     actions   = ["s3:ListBucket"]
@@ -48,7 +31,7 @@ data "aws_iam_policy_document" "apply" {
     condition {
       test     = "StringLike"
       variable = "s3:prefix"
-      values   = [var.state_key, "${var.state_key}.tflock"]
+      values   = ["env:/", var.state_key, "${var.state_key}.tflock"]
     }
   }
 
@@ -61,17 +44,32 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
-    actions   = ["s3:GetObject"]
-    resources = ["arn:aws:s3:::${var.state_bucket}/${var.github_state_key}"]
-  }
-
-  statement {
-    actions   = ["s3:ListBucket", "s3:Get*"]
+    actions = [
+      "s3:GetBucketAccelerateConfiguration",
+      "s3:GetBucketAcl",
+      "s3:GetBucketCors",
+      "s3:GetBucketEncryption",
+      "s3:GetBucketLifecycleConfiguration",
+      "s3:GetBucketLogging",
+      "s3:GetBucketPolicy",
+      "s3:GetBucketReplication",
+      "s3:GetBucketRequestPayment",
+      "s3:GetBucketVersioning",
+      "s3:GetBucketWebsite",
+      "s3:GetObjectLockConfiguration",
+      "s3:ListBucket",
+      "s3:ListTagsForResource",
+    ]
     resources = [var.cdn_bucket_arn]
   }
 
   statement {
-    actions = ["s3:GetObject", "s3:GetObjectTagging"]
+    actions = [
+      "s3:GetObject",
+      "s3:GetObjectTagging",
+      "s3:PutObject",
+      "s3:PutObjectTagging",
+    ]
     resources = [
       "${var.cdn_bucket_arn}/404.html",
       "${var.cdn_bucket_arn}/503.html",
@@ -80,15 +78,13 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
-    actions   = ["s3:GetAccelerateConfiguration"]
-    resources = [var.cdn_bucket_arn]
-  }
-
-  statement {
     actions = [
-      "lambda:DisableReplication*", "lambda:EnableReplication*", "lambda:GetFunction",
-      "lambda:GetFunctionCodeSigningConfig", "lambda:GetFunctionConfiguration",
-      "lambda:ListVersionsByFunction", "lambda:ListTags", "lambda:PublishVersion",
+      "lambda:GetFunction",
+      "lambda:GetFunctionCodeSigningConfig",
+      "lambda:GetFunctionConfiguration",
+      "lambda:ListTags",
+      "lambda:ListVersionsByFunction",
+      "lambda:PublishVersion",
       "lambda:UpdateFunctionCode",
     ]
     resources = [var.lambda_function_arn, "${var.lambda_function_arn}:*"]
@@ -100,34 +96,23 @@ data "aws_iam_policy_document" "apply" {
   }
 
   statement {
+    actions   = ["cloudfront:DescribeFunction", "cloudfront:GetFunction", "cloudfront:ListTagsForResource"]
+    resources = [var.cloudfront_function_arn]
+  }
+
+  statement {
     actions   = ["cloudfront:GetOriginAccessControl"]
-    resources = ["*"]
+    resources = [var.origin_access_control_arn]
   }
 
   statement {
     actions = [
-      "cloudfront:CreateFunction", "cloudfront:DescribeFunction", "cloudfront:GetFunction",
-      "cloudfront:ListFunctions", "cloudfront:ListTagsForResource", "cloudfront:PublishFunction", "cloudfront:UpdateFunction",
-      "cloudfront:UpdateFunctionCode", "cloudfront:UpdateFunctionMetadata",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    actions = [
-      "iam:DeleteRolePolicy",
       "iam:GetRole",
       "iam:GetRolePolicy",
       "iam:ListAttachedRolePolicies",
       "iam:ListRolePolicies",
-      "iam:PutRolePolicy",
     ]
-    resources = [aws_iam_role.this.arn, var.lambda_role_arn]
-  }
-
-  statement {
-    actions   = ["iam:GetOpenIDConnectProvider"]
-    resources = [var.github_actions_oidc_provider_arn]
+    resources = [var.lambda_role_arn]
   }
 
   statement {
@@ -152,7 +137,7 @@ data "aws_iam_policy_document" "apply" {
 }
 
 resource "aws_iam_role_policy" "apply" {
-  name   = "apply-lambda-function"
+  name   = "deploy-cdn-artifacts"
   role   = aws_iam_role.this.name
   policy = data.aws_iam_policy_document.apply.json
 }

@@ -25,12 +25,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      actions: write
       contents: read
       id-token: write
-
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout repository
@@ -82,5 +78,11 @@ jobs:
         working-directory: aws/cdn/tofu
 
       - name: OpenTofu apply
-        run: tofu apply -auto-approve
+        run: |
+          tofu apply -auto-approve \
+            '-target=module.s3.aws_s3_object.error_page["404.html"]' \
+            '-target=module.s3.aws_s3_object.error_page["503.html"]' \
+            -target=module.edge.aws_s3_object.lambda_zip \
+            -target=module.edge.aws_lambda_function.this \
+            -target=module.cloudfront.aws_cloudfront_distribution.this
         working-directory: aws/cdn/tofu
