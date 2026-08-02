@@ -51,3 +51,70 @@ resource "aws_ssoadmin_account_assignment" "tofu" {
   target_id          = each.value.account_id
   target_type        = "AWS_ACCOUNT"
 }
+
+module "management" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "foundation-management"
+  description  = "AWS Organizations, account, billing, and IAM Identity Center administration."
+  managed_policy_arns = toset([
+    "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
+    "arn:aws:iam::aws:policy/AWSSSOMasterAccountAdministrator",
+    "arn:aws:iam::aws:policy/Billing",
+    "arn:aws:iam::aws:policy/IAMFullAccess",
+  ])
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "AccountManagement"
+      Effect   = "Allow"
+      Action   = "account:*"
+      Resource = "*"
+    }]
+  })
+  account_assignments = {
+    management = {
+      account_id     = "384959722788"
+      principal_id   = "94183498-5041-705e-ddc0-aa6c2e714fbc"
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "platform" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "platform-operator"
+  description  = "Platform workload infrastructure administration."
+  managed_policy_arns = toset([
+    "arn:aws:iam::aws:policy/IAMFullAccess",
+    "arn:aws:iam::aws:policy/PowerUserAccess",
+  ])
+  account_assignments = {
+    platform = {
+      account_id     = "869061964712"
+      principal_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+      principal_type = "USER"
+    }
+  }
+}
+
+module "ultary_domains" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "ultary-domains-operator"
+  description  = "Ultary domain registration and Route 53 DNS administration."
+  managed_policy_arns = toset([
+    "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
+  ])
+  account_assignments = {
+    ultary_domains = {
+      account_id     = "971119963968"
+      principal_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+      principal_type = "USER"
+    }
+  }
+}
