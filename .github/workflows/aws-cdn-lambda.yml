@@ -23,13 +23,12 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      actions: write
       contents: read
       id-token: write
 
     env:
-      GITHUB_APP_ID: ${{ vars.TOFU_GITHUB_APP_ID }}
-      GITHUB_APP_INSTALLATION_ID: ${{ vars.TOFU_GITHUB_APP_INSTALLATION_ID }}
-      GITHUB_APP_PEM_FILE: ${{ secrets.TOFU_GITHUB_APP_PEM }}
+      GITHUB_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout repository

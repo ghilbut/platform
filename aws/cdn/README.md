@@ -31,9 +31,9 @@ discovery 문서의 `issuer`와 `jwks_uri`는 공개 CDN URL로 재작성됩니�
 오류 페이지와 Lambda ZIP은 OpenTofu가 S3 객체로 관리합니다. 로컬 첫 배포 전에는
 Lambda 번들만 빌드하면 됩니다.
 
-로컬에서 실행할 때는 `ghilbut-platform` AWS 프로필과 GitHub App 자격 증명이
-필요합니다. GitHub App은 `ghilbut/platform`의 Actions variables를 수정할 수
-있어야 합니다. 첫 배포 전에는 공유 GitHub Actions OIDC provider를
+로컬에서 실행할 때는 `ghilbut-platform` AWS 프로필과 `GH_TOKEN` fine-grained
+PAT가 필요합니다. PAT에는 `ghilbut/platform`의 Variables 읽기·쓰기 권한이
+필요합니다. 첫 배포 전에는 공유 GitHub Actions OIDC provider를
 [`github/tofu/`](../../github/tofu/)에서 먼저 적용해야 합니다. CDN 구성은
 `platform/github.tfstate`의 `github_actions_oidc_provider_arn` 출력을 참조합니다.
 
@@ -45,9 +45,7 @@ tofu apply
 cd ../..
 pnpm --filter @ghilbut/cdn-lambda build
 cd aws/cdn/tofu
-export GITHUB_APP_ID=...
-export GITHUB_APP_INSTALLATION_ID=...
-export GITHUB_APP_PEM_FILE="$(cat /path/to/github-app.private-key.pem)"
+export GITHUB_TOKEN="$GH_TOKEN"
 tofu init
 tofu apply
 ```
@@ -61,8 +59,8 @@ Lambda 워크플로는 이 역할을 사용해 기존 CDN의 Lambda·오류 페�
 - `aws-cdn-lambda.yml`: Lambda를 검사·빌드한 뒤 오류 페이지, Lambda ZIP, Lambda,
   CloudFront Function, CloudFront 배포를 OpenTofu로 갱신합니다.
 
-워크플로에는 `TOFU_GITHUB_APP_ID`, `TOFU_GITHUB_APP_INSTALLATION_ID`,
-`TOFU_GITHUB_APP_PEM` 자격 증명과 위 역할 변수가 필요합니다.
+워크플로는 GitHub가 발급하는 `GITHUB_TOKEN`으로 repository variable을 관리하며,
+`actions: write` 권한과 위 역할 변수가 필요합니다.
 
 S3 버킷, ACM 인증서, CloudFront 배포, IAM 역할, Route53 레코드의 생성·교체·삭제와
 IAM trust policy 변경은 워크플로 범위 밖입니다. 이런 OpenTofu 구성 변경은
