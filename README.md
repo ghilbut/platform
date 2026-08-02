@@ -16,7 +16,6 @@
 | `aws/` | AWS 관리 그룹 디렉토리 |
 | `aws/accounts/` | AWS Organizations 계정 |
 | `aws/identity/` | AWS IAM Identity Center 관리 |
-| `aws/management/` | AWS 관리 계정의 접근 제한과 opt-in 리전 설정 |
 | `aws/cdn/` | AWS CloudFront 기반의 CDN 인프라와 어플리케이션 |
 | `docs/` | 참고 문서 |
 | `domains/` | 도메인과 DNS 서버 관리 |
