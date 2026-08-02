@@ -27,7 +27,7 @@ Vault 구성과 관련 경로는 [Vault README](README.md)에서 확인한다. �
 | storage | Integrated Raft, `data-vault-0` 10 GiB PVC |
 | seal | AWS KMS `alias/platform-vault` |
 | AWS 인증 | CPA ServiceAccount OIDC federation, `platform-vault` 역할 |
-| recovery key | 5개 생성, 3개 필요 |
+| recovery key | 3개 생성, 2개 필요 |
 
 Raft snapshot은 Vault 데이터 전체를 포함한다. 파일은 암호화된 백업 저장소에만 보관하고 일반 파일 공유, CI artifact, Git에 넣지 않는다.
 
@@ -87,7 +87,7 @@ kubectl --context cpa -n vault exec vault-0 -- vault status
 - `Initialized`가 `false`다.
 - `vault-0`이 `Running`이다.
 
-`Initialized`가 `true`이면 `vault operator init`을 다시 실행하지 않는다. 기존 root token과 recovery key를 다시 발급할 수 없다.
+`Initialized`가 `true`이면 `vault operator init`을 다시 실행하지 않는다. 기존 root token은 다시 조회할 수 없다. recovery key 변경은 승인된 recovery rekey 절차로만 수행한다.
 
 ### 수동 초기화와 수령
 
@@ -96,12 +96,12 @@ kubectl --context cpa -n vault exec vault-0 -- vault status
 ```sh
 kubectl --context cpa -n vault exec -it vault-0 -- \
   vault operator init \
-  -recovery-shares=5 \
-  -recovery-threshold=3 \
+  -recovery-shares=3 \
+  -recovery-threshold=2 \
   -format=json
 ```
 
-출력의 `root_token`은 초기 운영 설정에만 사용한다. `recovery_keys_b64`의 5개 값은 서로 다른 수탁자와 보관 위치에 한 개씩 전달한다. PGP 공개키가 준비되어 있으면 `-recovery-pgp-keys`와 `-root-token-pgp-key`를 추가해 수령자별로 암호화된 출력을 사용한다.
+출력의 `root_token`은 초기 운영 설정에만 사용한다. `recovery_keys_b64`의 3개 값은 서로 다른 보관 위치에 한 개씩 전달한다. PGP 공개키가 준비되어 있으면 `-recovery-pgp-keys`와 `-root-token-pgp-key`를 추가해 수령자별로 암호화된 출력을 사용한다.
 
 초기화 직후 상태를 확인한다.
 
@@ -113,11 +113,11 @@ kubectl --context cpa -n vault exec vault-0 -- vault status
 
 ### 초기 설정과 root token 폐기
 
-root token으로 운영자 policy와 운영자 identity를 만들고, 해당 identity로 로그인할 수 있음을 확인한다. 그 뒤 root token을 폐기한다. root token을 잃은 경우 recovery key 3개로 `vault operator generate-root`를 수행한다. 기존 root token은 조회할 수 없다.
+root token으로 운영자 policy와 운영자 identity를 만들고, 해당 identity로 로그인할 수 있음을 확인한다. 그 뒤 root token을 폐기한다. root token을 잃은 경우 recovery key 2개로 `vault operator generate-root`를 수행한다. 기존 root token은 조회할 수 없다.
 
 ## auto-unseal 재시작 검증
 
-초기화가 끝나고 첫 snapshot을 검증한 뒤, 계획된 점검 시간에 Pod 재생성으로 AWS KMS auto-unseal을 확인한다. 단일 replica이므로 이 작업 동안 Vault API를 사용할 수 없다.
+초기화와 recovery key 수령 직후, Pod 재생성으로 AWS KMS auto-unseal을 확인한다. 단일 replica이므로 이 작업 동안 Vault API를 사용할 수 없다.
 
 StatefulSet, namespace, PVC, PV를 삭제하지 않고 Pod만 삭제한다.
 

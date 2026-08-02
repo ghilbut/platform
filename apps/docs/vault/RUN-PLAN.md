@@ -64,13 +64,21 @@ PR이 `main`에 병합된 뒤 실행한다. 반복 운영은 [Vault 운영 RUNBO
    ```sh
    kubectl --context cpa -n vault exec -it vault-0 -- \
      vault operator init \
-     -recovery-shares=5 \
-     -recovery-threshold=3 \
+     -recovery-shares=3 \
+     -recovery-threshold=2 \
      -format=json
    kubectl --context cpa -n vault exec vault-0 -- vault status
    ```
 
-6. `Initialized: true`와 `Sealed: false`를 확인한다. 운영자 identity를 만든 뒤 root token을 폐기하고, 첫 snapshot과 auto-unseal 재시작 검증은 RUNBOOK에 따라 별도 수행한다.
+6. Pod를 재생성해 AWS KMS auto-unseal을 검증한다. `Initialized: true`와 `Sealed: false`를 확인한다.
+
+   ```sh
+   kubectl --context cpa -n vault delete pod vault-0
+   kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+   kubectl --context cpa -n vault exec vault-0 -- vault status
+   ```
+
+7. 운영자 identity를 만든 뒤 root token을 폐기한다. 첫 snapshot은 RUNBOOK에 따라 별도 수행한다.
 
 ## 결과
 
@@ -79,4 +87,4 @@ PR이 `main`에 병합된 뒤 실행한다. 반복 운영은 [Vault 운영 RUNBO
 - K3s OpenTofu 결과:
 - Applications OpenTofu 결과:
 - Argo CD 동기화 결과:
-- 초기화와 비밀 수령 확인:
+- 초기화·비밀 수령·auto-unseal 검증 확인:

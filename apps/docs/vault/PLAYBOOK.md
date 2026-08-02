@@ -31,7 +31,7 @@ snapshot 복원은 snapshot 생성 이후의 Vault 데이터와 설정을 되돌
 2. 격리된 관리자 컴퓨터에 snapshot을 내려받고 checksum을 비교한다.
 3. 복원 기간에는 원본 workload로 향하는 쓰기를 중지한다. 이동 작업이면 마지막 snapshot을 만든 뒤 원본 workload를 읽기 전용 상태로 유지한다.
 4. source Vault의 AWS KMS key를 삭제하거나 교체하지 않는다. snapshot이 복원한 seal 설정은 source key로 auto-unseal한다.
-5. source recovery key 수탁자 3명과 복원 뒤 사용할 운영자 identity를 확보한다. recovery key는 auto-unseal에 입력하지 않으며, source 운영자 identity를 복구해야 할 때 `generate-root`에 사용한다.
+5. 분리 보관한 source recovery key 3개 중 2개와 복원 뒤 사용할 운영자 identity를 확보한다. recovery key는 auto-unseal에 입력하지 않으며, source 운영자 identity를 복구해야 할 때 `generate-root`에 사용한다.
 
 ## 새 Vault workload 설치
 
@@ -49,8 +49,8 @@ snapshot 복원은 snapshot 생성 이후의 Vault 데이터와 설정을 되돌
 ```sh
 kubectl --context <target-context> -n <target-namespace> exec -it <target-pod> -- \
   vault operator init \
-  -recovery-shares=5 \
-  -recovery-threshold=3 \
+  -recovery-shares=3 \
+  -recovery-threshold=2 \
   -format=json
 ```
 
@@ -87,7 +87,7 @@ kubectl --context <target-context> -n <target-namespace> exec <target-pod> -- va
 
 1. source에서 사용하던 비-root 운영자 identity로 대상에 로그인한다. 대상 bootstrap root token은 사용하지 않는다.
 2. 필요한 secrets engine, auth method, policy, audit device가 snapshot 시점 상태로 존재하는지 확인한다.
-3. recovery key 수탁자 3명으로 `vault operator generate-root`가 가능한지 복구 훈련 절차를 검증한다. 새 root token은 운영자 identity 복구에만 사용하고 즉시 폐기한다.
+3. 분리 보관한 recovery key 2개로 `vault operator generate-root`가 가능한지 복구 훈련 절차를 검증한다. 새 root token은 운영자 identity 복구에만 사용하고 즉시 폐기한다.
 4. 애플리케이션의 Vault 주소와 인증 구성을 대상으로 바꾸고, 읽기와 쓰기 동작을 확인한다.
 5. 대상 백업을 새로 만들고 checksum과 복원 절차를 확인한다.
 6. 원본 workload, PVC, IAM 권한, KMS key는 대상 검증과 전환 완료 뒤에만 별도 변경한다.
