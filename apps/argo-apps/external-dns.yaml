@@ -1,128 +1,75 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: external-dns
-  annotations:
-    argocd.argoproj.io/sync-options: Delete=false,Prune=false
-    argocd.argoproj.io/sync-wave: "-1"
----
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: external-dns
   namespace: argo
-  labels:
-    ultary.co/org: ultary
-    ultary.co/project: ultary
-    ultary.co/service: core
-    ultary.co/module: external-dns
 spec:
   project: default
   sources:
-    ## https://github.com/kubernetes-sigs/external-dns //charts/external-dns/values.yaml
     - chart: external-dns
       repoURL: https://kubernetes-sigs.github.io/external-dns
       targetRevision: 1.21.1
       helm:
+        releaseName: external-dns
         values: |
-          fullnameOverride: private
+          fullnameOverride: external-dns
           env:
-            - name: DNS_SERVER_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: synology-dns-server
-                  key: DNS_SERVER_KEY
-          logLevel: warning
-          sources:
-            # - service
-            # - ingress
-            - istio-gateway
-            - istio-virtualservice
-          policy: sync
-          registry: txt
-          txtOwnerId: edns
-          txtPrefix: private-
-          domainFilters:
-            #- dokevy.com
-            #- dokevy.in
-            - dokevy.io
-            #- dokevy.net
-            - ultary.co
-            - ultary.io
-          provider: rfc2136
-          extraArgs:
-            - --annotation-filter=external-dns.kubernetes.io/private in (true)
-            - --default-targets=gw.k8s.ultary.co
-            - --rfc2136-host=ns.ultary.co
-            - --rfc2136-port=53
-            - --rfc2136-insecure
-            - --rfc2136-min-ttl=3600s
-            - --rfc2136-tsig-axfr
-            - --rfc2136-tsig-keyname=dokevy
-            - --rfc2136-tsig-secret=${DNS_SERVER_KEY}
-            - --rfc2136-tsig-secret-alg=hmac-sha512
-            #- --rfc2136-zone=dokevy.com
-            #- --rfc2136-zone=dokevy.in
-            - --rfc2136-zone=dokevy.io
-            #- --rfc2136-zone=dokevy.net
-            - --rfc2136-zone=ultary.co
-            - --rfc2136-zone=ultary.io
-          secretConfiguration:
-            enabled: false
-          ---
-        valueFiles:
-          - values.yaml
-        version: v3
-    - chart: external-dns
-      repoURL: https://kubernetes-sigs.github.io/external-dns
-      targetRevision: 1.21.1
-      helm:
-        skipCrds: true
-        values: |
-          fullnameOverride: public
-          env:
+            - name: AWS_EC2_METADATA_DISABLED
+              value: "true"
             - name: AWS_REGION
               value: us-east-1
-            - name: AWS_DEFAULT_REGION
-              value: us-east-1
-            - name: AWS_ACCESS_KEY_ID
-              valueFrom:
-                secretKeyRef:
-                  name: aws-iam-user-k3s
-                  key: AWS_ACCESS_KEY_ID
-            - name: AWS_SECRET_ACCESS_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: aws-iam-user-k3s
-                  key: AWS_SECRET_ACCESS_KEY
-          logLevel: warning
-          sources:
-            # - service
-            # - ingress
-            - istio-gateway
-            - istio-virtualservice
+            - name: AWS_ROLE_ARN
+              value: arn:aws:iam::869061964712:role/platform-cpa-external-dns
+            - name: AWS_WEB_IDENTITY_TOKEN_FILE
+              value: /var/run/secrets/aws-iam-token/token
+          extraVolumeMounts:
+            - mountPath: /var/run/secrets/aws-iam-token
+              name: aws-iam-token
+              readOnly: true
+          extraVolumes:
+            - name: aws-iam-token
+              projected:
+                sources:
+                  - serviceAccountToken:
+                      audience: sts.amazonaws.com
+                      expirationSeconds: 3600
+                      path: token
+          logLevel: info
+          managedRecordTypes:
+            - CNAME
           policy: sync
-          registry: txt
-          txtOwnerId: edns
-          txtPrefix: public-
-          domainFilters:
-            - dokevy.com
-            - dokevy.in
-            - dokevy.io
-            - dokevy.net
-            - ultary.co
-            - ultary.io
+          podSecurityContext:
+            fsGroup: 65534
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
           provider: aws
-          extraArgs:
-            - --annotation-filter=external-dns.kubernetes.io/public in (true)
-            - --default-targets=ghilbut.asuscomm.com
-            - --force-default-targets
-          secretConfiguration:
-            enabled: false
-          ---
-        valueFiles:
-          - values.yaml
-        version: v3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 65532
+            runAsNonRoot: true
+            runAsUser: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          domainFilters:
+            - ghilbut.com
+            - ghilbut.net
+          registry: txt
+          serviceAccount:
+            create: true
+            name: external-dns
+          sources:
+            - istio-gateway
+          txtOwnerId: external-dns-cpa
+          txtPrefix: external-dns-
+    - path: apps/argo-apps/external-dns
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
   destination:
     name: in-cluster
     namespace: external-dns
