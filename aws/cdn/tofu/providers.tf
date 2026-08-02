@@ -12,8 +12,8 @@ provider "aws" {
     tags = {
       created_by = "opentofu"
       managed_by = "opentofu"
-      project    = "platform"
-      service    = "cdn"
+      project    = var.project
+      service    = var.service
     }
   }
 }

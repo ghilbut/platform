@@ -1,3 +1,13 @@
+variable "project" {
+  type    = string
+  default = "platform"
+}
+
+variable "service" {
+  type    = string
+  default = "cdn"
+}
+
 variable "github_owner" {
   type        = string
   description = "GitHub organization or user that owns the repository"
