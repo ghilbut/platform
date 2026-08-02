@@ -1,0 +1,30 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: aws-route53
+  namespace: istio-gateways
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  acme:
+    email: ghilbut@gmail.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+      - selector:
+          dnsZones:
+            - ghilbut.com
+            - ghilbut.net
+        dns01:
+          route53:
+            region: us-east-1
+            role: arn:aws:iam::869061964712:role/platform-cpa-cert-manager
+            auth:
+              kubernetes:
+                serviceAccountRef:
+                  audiences:
+                    - sts.amazonaws.com
+                  name: cert-manager-dns01

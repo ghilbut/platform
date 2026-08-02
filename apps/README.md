@@ -18,7 +18,7 @@ CPA 초기 설치에서는 [Cilium](argo-apps/cilium.yaml), [Istio system](argo-
 | [Argo CD](argo-apps/argo.yaml) | — | — | — | — | — |
 | [Cilium](argo-apps/cilium.yaml) | — | — | — | — | — |
 | [OpenEBS](argo-apps/ebs.yaml) | — | — | — | — | — |
-| [cert-manager](argo-apps/cert-manager.yaml) | — | — | — | — | — |
+| [cert-manager](argo-apps/cert-manager.yaml) | [README](docs/cert-manager/README.md) | — | [RUN-PLAN](docs/cert-manager/RUN-CERT-MANAGER-2026-08-02-PLAN.md) | — | — |
 | [external-dns](argo-apps/external-dns.yaml) | — | — | — | — | — |
 | [Istio system](argo-apps/istio-system.yaml), [Istio gateways](argo-apps/istio-gateways.yaml) | [README](docs/istio/README.md) | — | [RUN-PLAN](docs/istio/RUN-ISTIO-2026-08-02-PLAN.md) | — | — |
 | [Keycloak](argo-apps/keycloak.yaml) | [README](docs/keycloak/README.md) | — | [RUN-PLAN](docs/keycloak/RUN-KEYCLOAK-2026-08-02-PLAN.md) | — | — |
