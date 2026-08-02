@@ -45,6 +45,7 @@ tofu apply
 cd ../..
 pnpm --filter @ghilbut/cdn-lambda build
 cd aws/cdn/tofu
+export AWS_PROFILE=ghilbut-platform
 export GITHUB_TOKEN="$GH_TOKEN"
 tofu init
 tofu apply
