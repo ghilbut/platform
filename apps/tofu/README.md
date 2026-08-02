@@ -25,7 +25,7 @@ OIDC discovery 문서와 JWKS는 공개 정보이며 ServiceAccount token이나 
 - Vault 역할은 `system:serviceaccount:vault:vault` subject와 `sts.amazonaws.com` audience를 모두 요구한다.
 - Vault Helm chart는 projected ServiceAccount token을 `AWS_WEB_IDENTITY_TOKEN_FILE`로 전달한다. EKS 전용 webhook을 사용하지 않는다.
 
-Vault AWS KMS seal key에는 `kms:Encrypt`, `kms:Decrypt`, `kms:DescribeKey`만 허용한다. Vault 초기화와 복구 자격 증명 절차는 [Vault 실행 기록](../argo-apps/vault/RUN-2026-08-01.md)을 따른다.
+Vault AWS KMS seal key에는 `kms:Encrypt`, `kms:Decrypt`, `kms:DescribeKey`만 허용한다. Vault 초기화와 수동 snapshot은 [Vault 운영 RUNBOOK](../argo-apps/vault/RUNBOOK.md)을 따르고, snapshot 복원과 workload 이전은 [Vault 복구 PLAYBOOK](../argo-apps/vault/PLAYBOOK.md)을 따른다.
 
 ## 사용
 
