@@ -16,6 +16,10 @@ AWS Foundation은 AWS 계정 수명 주기, IAM Identity Center 접근 권한, A
 현재는 `accounts/tofu/`만 존재한다. `identity/tofu/`와 `organizations/tofu/`는 Foundation
 전환 작업에 따라 추가한다.
 
+`accounts/tofu/modules/management/`는 management 계정 자체의 opt-in 리전만 관리한다.
+따라서 Account Management API를 standalone context로 호출하며, AWS Organizations의
+Account Management trusted access를 활성화하지 않는다.
+
 ## Accounts state migration
 
 기존 `platform/aws/accounts.tfstate` 상태를 새 backend key로 이전할 때는
