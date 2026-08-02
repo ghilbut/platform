@@ -9,15 +9,15 @@ area: apps
 
 ## 문서
 
-| 애플리케이션 | README | RULEBOOK | RUNBOOK | PLAYBOOK |
-| --- | --- | --- | --- | --- |
-| [Argo CD](argo-apps/argo.yaml) | — | — | — | — |
-| [Cilium](argo-apps/cilium.yaml) | — | — | — | — |
-| [OpenEBS](argo-apps/ebs.yaml) | — | — | — | — |
-| [cert-manager](argo-apps/cert-manager.yaml) | — | — | — | — |
-| [external-dns](argo-apps/external-dns.yaml) | — | — | — | — |
-| [Istio](argo-apps/istio.yaml) | — | — | — | — |
-| [Keycloak](argo-apps/keycloak.yaml) | — | — | — | — |
-| [Vault](argo-apps/vault.yaml) | [README](docs/vault/README.md) | — | [RUNBOOK](docs/vault/RUNBOOK.md) | [PLAYBOOK](docs/vault/PLAYBOOK.md) |
+| 애플리케이션 | README | RULEBOOK | RUN-PLAN | RUNBOOK | PLAYBOOK |
+| --- | --- | --- | --- | --- | --- |
+| [Argo CD](argo-apps/argo.yaml) | — | — | — | — | — |
+| [Cilium](argo-apps/cilium.yaml) | — | — | — | — | — |
+| [OpenEBS](argo-apps/ebs.yaml) | — | — | — | — | — |
+| [cert-manager](argo-apps/cert-manager.yaml) | — | — | — | — | — |
+| [external-dns](argo-apps/external-dns.yaml) | — | — | — | — | — |
+| [Istio](argo-apps/istio.yaml) | — | — | — | — | — |
+| [Keycloak](argo-apps/keycloak.yaml) | — | — | — | — | — |
+| [Vault](argo-apps/vault.yaml) | [README](docs/vault/README.md) | — | [RUN-PLAN](docs/vault/RUN-PLAN.md) | [RUNBOOK](docs/vault/RUNBOOK.md) | [PLAYBOOK](docs/vault/PLAYBOOK.md) |
 
 Kubernetes workload 보안 기준은 [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)를 따른다.
