@@ -6,7 +6,6 @@ terraform {
     bucket       = "ghilbut-tfstates"
     encrypt      = true
     key          = "aws/cdn.tfstate"
-    profile      = "ghilbut-platform"
     region       = "us-east-1"
     use_lockfile = true
   }
