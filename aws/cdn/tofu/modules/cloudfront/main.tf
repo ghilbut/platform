@@ -1,8 +1,8 @@
 locals {
-  default_tags = merge(var.default_tags, {
+  default_tags = {
     "opentofu/module/repo" = var.repo
     "opentofu/module/path" = "aws/cdn/tofu/modules/cloudfront/"
-  })
+  }
 }
 
 resource "aws_cloudfront_origin_access_control" "this" {

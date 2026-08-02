@@ -3,8 +3,6 @@ variable "bucket_name" {
   description = "Name of the CDN origin bucket"
 }
 
-variable "default_tags" { type = map(string) }
-
 variable "error_page_files" {
   type        = map(string)
   description = "S3 object key to local error page file path"

@@ -33,8 +33,7 @@ module "s3" {
   source = "./modules/s3"
 
   # S3 bucket names share a global namespace, so include the repository owner.
-  bucket_name  = "${var.github_owner}-${var.github_repository}-${var.name}"
-  default_tags = local.default_tags
+  bucket_name = "${var.github_owner}-${var.github_repository}-${var.name}"
   error_page_files = {
     "404.html" = "${path.root}/../404.html"
     "503.html" = "${path.root}/../503.html"
@@ -47,7 +46,6 @@ module "certificate" {
   source = "./modules/certificate"
 
   acm_domain_name = var.acm_domain_name
-  default_tags    = local.default_tags
   fqdns           = local.fqdns
   name            = var.name
   repo            = local.repo
@@ -60,7 +58,6 @@ module "edge" {
   allowlist          = local.viewer_request_allowlist
   bucket_arn         = module.s3.arn
   bucket_name        = module.s3.name
-  default_tags       = local.default_tags
   name               = var.name
   redirect_map       = local.viewer_request_redirect_map
   repo               = local.repo
@@ -73,7 +70,6 @@ module "cloudfront" {
 
   bucket_regional_domain_name = module.s3.regional_domain_name
   certificate_arn             = module.certificate.arn
-  default_tags                = local.default_tags
   fqdns                       = local.fqdns
   lambda_function_arn         = module.edge.lambda_function_arn
   name                        = var.name
@@ -109,7 +105,6 @@ module "github_actions" {
   acm_certificate_arn              = module.certificate.arn
   cdn_bucket_arn                   = module.s3.arn
   cloudfront_distribution_arn      = module.cloudfront.arn
-  default_tags                     = local.default_tags
   github_repository                = var.github_repository
   github_actions_oidc_provider_arn = data.terraform_remote_state.github.outputs.github_actions_oidc_provider_arn
   github_state_key                 = local.github_state_key

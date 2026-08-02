@@ -1,7 +1,6 @@
 variable "acm_certificate_arn" { type = string }
 variable "cdn_bucket_arn" { type = string }
 variable "cloudfront_distribution_arn" { type = string }
-variable "default_tags" { type = map(string) }
 variable "github_actions_oidc_provider_arn" { type = string }
 variable "github_repository" { type = string }
 variable "github_state_key" { type = string }

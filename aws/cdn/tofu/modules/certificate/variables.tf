@@ -1,5 +1,4 @@
 variable "acm_domain_name" { type = string }
-variable "default_tags" { type = map(string) }
 variable "fqdns" { type = list(string) }
 variable "name" { type = string }
 variable "repo" { type = string }

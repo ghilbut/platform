@@ -1,8 +1,8 @@
 locals {
-  default_tags = merge(var.default_tags, {
+  default_tags = {
     "opentofu/module/repo" = var.repo
     "opentofu/module/path" = "aws/cdn/tofu/modules/edge/"
-  })
+  }
 }
 
 data "aws_iam_policy_document" "lambda_assume" {

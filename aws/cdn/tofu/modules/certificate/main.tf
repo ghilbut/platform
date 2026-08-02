@@ -11,10 +11,10 @@ data "aws_route53_zone" "acm_domain" {
 }
 
 locals {
-  default_tags = merge(var.default_tags, {
+  default_tags = {
     "opentofu/module/repo" = var.repo
     "opentofu/module/path" = "aws/cdn/tofu/modules/certificate/"
-  })
+  }
 
   zone_id_by_root = merge(
     { for zone, value in data.aws_route53_zone.zones : zone => value.zone_id },
