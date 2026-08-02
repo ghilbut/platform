@@ -21,7 +21,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [cert-manager READM
 | --- | --- |
 | Kubernetes context | `cpa` |
 | cert-manager version | `v1.21.1` |
-| IAM role | `platform-cpa-cert-manager` |
+| IAM role | `platform-cert-manager` |
 | DNS-01 ServiceAccount | `istio-gateways/cert-manager-dns01` |
 | Route 53 hosted zones | `ghilbut.com`, `ghilbut.net` |
 | Issuer | `istio-gateways/aws-route53` |
@@ -37,7 +37,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [cert-manager READM
    kubectl --context cpa get namespace istio-gateways
    ```
 
-2. platform 계정에서 CPA cert-manager 전용 IAM 역할을 만든다. plan에는 CPA OIDC provider 조회, `platform-cpa-cert-manager` 역할, `ghilbut.com`과 `ghilbut.net` Route 53 DNS-01 권한만 포함되어야 한다.
+2. platform 계정에서 공용 cert-manager IAM 역할을 만든다. plan에는 CPA OIDC provider 조회, `platform-cert-manager` 역할, `ghilbut.com`과 `ghilbut.net` Route 53 DNS-01 권한만 포함되어야 한다. 다른 cluster를 추가할 때는 해당 OIDC provider와 DNS-01 ServiceAccount subject를 trust에 추가한다.
 
    ```sh
    tofu -chdir=apps/tofu init

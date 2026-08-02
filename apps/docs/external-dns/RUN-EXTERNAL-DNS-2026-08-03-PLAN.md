@@ -21,7 +21,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [external-dns READM
 | --- | --- |
 | Kubernetes context | `cpa` |
 | external-dns chart | `1.21.1` |
-| IAM role | `platform-cpa-external-dns` |
+| IAM role | `platform-external-dns` |
 | ServiceAccount | `external-dns/external-dns` |
 | Gateway | `istio-gateways/public` |
 | DNS target | `ghilbut.asuscomm.com` |
@@ -40,7 +40,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [external-dns READM
    dig +short ghilbut.asuscomm.com A
    ```
 
-2. platform 계정에서 CPA external-dns 전용 IAM 역할을 만든다. plan에는 CPA OIDC provider 조회, `platform-cpa-external-dns` 역할과 선언한 Route 53 record 권한만 포함되어야 한다.
+2. platform 계정에서 공용 external-dns IAM 역할을 만든다. plan에는 CPA OIDC provider 조회, `platform-external-dns` 역할과 선언한 Route 53 record 권한만 포함되어야 한다. 다른 cluster를 추가할 때는 해당 OIDC provider와 external-dns ServiceAccount subject를 trust에 추가하고, 서로 다른 `txtOwnerId`를 사용한다.
 
    ```sh
    tofu -chdir=apps/tofu init

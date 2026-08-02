@@ -21,7 +21,7 @@ spec:
         dns01:
           route53:
             region: us-east-1
-            role: arn:aws:iam::869061964712:role/platform-cpa-cert-manager
+            role: arn:aws:iam::869061964712:role/platform-cert-manager
             auth:
               kubernetes:
                 serviceAccountRef:

@@ -1,44 +1,21 @@
-variable "cluster_name" {
-  type        = string
-  description = "Cluster identifier included in external-dns IAM resource names."
+variable "clusters" {
+  type = map(object({
+    hosted_zone_names         = set(string)
+    oidc_issuer               = string
+    record_names              = set(string)
+    service_account_name      = string
+    service_account_namespace = string
+    txt_prefix                = string
+  }))
+  description = "Clusters whose external-dns ServiceAccount may assume the shared role and their allowed Route 53 records."
 
   validation {
-    condition     = can(regex("^[a-z0-9][a-z0-9-]*$", var.cluster_name))
-    error_message = "cluster_name must use lowercase letters, digits, and hyphens."
+    condition     = length(var.clusters) > 0
+    error_message = "clusters must contain at least one cluster."
   }
-}
-
-variable "hosted_zone_names" {
-  type        = set(string)
-  description = "Public Route 53 hosted zones external-dns may read."
 }
 
 variable "name" {
   type        = string
   description = "Platform name prefix for external-dns IAM resources."
-}
-
-variable "oidc_issuer" {
-  type        = string
-  description = "Public Kubernetes ServiceAccount OIDC issuer URL for this cluster."
-}
-
-variable "record_names" {
-  type        = set(string)
-  description = "DNS record names external-dns may change."
-}
-
-variable "service_account_name" {
-  type        = string
-  description = "Name of the external-dns ServiceAccount allowed to assume the role."
-}
-
-variable "service_account_namespace" {
-  type        = string
-  description = "Namespace of the external-dns ServiceAccount allowed to assume the role."
-}
-
-variable "txt_prefix" {
-  type        = string
-  description = "Prefix external-dns uses for TXT ownership records."
 }
