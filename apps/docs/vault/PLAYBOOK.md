@@ -13,7 +13,7 @@ cluster: cpa
 - [Raft snapshot 복원](#raft-snapshot-복원)
 - [검증과 전환](#검증과-전환)
 
-이 문서는 Integrated Raft snapshot으로 Vault 전체 상태를 복원하거나 다른 Kubernetes workload로 옮기는 절차다. 일상 운영과 수동 snapshot 생성은 [Vault 운영 RUNBOOK](RUNBOOK.md)을 따른다.
+이 문서는 Integrated Raft snapshot으로 Vault 전체 상태를 복원하거나 다른 Kubernetes workload로 옮기는 절차다. 구성 경로는 [Vault README](README.md), 일상 운영과 수동 snapshot 생성은 [Vault 운영 RUNBOOK](RUNBOOK.md)을 따른다.
 
 ## 적용 범위
 

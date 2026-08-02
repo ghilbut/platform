@@ -5,17 +5,17 @@ area: apps
 
 # Applications
 
-`apps/`는 CPA Kubernetes cluster에서 실행되는 애플리케이션의 진입점이다. Argo CD bootstrap은 [argo.yaml](argo.yaml)에서 시작하며, AWS 인프라는 [OpenTofu](tofu/README.md)에서 관리한다.
+`apps/`는 CPA Kubernetes cluster에서 실행되는 애플리케이션의 진입점이다. Argo CD bootstrap은 [argo.yaml](argo.yaml)에서 시작하며, 애플리케이션 문서는 [Applications Documents RULEBOOK](docs/RULEBOOK.md)을 따른다.
 
-## 애플리케이션
+## 문서
 
-| 애플리케이션 | 배포 또는 문서 |
-| --- | --- |
-| Argo CD | [Application](argo-apps/argo.yaml) · [app-of-apps](argo-apps/argo-apps.yaml) |
-| Cilium | [Application](argo-apps/cilium.yaml) |
-| OpenEBS | [Application](argo-apps/ebs.yaml) |
-| cert-manager | [Application](argo-apps/cert-manager.yaml) |
-| external-dns | [Application](argo-apps/external-dns.yaml) |
-| Istio | [Applications](argo-apps/istio.yaml) |
-| Keycloak | [Application](argo-apps/keycloak.yaml) |
-| Vault | [Application](argo-apps/vault.yaml) · [RUNBOOK](argo-apps/vault/RUNBOOK.md) · [PLAYBOOK](argo-apps/vault/PLAYBOOK.md) |
+| 애플리케이션 | README | RULEBOOK | RUNBOOK | PLAYBOOK |
+| --- | --- | --- | --- | --- |
+| [Argo CD](argo-apps/argo.yaml) | — | — | — | — |
+| [Cilium](argo-apps/cilium.yaml) | — | — | — | — |
+| [OpenEBS](argo-apps/ebs.yaml) | — | — | — | — |
+| [cert-manager](argo-apps/cert-manager.yaml) | — | — | — | — |
+| [external-dns](argo-apps/external-dns.yaml) | — | — | — | — |
+| [Istio](argo-apps/istio.yaml) | — | — | — | — |
+| [Keycloak](argo-apps/keycloak.yaml) | — | — | — | — |
+| [Vault](argo-apps/vault.yaml) | [README](docs/vault/README.md) | — | [RUNBOOK](docs/vault/RUNBOOK.md) | [PLAYBOOK](docs/vault/PLAYBOOK.md) |
