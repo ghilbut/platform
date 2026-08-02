@@ -7,6 +7,11 @@
       <excludeFolder url="file://$MODULE_DIR$/domains/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/ultary/domains/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/accounts/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/cdn/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/identity/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/github/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/k3s/tofu/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -1,41 +1,36 @@
 # Platform
 
-## Directories
+## A. AI Agents
 
-각 리소스는 하나의 OpenTofu 상태만 관리한다.
-
-| 경로 | 책임 | 소유하지 않는 것 |
-| --- | --- | --- |
-| `.github/workflows/` | 저장소 CI와 배포 절차 | 인프라의 영구 상태 |
-| `aws/accounts/tofu/` | AWS Organizations 계정 | 다른 AWS 서비스 리소스 |
-| `aws/cdn/` | CDN 애플리케이션 산출물과 CDN 인프라 | 계정 공용 GitHub OIDC provider |
-| `aws/cdn/tofu/` | CDN, 배포 역할, `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN` 저장소 변수 | 다른 서비스의 GitHub 변수와 역할 |
-| `github/tofu/` | AWS 계정 공용 GitHub Actions OIDC provider | 서비스별 IAM 역할, 저장소 변수, CDN 리소스 |
-| `k3s/tofu/` | K3S 공개 OIDC 문서를 CDN S3 원본에 동기화 | CDN 배포판, 버킷, GitHub Actions 역할 |
-| `.worktrees/` | 브랜치 작업용 Git worktree | 영구 소스 또는 상태 파일 |
-
-`github/tofu/`는 재사용 가능한 GitHub Actions OIDC provider 하나만 관리한다.
-`aws/cdn/tofu/`는 그 provider ARN을 읽어 CDN 전용 역할과 저장소 변수를 관리한다.
-
-OpenTofu 작성·상태·배포 지침은 [docs/TOFU.md](docs/TOFU.md)를 따른다.
-
-## Claude Remote-Control
+### Claude Remote-Control
 
 [**claude-rc.sh**](claude-rc.sh)
 
-```shell
-$ ANTHROPIC_MODEL=claude-opus-4-8 \
-  CLAUDE_CODE_EFFORT_LEVEL=xhigh \
-  claude \
-  remote-control \
-  --remote-control-session-name-prefix "ghilbut" \
-  --permission-mode bypassPermissions \
-  --spawn worktree \
-  --capacity 4 \
-  --no-create-session-in-dir
-```
+## B. Directories
 
-## Accounts
+각 리소스는 하나의 OpenTofu 상태만 관리한다.
+
+| 경로 | 책임 |
+|---|---|
+| `apps/` | 인프라와 플랫폼을 관리하는 어플리케이션들 |
+| `aws/` | AWS 관리 그룹 디렉토리 |
+| `aws/accounts/` | AWS Organizations 계정 |
+| `aws/identity/` | AWS IAM Identity Center 관리 |
+| `aws/cdn/` | AWS CloudFront 기반의 CDN 인프라와 어플리케이션 |
+| `docs/` | 참고 문서 |
+| `domains/` | 도메인과 DNS 서버 관리 |
+| `github/` | Github 계정 관리 |
+| `k3s/` | 온프레미스 K3s 관리 및 클라우드 연동 |
+| `pki/` | Root CA 인증서와 Intermediate 인증서의 작업 공간. 인증서는 git과 동기화하지 않는다. |
+| `ultary/` | `Ultary, Inc.`가 준비될 때까지 일부 관리를 대신해 준다. |
+
+## C. Programming
+
+### OpenTofu
+
+OpenTofu 작성·상태·배포 지침은 [docs/TOFU.md](docs/TOFU.md)를 따른다.
+
+## D. Accounts
 
 ### AWS
 
@@ -47,7 +42,7 @@ SSO Start URL: https://ghilbut.awsapps.com/start
 | 869061964712 | platform       | aws-platform@ghilbut.com       |
 | 971119963968 | ultary-domains | aws-ultary-domains@ghilbut.com |
 
-## Domains
+## E. Domains
 
 ### Ghilbut
 
