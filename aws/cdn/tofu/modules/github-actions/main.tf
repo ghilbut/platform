@@ -107,7 +107,7 @@ data "aws_iam_policy_document" "apply" {
   statement {
     actions = [
       "cloudfront:CreateFunction", "cloudfront:DescribeFunction", "cloudfront:GetFunction",
-      "cloudfront:ListFunctions", "cloudfront:PublishFunction", "cloudfront:UpdateFunction",
+      "cloudfront:ListFunctions", "cloudfront:ListTagsForResource", "cloudfront:PublishFunction", "cloudfront:UpdateFunction",
       "cloudfront:UpdateFunctionCode", "cloudfront:UpdateFunctionMetadata",
     ]
     resources = ["*"]
@@ -155,10 +155,4 @@ resource "aws_iam_role_policy" "apply" {
   name   = "apply-lambda-function"
   role   = aws_iam_role.this.name
   policy = data.aws_iam_policy_document.apply.json
-}
-
-resource "github_actions_variable" "cdn_role_arn" {
-  repository    = var.github_repository
-  variable_name = "AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN"
-  value         = aws_iam_role.this.arn
 }

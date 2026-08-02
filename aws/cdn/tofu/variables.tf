@@ -16,7 +16,7 @@ variable "github_owner" {
 
 variable "github_repository" {
   type        = string
-  description = "GitHub repository name to receive CDN Actions variables"
+  description = "Repository trusted to assume the CDN deployment role"
   default     = "platform"
 }
 

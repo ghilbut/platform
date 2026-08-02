@@ -13,3 +13,7 @@ provider "aws" {
     }
   }
 }
+
+provider "github" {
+  owner = "ghilbut"
+}
