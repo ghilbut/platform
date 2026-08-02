@@ -9,6 +9,7 @@ cluster: cpa
 
 - [설치](#설치)
 - [초기화](#초기화)
+- [초기 설정과 root token 폐기](#초기-설정과-root-token-폐기)
 - [auto-unseal 재시작 검증](#auto-unseal-재시작-검증)
 - [수동 Raft snapshot](#수동-raft-snapshot)
 - [자동 백업 설계](#자동-백업-설계)
@@ -113,9 +114,18 @@ kubectl --context cpa -n vault exec vault-0 -- vault status
 
 `Initialized`는 `true`, `Sealed`는 `false`여야 한다. `Sealed`가 `true`이면 AWS KMS 권한과 ServiceAccount OIDC federation을 조사한다. AWS KMS auto-unseal 구성에서 recovery key는 `vault operator unseal`에 사용하지 않는다.
 
-### 초기 설정과 root token 폐기
+## 초기 설정과 root token 폐기
 
-root token으로 운영자 policy와 운영자 identity를 만들고, 해당 identity로 로그인할 수 있음을 확인한다. 그 뒤 root token을 폐기한다. root token을 잃은 경우 recovery key 2개로 `vault operator generate-root`를 수행한다. 기존 root token은 조회할 수 없다.
+운영자 identity는 사람이 Keycloak에서 인증한 뒤 Vault policy를 받는 주체다. 이 구성에서는 Keycloak 사용자 `ghilbut`의 `preferred_username` claim을 Vault `vault-operator` policy에 연결한다. Kubernetes ServiceAccount, IAM 역할, root token은 운영자 identity가 아니다.
+
+[Keycloak Vault OIDC 실행 계획](../keycloak/RUN-KEYCLOAK-2026-08-02-PLAN.md#vault-operator-oidc)을 먼저 완료한 뒤 [Vault 설치 실행 계획의 OIDC 설정·검증·폐기 절차](RUN-VAULT-2026-08-02-PLAN.md#keycloak-oidc-운영자-인증과-root-token-폐기)를 순서대로 실행한다.
+
+root token 폐기는 두 작업으로 끝낸다.
+
+1. `vault token revoke -self`를 root token으로 실행해 Vault 내부에서 token을 revoke한다. OIDC 로그인과 `vault-operator` policy가 성공한 후에만 실행한다.
+2. 초기화 JSON, clipboard, 메모, 비밀 보관소와 터미널 scrollback의 root token 사본을 외부에서 제거한다. recovery key 3개는 제거하지 않는다.
+
+root token을 잃었거나 폐기한 뒤 새 root token이 필요하면 recovery key 2개로 `vault operator generate-root`를 수행한다. 기존 root token은 조회하거나 복구할 수 없다.
 
 ## auto-unseal 재시작 검증
 
