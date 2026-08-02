@@ -1,3 +1,8 @@
+---
+type: rulebook
+area: pki
+---
+
 # PKI 룰북
 
 ## 목적과 적용 범위
