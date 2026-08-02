@@ -7,6 +7,7 @@ cluster: cpa
 
 # Vault 운영 RUNBOOK
 
+- [설치](#설치)
 - [초기화](#초기화)
 - [수동 Raft snapshot](#수동-raft-snapshot)
 - [자동 백업 설계](#자동-백업-설계)
@@ -28,6 +29,36 @@ Vault 배포, IAM federation, AWS KMS seal의 구성은 [Applications OpenTofu](
 | recovery key | 5개 생성, 3개 필요 |
 
 Raft snapshot은 Vault 데이터 전체를 포함한다. 파일은 암호화된 백업 저장소에만 보관하고 일반 파일 공유, CI artifact, Git에 넣지 않는다.
+
+## 설치
+
+PR이 `main`에 병합된 뒤에만 설치한다. Vault Argo CD Application의 `targetRevision`은 `main`이므로, 병합 전 branch에서 OpenTofu를 적용하거나 Argo CD를 동기화하지 않는다.
+
+### AWS 리소스 생성
+
+`apps/tofu`는 CPA OIDC provider, `platform-vault` 역할, Vault AWS KMS seal key를 생성한다. 실제 적용 전 plan의 생성 대상과 AWS 계정이 platform인지 확인한다.
+
+```sh
+cd apps/tofu
+tofu init
+tofu plan
+tofu apply
+```
+
+### Argo CD 배포와 확인
+
+Argo CD에 Vault Application을 등록하고 수동 동기화한다. 이 Application에는 자동 동기화 정책이 없으므로 `argocd app sync` 또는 Argo CD UI에서 명시적으로 동기화해야 한다.
+
+```sh
+kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
+argocd app sync vault
+kubectl --context cpa get namespace vault
+kubectl --context cpa -n vault get serviceaccount,pvc,pod
+kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+kubectl --context cpa -n vault exec vault-0 -- vault status
+```
+
+마지막 명령은 `Seal Type: awskms`, `Initialized: false`를 보여야 한다. `Initialized: true`이면 새로 초기화하지 않고 기존 Vault 상태를 확인한다. OpenTofu와 Argo CD는 Vault 초기화를 수행하지 않는다.
 
 ## 초기화
 
