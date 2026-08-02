@@ -33,18 +33,18 @@ Vault AWS KMS seal key에는 `kms:Encrypt`, `kms:Decrypt`, `kms:DescribeKey`만 
 
 `k3s/tofu`에서 IAM OIDC provider를 먼저 적용한 뒤 이 root에서 `tofu init`과 `tofu plan`을 실행한다. Vault AWS KMS seal key와 Vault IAM 역할은 이 root가 생성한다.
 
-추가 workload는 공용 IAM OIDC provider를 재사용하되, workload 사이에는 역할을 공유하지 않는다. 백업 workload는 각각의 namespace·ServiceAccount subject와 필요한 S3 또는 기타 권한만 가진 별도 module을 추가한다. cert-manager와 external-dns는 여러 cluster가 같은 공용 도메인을 운영하는 예외로, 애플리케이션별 전용 역할 하나를 공유한다.
+추가 workload는 공용 IAM OIDC provider를 재사용하되, 역할을 공유하지 않는다. cert-manager, external-dns, 백업 workload는 각각의 namespace·ServiceAccount subject와 필요한 Route 53, S3 또는 기타 권한만 가진 별도 module을 추가한다.
 
 Vault chart의 StatefulSet은 `data-vault-0` PVC를 사용한다. PVC는 chart보다 앞선 sync wave에서 생성되며, Vault Application 삭제와 Git prune에서 제외된다. CPA cluster에는 `openebs-lvm` StorageClass가 있어야 한다.
 
 ## cert-manager 구성
 
-- `modules/cert-manager/`는 모든 `cert_manager_clusters`가 공유하는 `platform-cert-manager` IAM 역할 하나를 만든다. 현재 role은 CPA의 `ghilbut.com`, `ghilbut.net` Route 53 DNS-01 권한을 부여한다.
-- role은 등록된 각 cluster의 OIDC issuer와 지정한 ServiceAccount subject, `sts.amazonaws.com` audience를 각각 요구한다. 등록된 cluster의 cert-manager는 선언된 hosted zone 범위를 공유하므로, cluster 추가 시 신뢰 주체와 권한 범위를 함께 검토한다.
+- `modules/cert-manager/`는 `cert_manager_clusters`의 cluster마다 `platform-<cluster>-cert-manager` IAM 역할을 만든다. 현재 root는 CPA에 `ghilbut.com`, `ghilbut.net` Route 53 DNS-01 권한을 부여한다.
+- 각 역할은 해당 cluster의 OIDC issuer와 지정한 ServiceAccount subject, `sts.amazonaws.com` audience를 모두 요구한다.
 - 각 cluster의 `istio-gateways` Issuer는 bound ServiceAccount token으로 STS를 호출한다. 장기 AWS access key Kubernetes Secret과 controller ambient credential을 사용하지 않는다.
 
 ## external-dns 구성
 
-- `modules/external-dns/`는 모든 `external_dns_clusters`가 공유하는 `platform-external-dns` IAM 역할 하나를 만든다. 현재 role은 CPA의 `id.ghilbut.com`, `vault.ghilbut.com` CNAME과 TXT ownership record만 변경할 수 있다.
-- role은 등록된 각 cluster의 OIDC issuer와 지정한 ServiceAccount subject, `sts.amazonaws.com` audience를 각각 요구한다. 등록된 cluster의 external-dns는 모두 선언된 record 범위를 공유하므로, cluster 추가 시 신뢰 주체와 권한 범위를 함께 검토한다.
-- 각 cluster는 다른 `txtOwnerId`를 사용한다. `policy: sync`는 Gateway에서 hostname을 제거하면 같은 owner ID의 record와 TXT ownership record를 함께 삭제한다.
+- `modules/external-dns/`는 `external_dns_clusters`의 cluster마다 `platform-<cluster>-external-dns` IAM 역할을 만든다. 현재 root는 CPA의 `id.ghilbut.com`, `vault.ghilbut.com` CNAME과 TXT ownership record만 변경할 수 있다.
+- 각 역할은 해당 cluster의 OIDC issuer와 지정한 ServiceAccount subject, `sts.amazonaws.com` audience를 모두 요구한다.
+- `policy: sync`는 Gateway에서 hostname을 제거하면 같은 owner ID의 record와 TXT ownership record를 함께 삭제한다. 다른 owner ID 또는 선언하지 않은 record는 변경하지 않는다.

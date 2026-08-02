@@ -6,7 +6,7 @@ application: external-dns
 
 # external-dns
 
-CPA Istio `public` Gateway의 `id.ghilbut.com`, `vault.ghilbut.com` CNAME과 TXT ownership record를 Route 53에서 관리한다. `external-dns` ServiceAccount는 다수 cluster가 공유하는 `platform-external-dns` IAM 역할을 사용한다. role의 OIDC trust는 cluster별 ServiceAccount subject로 제한하고, 등록된 cluster는 선언된 Route 53 record 범위를 공유한다.
+CPA Istio `public` Gateway의 `id.ghilbut.com`, `vault.ghilbut.com` CNAME과 TXT ownership record를 Route 53에서 관리한다. `external-dns` ServiceAccount는 `platform-cpa-external-dns` IAM 역할만 사용할 수 있다.
 
 ## 연결
 

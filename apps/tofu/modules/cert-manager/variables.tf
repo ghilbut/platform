@@ -3,17 +3,32 @@ variable "name" {
   description = "Platform name prefix for cert-manager IAM resources."
 }
 
-variable "clusters" {
-  type = map(object({
-    hosted_zone_names         = set(string)
-    oidc_issuer               = string
-    service_account_name      = string
-    service_account_namespace = string
-  }))
-  description = "Clusters whose cert-manager DNS01 ServiceAccount may assume the shared role and their Route 53 hosted zones."
+variable "cluster_name" {
+  type        = string
+  description = "Cluster identifier included in cert-manager IAM resource names."
 
   validation {
-    condition     = length(var.clusters) > 0
-    error_message = "clusters must contain at least one cluster."
+    condition     = can(regex("^[a-z0-9][a-z0-9-]*$", var.cluster_name))
+    error_message = "cluster_name must use lowercase letters, digits, and hyphens."
   }
+}
+
+variable "oidc_issuer" {
+  type        = string
+  description = "Public Kubernetes ServiceAccount OIDC issuer URL for this cluster."
+}
+
+variable "service_account_name" {
+  type        = string
+  description = "Name of the cert-manager DNS01 ServiceAccount allowed to assume the role."
+}
+
+variable "service_account_namespace" {
+  type        = string
+  description = "Namespace of the cert-manager DNS01 ServiceAccount allowed to assume the role."
+}
+
+variable "hosted_zone_names" {
+  type        = set(string)
+  description = "Public Route 53 hosted zones cert-manager may manage for DNS01 challenges."
 }

@@ -28,7 +28,7 @@ variable "cert_manager_clusters" {
     service_account_name      = string
     service_account_namespace = string
   }))
-  description = "Additional clusters that share the cert-manager IAM role. The cpa entry is defined by this root."
+  description = "Additional clusters that use the cert-manager module. The cpa entry is defined by this root."
   default     = {}
 
   validation {
@@ -49,7 +49,7 @@ variable "external_dns_clusters" {
     service_account_namespace = string
     txt_prefix                = string
   }))
-  description = "Additional clusters that share the external-dns IAM role. The cpa entry is defined by this root."
+  description = "Additional clusters that use the external-dns module. The cpa entry is defined by this root."
   default     = {}
 
   validation {

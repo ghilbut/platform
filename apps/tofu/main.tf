@@ -22,10 +22,16 @@ locals {
 }
 
 module "cert_manager" {
+  for_each = local.cert_manager_clusters
+
   source = "./modules/cert-manager"
 
-  clusters = local.cert_manager_clusters
-  name     = "platform"
+  cluster_name              = each.key
+  name                      = "platform"
+  hosted_zone_names         = each.value.hosted_zone_names
+  oidc_issuer               = each.value.oidc_issuer
+  service_account_name      = each.value.service_account_name
+  service_account_namespace = each.value.service_account_namespace
 }
 
 locals {
@@ -45,8 +51,16 @@ locals {
 }
 
 module "external_dns" {
+  for_each = local.external_dns_clusters
+
   source = "./modules/external-dns"
 
-  clusters = local.external_dns_clusters
-  name     = "platform"
+  cluster_name              = each.key
+  hosted_zone_names         = each.value.hosted_zone_names
+  name                      = "platform"
+  oidc_issuer               = each.value.oidc_issuer
+  record_names              = each.value.record_names
+  service_account_name      = each.value.service_account_name
+  service_account_namespace = each.value.service_account_namespace
+  txt_prefix                = each.value.txt_prefix
 }
