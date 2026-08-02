@@ -13,6 +13,10 @@ resource "aws_kms_alias" "seal" {
   target_key_id = aws_kms_key.seal.key_id
 }
 
+data "aws_iam_openid_connect_provider" "this" {
+  url = var.oidc_issuer
+}
+
 locals {
   oidc_condition_prefix = trimprefix(var.oidc_issuer, "https://")
 }
@@ -26,7 +30,7 @@ resource "aws_iam_role" "vault" {
       {
         Effect    = "Allow"
         Action    = "sts:AssumeRoleWithWebIdentity"
-        Principal = { Federated = var.oidc_provider_arn }
+        Principal = { Federated = data.aws_iam_openid_connect_provider.this.arn }
         Condition = {
           StringEquals = {
             "${local.oidc_condition_prefix}:aud" = "sts.amazonaws.com"

@@ -5,7 +5,7 @@ area: apps
 
 # Applications OpenTofu
 
-이 루트는 플랫폼 애플리케이션의 AWS 인프라를 관리한다. CPA ServiceAccount OIDC issuer를 IAM에 한 번 등록하고, 애플리케이션별 IAM 역할과 권한을 분리한다.
+이 루트는 플랫폼 애플리케이션의 AWS 인프라를 관리한다. `k3s/tofu`가 등록한 CPA ServiceAccount IAM OIDC provider를 사용해 애플리케이션별 IAM 역할과 권한을 분리한다.
 
 애플리케이션 문서의 진입점은 [Applications](../README.md)다.
 
@@ -16,7 +16,7 @@ CPA OIDC issuer의 공개와 Kubernetes 설정은 [K3s OIDC](../../k3s/OIDC.md)�
 | 구분 | 소유 위치 | 범위 |
 | --- | --- | --- |
 | CPA OIDC issuer | [K3s OIDC](../../k3s/OIDC.md) | ServiceAccount token의 issuer, discovery 문서, JWKS 공개 |
-| IAM OIDC provider | 이 OpenTofu root | `https://oidc.k3s.ghilbut.com/cpa`를 신뢰하는 platform 계정의 공용 federation 진입점 |
+| IAM OIDC provider | [K3s OpenTofu](../../k3s/tofu/) | `https://oidc.k3s.ghilbut.com/cpa`를 신뢰하는 platform 계정의 공용 federation 진입점 |
 | IAM 역할과 권한 정책 | 애플리케이션 module | 한 ServiceAccount와 그 workload에 필요한 AWS 리소스만 허용 |
 
 OIDC discovery 문서와 JWKS는 공개 정보이며 ServiceAccount token이나 Kubernetes Secret을 공개하지 않는다. token 서명 private key와 각 Pod의 projected token은 Kubernetes 내부에서 보호한다.
@@ -31,7 +31,7 @@ Vault AWS KMS seal key에는 `kms:Encrypt`, `kms:Decrypt`, `kms:DescribeKey`만 
 
 ## 사용
 
-`tofu init`과 `tofu plan`을 실행한다. Vault AWS KMS seal key, IAM OIDC provider, Vault IAM 역할은 이 루트가 생성한다.
+`k3s/tofu`에서 IAM OIDC provider를 먼저 적용한 뒤 이 root에서 `tofu init`과 `tofu plan`을 실행한다. Vault AWS KMS seal key와 Vault IAM 역할은 이 root가 생성한다.
 
 추가 workload는 공용 IAM OIDC provider를 재사용하되, 역할을 공유하지 않는다. cert-manager, external-dns, 백업 workload는 각각의 namespace·ServiceAccount subject와 필요한 Route 53, S3 또는 기타 권한만 가진 별도 module을 추가한다.
 

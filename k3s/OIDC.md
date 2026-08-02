@@ -23,7 +23,7 @@ ServiceAccount token, Kubernetes Secret, token 서명 private key는 공개하�
 
 K3s 설치 시 `service-account-issuer`와 `service-account-jwks-uri`에 이 issuer를 설정한다. 상세 절차는 [K3s 설치 RUNBOOK](RUNBOOK.md#b-server)의 server 설치를 따른다. CPA의 적용 값은 [CPA 설치 기록](RUN-CPA-2026-05-18.md#1-범위)에 기록한다.
 
-`k3s/tofu`는 Kubernetes API에서 discovery 문서와 JWKS를 읽어 CDN object로 동기화한다. 공개 endpoint의 CDN과 object 경로는 [AWS CDN](../aws/cdn/README.md)을 따른다.
+`k3s/tofu`는 Kubernetes API에서 discovery 문서와 JWKS를 읽어 CDN object로 동기화하고, CPA issuer의 IAM OIDC provider를 만든다. 공개 endpoint의 CDN과 object 경로는 [AWS CDN](../aws/cdn/README.md)을 따른다.
 
 ## AWS IAM federation 경계
 
@@ -35,7 +35,7 @@ platform 계정에는 CPA issuer당 IAM OIDC provider를 하나만 만든다. �
 | client ID | `sts.amazonaws.com` |
 | TLS intermediate CA SHA-1 thumbprint | `e7b8b5a6743ce1b2f17b041de59558a41472d70c` |
 
-thumbprint는 `apps/tofu`의 `cpa_oidc_thumbprint`로 관리한다. CDN TLS 인증서의 intermediate CA가 바뀌면 새 thumbprint를 확인하고 이 값을 갱신한다.
+thumbprint는 `k3s/tofu`의 `cpa_oidc_thumbprint`로 관리한다. CDN TLS 인증서의 intermediate CA가 바뀌면 새 thumbprint를 확인하고 이 값을 갱신한다.
 
 각 workload는 IAM 역할을 공유하지 않는다. 역할 trust policy는 다음을 모두 지정한다.
 

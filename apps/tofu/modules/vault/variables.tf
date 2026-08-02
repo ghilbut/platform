@@ -3,11 +3,6 @@ variable "name" {
   description = "Name prefix for Vault resources."
 }
 
-variable "oidc_provider_arn" {
-  type        = string
-  description = "ARN of the IAM OIDC provider that verifies CPA ServiceAccount tokens."
-}
-
 variable "oidc_issuer" {
   type        = string
   description = "Public CPA Kubernetes ServiceAccount OIDC issuer URL."

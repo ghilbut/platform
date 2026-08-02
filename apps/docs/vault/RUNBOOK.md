@@ -37,9 +37,14 @@ PR이 `main`에 병합된 뒤에만 설치한다. Vault Argo CD Application의 `
 
 ### AWS 리소스 생성
 
-`apps/tofu`는 CPA OIDC provider, `platform-vault` 역할, Vault AWS KMS seal key를 생성한다. 실제 적용 전 plan의 생성 대상과 AWS 계정이 platform인지 확인한다.
+`k3s/tofu`는 CPA OIDC provider를 생성하고, `apps/tofu`는 `platform-vault` 역할과 Vault AWS KMS seal key를 생성한다. 실제 적용 전 각 root의 plan 생성 대상과 AWS 계정이 platform인지 확인한다.
 
 ```sh
+cd k3s/tofu
+tofu init
+tofu plan
+tofu apply
+
 cd apps/tofu
 tofu init
 tofu plan
