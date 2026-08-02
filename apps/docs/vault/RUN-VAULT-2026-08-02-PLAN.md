@@ -3,11 +3,11 @@ type: run
 area: apps
 application: vault
 cluster: cpa
-status: planned
+status: paused
 planned_at: 2026-08-02
-paused_at:
-paused_step:
-paused_reason:
+paused_at: 2026-08-02
+paused_step: "4단계: Vault Argo CD 동기화"
+paused_reason: "openebs-lvm의 WaitForFirstConsumer와 data-vault-0의 sync wave -1이 StatefulSet 생성을 막아 PVC가 Pending 상태로 남았다. StorageClass의 명시적 volumeBindingMode를 제거한 PR #20 병합과 EBS Application 동기화가 필요하다."
 completed_at:
 ---
 
@@ -186,3 +186,4 @@ PR이 `main`에 병합된 뒤 실행한다. 이 문서는 [RUN-PLAN](../../../do
 - 초기화·비밀 수령·auto-unseal 검증 확인:
 - Keycloak OIDC 로그인과 `vault-operator` policy 확인:
 - Vault 내부 root token revoke와 외부 사본 제거 확인:
+- 중단 이력: 4단계에서 `data-vault-0` PVC가 `WaitForFirstConsumer`로 `Pending` 상태였다. namespace와 ServiceAccount는 생성됐고, StatefulSet은 생성되지 않았다.
