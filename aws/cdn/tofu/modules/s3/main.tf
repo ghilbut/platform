@@ -1,7 +1,14 @@
+locals {
+  default_tags = {
+    "opentofu/module/repo" = var.repo
+    "opentofu/module/path" = "aws/cdn/tofu/modules/s3/"
+  }
+}
+
 resource "aws_s3_bucket" "this" {
   bucket = var.bucket_name
 
-  tags = { Name = var.bucket_name }
+  tags = merge(local.default_tags, { Name = "${var.name}-origin" })
 }
 
 resource "aws_s3_bucket_public_access_block" "this" {
@@ -21,4 +28,5 @@ resource "aws_s3_object" "error_page" {
   source       = each.value
   source_hash  = filemd5(each.value)
   content_type = "text/html; charset=utf-8"
+  tags         = local.default_tags
 }

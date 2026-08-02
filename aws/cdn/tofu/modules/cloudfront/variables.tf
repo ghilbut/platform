@@ -3,4 +3,5 @@ variable "certificate_arn" { type = string }
 variable "fqdns" { type = list(string) }
 variable "lambda_function_arn" { type = string }
 variable "name" { type = string }
+variable "repo" { type = string }
 variable "viewer_request_function_arn" { type = string }

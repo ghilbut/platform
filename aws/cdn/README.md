@@ -4,10 +4,12 @@
 
 ## 구성
 
-- S3 버킷: `ghilbut-cloudfront-cdn` (`us-east-1`)
+- S3 버킷: `ghilbut-platform-cdn` (`us-east-1`)
 - 상태 파일: `s3://ghilbut-tfstates/aws/cdn.tfstate`
 - ACM 인증서: `ghilbut.com` 및 CDN 호스트의 SAN
 - CloudFront: OAC를 통한 비공개 S3 원본
+
+S3 객체는 최대 10개 태그를 지원합니다. 현재 기본·루트·모듈 출처 태그 8개를 적용합니다.
 - Lambda@Edge: S3 객체 존재 여부 확인 및 SPA의 `index.html` 폴백
 - CloudFront Function: 허용 호스트 검증, 리디렉션, URI 접두사 처리
 
@@ -16,7 +18,7 @@ Lambda는 루트 `pnpm-workspace.yaml`에 등록된 `@ghilbut/cdn-lambda` 워크
 @ghilbut/cdn-lambda <script>`로 실행합니다.
 
 기본 호스트는 파일 모드의 `oidc.k3s.ghilbut.com`입니다. 객체는
-`s3://ghilbut-cloudfront-cdn/oidc.k3s.ghilbut.com/` 아래에 업로드합니다.
+`s3://ghilbut-platform-cdn/oidc.k3s.ghilbut.com/` 아래에 업로드합니다.
 
 `k3s/tofu/`는 `cpa` kubectl 컨텍스트의 OIDC 문서를 다음 S3 객체로 동기화합니다.
 discovery 문서의 `issuer`와 `jwks_uri`는 공개 CDN URL로 재작성됩니다.
@@ -31,9 +33,16 @@ Lambda 번들만 빌드하면 됩니다.
 
 로컬에서 실행할 때는 `ghilbut-platform` AWS 프로필과 GitHub App 자격 증명이
 필요합니다. GitHub App은 `ghilbut/platform`의 Actions variables를 수정할 수
-있어야 합니다.
+있어야 합니다. 첫 배포 전에는 공유 GitHub Actions OIDC provider를
+[`github/tofu/`](../../github/tofu/)에서 먼저 적용해야 합니다. CDN 구성은
+`platform/github.tfstate`의 `github_actions_oidc_provider_arn` 출력을 참조합니다.
 
 ```sh
+cd github/tofu
+tofu init
+tofu apply
+
+cd ../..
 pnpm --filter @ghilbut/cdn-lambda build
 cd aws/cdn/tofu
 export GITHUB_APP_ID=...

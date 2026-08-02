@@ -1,19 +1,9 @@
-variable "org" {
-  type    = string
-  default = "ghilbut"
-}
-
 variable "project" {
   type    = string
   default = "platform"
 }
 
 variable "service" {
-  type    = string
-  default = "cdn"
-}
-
-variable "component" {
   type    = string
   default = "cdn"
 }
@@ -32,13 +22,8 @@ variable "github_repository" {
 
 variable "name" {
   type        = string
-  description = "Name prefix for all resources"
-  default     = "ghilbut"
-}
-
-variable "default_tags" {
-  type    = map(string)
-  default = {}
+  description = "Short CDN identifier used in resource names and Name tags"
+  default     = "platform-cdn"
 }
 
 variable "acm_domain_name" {
