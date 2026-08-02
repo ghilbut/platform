@@ -9,6 +9,7 @@ cluster: cpa
 
 - [설치](#설치)
 - [초기화](#초기화)
+- [auto-unseal 재시작 검증](#auto-unseal-재시작-검증)
 - [수동 Raft snapshot](#수동-raft-snapshot)
 - [자동 백업 설계](#자동-백업-설계)
 - [일상 확인](#일상-확인)
@@ -108,6 +109,20 @@ kubectl --context cpa -n vault exec vault-0 -- vault status
 ### 초기 설정과 root token 폐기
 
 root token으로 운영자 policy와 운영자 identity를 만들고, 해당 identity로 로그인할 수 있음을 확인한다. 그 뒤 root token을 폐기한다. root token을 잃은 경우 recovery key 3개로 `vault operator generate-root`를 수행한다. 기존 root token은 조회할 수 없다.
+
+## auto-unseal 재시작 검증
+
+초기화가 끝나고 첫 snapshot을 검증한 뒤, 계획된 점검 시간에 Pod 재생성으로 AWS KMS auto-unseal을 확인한다. 단일 replica이므로 이 작업 동안 Vault API를 사용할 수 없다.
+
+StatefulSet, namespace, PVC, PV를 삭제하지 않고 Pod만 삭제한다.
+
+```sh
+kubectl --context cpa -n vault delete pod vault-0
+kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+kubectl --context cpa -n vault exec vault-0 -- vault status
+```
+
+새 Pod의 `Seal Type`은 `awskms`, `Initialized`는 `true`, `Sealed`는 `false`여야 한다. `Sealed`가 `true`이면 KMS key 상태, `platform-vault` 역할의 KMS 권한, ServiceAccount OIDC federation을 확인한다. PVC 또는 PV를 삭제해 재시작을 검증하지 않는다.
 
 ## 수동 Raft snapshot
 
