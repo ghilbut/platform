@@ -39,6 +39,7 @@ spec:
                   - /metadata/annotations/argocd.argoproj.io~1tracking-id
                   - /metadata/labels/argocd.argoproj.io~1instance
             params:
+              applicationsetcontroller.enable.progressive.syncs: true
               server.insecure: true
               server.basehref: cd
               server.rootpath: cd
