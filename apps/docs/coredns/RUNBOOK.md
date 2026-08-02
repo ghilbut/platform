@@ -21,7 +21,7 @@ CoreDNS etcd plugin은 SkyDNS 형식의 JSON value를 사용한다. `ghilbut.com
      --rm -it \
      --env=ETCDCTL_API=3 \
      -- /usr/local/bin/etcdctl \
-     --endpoints=http://etcd-0.etcd.coredns.svc.cluster.local:2379 \
+     --endpoints=http://etcd:2379 \
      put /skydns/com/ghilbut/<record-name> '{"host":"<ipv4-address>","ttl":60}'
    ```
 
@@ -40,6 +40,6 @@ CoreDNS etcd plugin은 SkyDNS 형식의 JSON value를 사용한다. `ghilbut.com
      --rm -it \
      --env=ETCDCTL_API=3 \
      -- /usr/local/bin/etcdctl \
-     --endpoints=http://etcd-0.etcd.coredns.svc.cluster.local:2379 \
+     --endpoints=http://etcd:2379 \
      del /skydns/com/ghilbut/<record-name>
    ```
