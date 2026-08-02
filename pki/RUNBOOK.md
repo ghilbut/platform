@@ -1,3 +1,8 @@
+---
+type: runbook
+area: pki
+---
+
 # PKI 런북
 
 ## 목적
