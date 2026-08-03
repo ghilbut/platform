@@ -6,7 +6,7 @@ cluster: cpa
 
 # Applications 설치
 
-CPA cluster에 기반 애플리케이션을 설치한다. 첫 목표는 `https://argo.ghilbut.com/cd`로 Argo CD를 제공하는 것이다.
+CPA cluster에 기반 애플리케이션을 설치한다.
 
 ## A. 사전 확인
 
