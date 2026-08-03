@@ -292,6 +292,8 @@ kubectl --context "$CLUSTER" get pods -n argo
 
 새 admin password는 실행자가 대화형 prompt에 입력한다. `argocd admin initial-password`의 첫 행만 initial password로 사용한다. password와 Argo CD authentication token은 실행 문서와 저장소에 기록하지 않는다.
 
+1. Initial password로 로그인한다.
+
 ```shell
 argocd login \
   --name "$CLUSTER" \
@@ -303,15 +305,28 @@ argocd login \
   --plaintext \
   --port-forward \
   --port-forward-namespace argo
+```
 
+2. Admin password를 변경한다.
+
+```shell
 argocd account update-password \
   --argocd-context "$CLUSTER" \
   --kube-context "$CLUSTER" \
   --port-forward \
   --port-forward-namespace argo
+```
 
+3. Initial password Secret을 삭제한다.
+
+```shell
 kubectl --context "$CLUSTER" -n argo \
   delete secret argocd-initial-admin-secret
+```
+
+4. Argo CD CLI context에서 로그아웃한다.
+
+```shell
 argocd logout "$CLUSTER"
 ```
 

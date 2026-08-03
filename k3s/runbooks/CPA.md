@@ -239,7 +239,9 @@ YAML
 
 ### 1. Admin password
 
-새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 전체 block은 `argocd admin initial-password`의 첫 행으로 로그인한 뒤 password를 변경한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 순서대로 명령을 실행한다. `argocd admin initial-password`의 첫 행으로 로그인한 뒤 password를 변경한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+
+1. Initial password로 로그인한다.
 
 ```shell
 argocd login \
@@ -252,14 +254,27 @@ argocd login \
   --plaintext \
   --port-forward \
   --port-forward-namespace argo
+```
 
+2. Admin password를 변경한다.
+
+```shell
 argocd account update-password \
   --argocd-context cpa \
   --kube-context cpa \
   --port-forward \
   --port-forward-namespace argo
+```
 
+3. Initial password Secret을 삭제한다.
+
+```shell
 kubectl --context cpa -n argo delete secret argocd-initial-admin-secret
+```
+
+4. Argo CD CLI context에서 로그아웃한다.
+
+```shell
 argocd logout cpa
 ```
 
