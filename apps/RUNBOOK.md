@@ -156,6 +156,8 @@ dig @192.168.254.4 ghilbut.net SOA
 
 설치가 완료되면 사용자가 ASUS Router의 `LAN > DHCP Server > DNS Server`를 `192.168.254.4`로 변경한다.
 
+`Advertise router’s IP in addition to user specified DNS`를 `No`로 설정한다. LAN 클라이언트는 CoreDNS만 DNS server로 사용한다. 이 옵션을 적용하면 `www.asusrouter.com`으로 Router 관리 화면에 접속할 수 없다. Router의 LAN IP를 사용한다. [ASUS Router DHCP DNS 설정](https://www.asus.com/us/support/faq/1050080/)을 참고한다.
+
 ASUS Router 설정을 적용한 뒤 LAN 클라이언트의 네트워크를 다시 연결하고 다음 명령을 실행한다.
 
 ```shell
