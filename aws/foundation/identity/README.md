@@ -13,6 +13,16 @@ title: IAM Identity Center
 | `TofuApply` | platform | `DevOps` 그룹 | Platform 워크로드 OpenTofu 적용 |
 | `UltaryDomainsTofuApply` | ultary-domains | `DevOps` 그룹 | Ultary 도메인과 Route 53 OpenTofu 적용 |
 
+새 permission set은 기존 할당을 유지한 채 추가한다. provider 인증과 실행 역할 신뢰 정책을
+전환한 뒤 기존 permission set을 제거한다.
+
+| Permission set | 대상 계정 | Principal | 책임 |
+|---|---|---|---|
+| `TofuApplyForManagement` | management | `DevOps` 그룹 | Management 계정 OpenTofu 적용 |
+| `TofuApplyForDomains` | platform | `DevOps` 그룹 | Domains 이전 전 Route 53 관리 |
+| `TofuApplyForWorkloads` | platform | `DevOps` 그룹 | 현재 Platform 워크로드 OpenTofu 적용 |
+| `TofuApplyForUltaryDomains` | ultary-domains | `DevOps` 그룹 | Ultary Domains Route 53 관리 |
+
 `TofuApply`는 플랫폼 리소스와 IAM 역할을 관리할 수 있지만, inline deny policy로
 Organizations, Billing, Account Management, IAM Identity Center 관리를 명시적으로 거부한다.
 
@@ -23,10 +33,12 @@ IAM Identity Center permission set은 사람 또는 CI의 최초 인증에만 �
 AWS가 생성하는 `AWSReservedSSO` 역할의 suffix는 바뀔 수 있으므로, 실행 역할의 신뢰 정책은
 permission set 이름과 역할 경로를 조건으로 사용한다.
 
+각 최초 인증 permission set은 표에 있는 실행 역할 한 개에만 `sts:AssumeRole`을 허용한다.
+
 | 최초 인증 permission set | 실행 역할 | 관리 state |
 |---|---|---|
-| `ManagementTofuApply` | `management-tofu-apply` | Foundation identity와 accounts |
-| `TofuApply` | `platform-tofu-apply` | CDN |
+| `TofuApplyForManagement` | `tofu-apply` | Foundation identity와 accounts |
+| `TofuApplyForWorkloads` | `tofu-apply` | CDN |
 
 ## CLI profile migration
 
