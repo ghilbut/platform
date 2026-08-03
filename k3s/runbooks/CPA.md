@@ -223,11 +223,15 @@ global:
     level: warn
 configs:
   cm:
+    admin.enabled: true
     application.resourceTrackingMethod: annotation+label
+    users.anonymous.enabled: true
   params:
     server.insecure: true
     server.basehref: /cd
     server.rootpath: /cd
+  rbac:
+    policy.default: role:admin
   secret:
     createSecret: false
 dex:
@@ -237,9 +241,9 @@ notifications:
 YAML
 ```
 
-### 1. Admin password
+익명 사용자는 `role:admin` 권한을 사용한다. [Argo CD RBAC configuration](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/)을 참고한다.
 
-새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 순서대로 명령을 실행한다. `argocd admin initial-password`의 첫 행으로 로그인한 뒤 password를 변경한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+### 1. Admin password
 
 1. Initial password로 로그인한다.
 
