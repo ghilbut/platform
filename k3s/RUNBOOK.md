@@ -84,7 +84,29 @@ sudo chmod 440 "/etc/sudoers.d/$SSH_USER"
 sudo visudo -cf "/etc/sudoers.d/$SSH_USER"
 ```
 
-### 2. K3s server 설치
+### 2. OpenEBS LVM volume group 준비
+
+OpenEBS LVM LocalPV는 host에서 준비한 volume group에 Logical Volume을 생성한다. `/dev/sda10` 같은 대상 partition은 mount, LVM, RAID 또는 filesystem에 사용 중이지 않아야 한다. `pvcreate`는 기존 filesystem signature를 덮어쓸 수 있다.
+
+```shell
+export OPENEBS_PV_DEVICE='/dev/sda10'
+
+ssh "$SSH_USER@$SERVER_IP" "lsblk -f $OPENEBS_PV_DEVICE"
+ssh "$SSH_USER@$SERVER_IP" "sudo blkid $OPENEBS_PV_DEVICE || true"
+ssh "$SSH_USER@$SERVER_IP" "sudo pvs; sudo vgs; sudo findmnt -S $OPENEBS_PV_DEVICE || true; sudo wipefs -n $OPENEBS_PV_DEVICE"
+```
+
+`openebs` volume group이 없고 대상 device가 비어 있음이 확인된 경우에만 다음 명령을 실행한다.
+
+```shell
+ssh "$SSH_USER@$SERVER_IP" "sudo pvcreate $OPENEBS_PV_DEVICE"
+ssh "$SSH_USER@$SERVER_IP" "sudo vgcreate openebs $OPENEBS_PV_DEVICE"
+ssh "$SSH_USER@$SERVER_IP" 'sudo pvs -o pv_name,vg_name,pv_size,pv_free; sudo vgs -o vg_name,vg_size,vg_free'
+```
+
+OpenEBS 배포 뒤의 StorageClass 확인과 용량 확장은 [OpenEBS RUNBOOK](../apps/docs/ebs/RUNBOOK.md)을 따른다.
+
+### 3. K3s server 설치
 
 다음은 control-plane에서 실행한다.
 
@@ -132,7 +154,7 @@ KUBECONFIG="$KUBECONFIG_PATH" kubectl get nodes
 
 CNI 이전의 NotReady는 예상되는 상태다. Cilium 설치 후 Ready를 확인한다.
 
-### 3. Cilium 설치
+### 4. Cilium 설치
 
 CNI가 없으면 Helm Controller Job도 실행되지 않으므로 Cilium은 Helm CLI로 먼저 설치한다.
 
