@@ -7,7 +7,17 @@ area: k3s
 
 문서 규칙은 [RULEBOOK](RULEBOOK.md)을 따른다. 실행별 값과 실제 명령은 `runbooks/`에 기록한다.
 
-## A. 설치 값
+## A. 공식 참고 문서
+
+- [K3s server CLI](https://docs.k3s.io/cli/server): server 설치 옵션, embedded etcd, networking, packaged component 비활성화
+- [K3s 제거](https://docs.k3s.io/installation/uninstall): server와 agent 제거 script의 영향 범위
+- [Kubernetes ServiceAccount token projection과 issuer discovery](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/): issuer, discovery document, JWKS endpoint, public JWKS URI
+- [LVM physical volume](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-physical-volumes_configuring-and-managing-logical-volumes)과 [volume group](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-volume-groups_configuring-and-managing-logical-volumes): `pvcreate`, `vgcreate`, `pvs`, `vgs`
+- [Cilium Helm 설치](https://docs.cilium.io/en/stable/installation/k8s-install-helm/): Helm chart 설치와 node taint
+- [Argo CD 설치](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#helm): Helm chart 설치
+- [AWS IAM OIDC provider 생성](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html): issuer URL과 audience 설정
+
+## B. 설치 값
 
 설치 전에 다음 값을 확정한다. Service CIDR, Pod CIDR, 물리 네트워크 CIDR은 서로 겹치지 않는다. 실행 컴퓨터에는 `kubectl`과 `helm`이 있어야 한다.
 
@@ -20,13 +30,12 @@ area: k3s
 | `POD_CIDR` | Cilium cluster-pool Pod CIDR |
 | `OIDC_ISSUER` | ServiceAccount issuer URL |
 | `CILIUM_VERSION` | Cilium Helm chart 버전 |
-| `ARGO_CD_VERSION` | Argo CD Helm chart 버전 |
 | `OPENEBSD_DEVICE` | OpenEBS LVM physical volume으로 초기화할 미마운트 block device |
 | `OPENEBSD_VG` | OpenEBS LVM volume group 이름 |
 
-ServiceAccount OIDC discovery 문서와 JWKS 공개 절차는 [OIDC](OIDC.md)를 따른다. token, kubeconfig 인증서, private key는 실행 문서와 저장소에 기록하지 않는다.
+Argo CD를 설치하는 클러스터는 `ARGO_CD_VERSION`도 확정한다. token, kubeconfig 인증서, private key는 실행 문서와 저장소에 기록하지 않는다.
 
-## B. Server
+## C. Server
 
 ### 1. host 준비
 
@@ -135,7 +144,53 @@ kubectl get nodes -o wide
 
 K3s가 CNI를 기다리는 동안 server node는 `NotReady`다. Cilium 설치 뒤 node `Ready`를 확인한다.
 
-## C. Cilium 최소 구성
+## D. ServiceAccount OIDC와 AWS IAM federation
+
+K3s server는 `service-account-issuer`와 `service-account-jwks-uri`로 ServiceAccount token의 issuer와 공개 JWKS URL을 설정한다. Kubernetes API server는 `/.well-known/openid-configuration`과 `/openid/v1/jwks`를 제공한다. CPA의 CDN은 이 두 응답을 `${OIDC_ISSUER}` 경로로 공개한다.
+
+공개 endpoint는 discovery document와 JWKS만 제공한다. ServiceAccount token, Kubernetes Secret, token 서명 private key는 공개하지 않는다. Pod는 TokenRequest API가 발급한 짧은 수명의 projected ServiceAccount token을 사용한다.
+
+### 1. CPA 공개 issuer 동기화
+
+CPA의 `k3s/tofu`는 Kubernetes API에서 discovery document와 JWKS를 읽어 CDN origin object로 동기화하고, `https://oidc.k3s.ghilbut.com/cpa` IAM OIDC provider를 관리한다.
+
+```shell
+tofu -chdir=k3s/tofu init
+tofu -chdir=k3s/tofu plan
+tofu -chdir=k3s/tofu apply
+```
+
+### 2. AWS IAM federation 경계
+
+AWS 계정은 cluster issuer당 IAM OIDC provider를 하나 사용한다. IAM role은 workload별로 분리하고, 각 role의 trust policy에는 다음 값을 모두 지정한다.
+
+1. `sts:AssumeRoleWithWebIdentity` action
+2. audience `sts.amazonaws.com`
+3. 정확한 `system:serviceaccount:<namespace>:<serviceaccount>` subject
+
+CPA OIDC provider의 TLS intermediate CA SHA-1 thumbprint는 `k3s/tofu`의 `cpa_oidc_thumbprint`로 관리한다.
+
+### 3. 확인
+
+```shell
+export CLUSTER='<CLUSTER>'
+export OIDC_ISSUER='<OIDC_ISSUER>'
+
+kubectl --context "$CLUSTER" get --raw '/.well-known/openid-configuration' \
+  | jq -e --arg issuer "$OIDC_ISSUER" \
+      '.issuer == $issuer and .jwks_uri == ($issuer + "/openid/v1/jwks")'
+kubectl --context "$CLUSTER" get --raw '/openid/v1/jwks' \
+  | jq -e '.keys | length > 0'
+curl --fail --silent --show-error \
+  "$OIDC_ISSUER/.well-known/openid-configuration" \
+  | jq -e --arg issuer "$OIDC_ISSUER" \
+      '.issuer == $issuer and .jwks_uri == ($issuer + "/openid/v1/jwks")'
+diff \
+  <(kubectl --context "$CLUSTER" get --raw '/openid/v1/jwks' | jq -S .) \
+  <(curl --fail --silent --show-error "$OIDC_ISSUER/openid/v1/jwks" | jq -S .)
+```
+
+## E. Cilium 최소 구성
 
 CNI가 없으면 Helm Controller Job도 실행하지 못한다. Cilium은 Helm CLI로 먼저 설치한다.
 
@@ -184,9 +239,9 @@ kubectl --context "$CLUSTER" wait --for=condition=Ready node \
   --all --timeout=10m
 ```
 
-## D. Argo CD 최소 구성
+## F. Optional: Argo CD 최소 구성
 
-Argo CD는 `argo` namespace에 설치한다. 이 구성은 Dex와 notifications를 사용하지 않는다.
+Argo CD는 모든 클러스터에 설치하지 않는다. GitOps 관리가 필요한 클러스터만 이 절차를 실행한다. 이 구성은 Dex와 notifications를 사용하지 않는다.
 
 ```shell
 export CLUSTER='<CLUSTER>'
@@ -241,7 +296,7 @@ curl --fail --silent --show-error --output /dev/null \
   http://localhost:8080/cd
 ```
 
-## E. Agent
+## G. Agent
 
 agent host는 server와 같은 Ubuntu 준비 절차를 수행한다. agent에는 `/var/lib/kubelet`, `/var/lib/rancher`, `/var/lib/rancher/k3s/agent/containerd` 파일시스템을 사용한다. embedded etcd 전용인 `/var/lib/rancher/k3s/server/db`는 agent에 만들지 않는다.
 

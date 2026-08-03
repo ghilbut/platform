@@ -11,7 +11,7 @@ completed_at: 2026-08-03
 CPA는 단일 control-plane K3s 클러스터다. 이 문서는 2026-08-03에 실행한 명령과 값을 기록한다. 인증 정보와 token은 기록하지 않는다.
 
 > [!info] 공통 절차
-> ![[k3s/RUNBOOK#A. 설치 값]]
+> ![[k3s/RUNBOOK#B. 설치 값]]
 
 ## A. 적용 값
 
@@ -124,7 +124,32 @@ kubectl get nodes -o wide
 
 결과: `cpa` context는 `cpa` cluster와 `cpa` user를 사용한다.
 
-## E. Cilium
+## E. ServiceAccount OIDC와 AWS IAM federation
+
+> [!info] 공통 절차
+> ![[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation]]
+
+```shell
+# administrator computer
+tofu -chdir=k3s/tofu init
+tofu -chdir=k3s/tofu apply
+
+kubectl --context cpa get --raw '/.well-known/openid-configuration' \
+  | jq -e \
+      '.issuer == "https://oidc.k3s.ghilbut.com/cpa" and .jwks_uri == "https://oidc.k3s.ghilbut.com/cpa/openid/v1/jwks"'
+curl --fail --silent --show-error \
+  https://oidc.k3s.ghilbut.com/cpa/.well-known/openid-configuration \
+  | jq -e \
+      '.issuer == "https://oidc.k3s.ghilbut.com/cpa" and .jwks_uri == "https://oidc.k3s.ghilbut.com/cpa/openid/v1/jwks"'
+diff \
+  <(kubectl --context cpa get --raw '/openid/v1/jwks' | jq -S .) \
+  <(curl --fail --silent --show-error \
+    https://oidc.k3s.ghilbut.com/cpa/openid/v1/jwks | jq -S .)
+```
+
+K3s server에는 CPA issuer와 공개 JWKS URL을 적용했다. `tofu -chdir=k3s/tofu apply`는 공개 JWKS를 새 K3s 서명 키로 동기화했다. Kubernetes API와 공개 issuer의 discovery document, JWKS `diff`가 성공했다.
+
+## F. Cilium
 
 ```shell
 # administrator computer
@@ -165,10 +190,12 @@ kubectl --context cpa wait --for=condition=Ready node/cpa --timeout=10m
 
 결과: cpa node, Cilium DaemonSet, Cilium Operator, CoreDNS, metrics-server가 Ready다.
 
-## F. Argo CD
+## G. Optional: Argo CD
 
 > [!info] 공통 절차
-> ![[k3s/RUNBOOK#D. Argo CD 최소 구성]]
+> ![[k3s/RUNBOOK#F. Optional: Argo CD 최소 구성]]
+
+CPA는 GitOps 관리에 Argo CD를 사용하므로 이 optional 절차를 실행한다.
 
 ```shell
 # administrator computer
@@ -222,13 +249,14 @@ curl --fail --silent --show-error --output /dev/null \
 
 결과: `307 http://localhost:8080/cd/`.
 
-## G. 완료 결과
+## H. 완료 결과
 
 | 확인 항목 | 결과 |
 | --- | --- |
 | K3s server | `v1.36.2+k3s1`, active |
 | cpa node | Ready |
 | Cilium | chart `1.19.3`, DaemonSet과 Operator Ready |
-| Argo CD | chart `9.5.13`, 모든 운영 Pod Running |
+| Argo CD, optional | chart `9.5.13`, 모든 운영 Pod Running |
 | OpenEBS LVM | `/dev/sda10` → `openebs`, 약 396GiB |
 | Argo CD local URL | `http://localhost:8080/cd` → `/cd/` HTTP 307 |
+| ServiceAccount OIDC | issuer, 공개 discovery document, JWKS 일치 |
