@@ -88,10 +88,9 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 
 | 항목 | 값 |
 | --- | --- |
-| LVM volume group | `openebs` |
 | StorageClass | `openebs-lvm` |
 
-`ebs`를 sync한다. OpenEBS LVM controller와 node Pod, `openebs` volume group을 사용하는 `openebs-lvm` StorageClass를 확인한다.
+[[k3s/runbooks/CPA#B. host와 OpenEBS LVM|CPA OpenEBS LVM 선행 구성]]의 `openebs` volume group이 준비된 뒤 `ebs`를 sync한다. OpenEBS LVM controller와 node Pod, `openebs-lvm` StorageClass를 확인한다.
 
 ```shell
 kubectl --context cpa -n argo patch application ebs \
