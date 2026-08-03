@@ -44,7 +44,7 @@ kubectl --context cpa -n argo get applications
 
 [Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/)을 참고한다.
 
-`istio-system`을 sync한다. `argo` namespace에 sidecar injection을 설정하고 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod에 `istio-proxy` container가 있어야 한다.
+`istio-system`을 sync한다. `argo` namespace에 sidecar injection을 설정하고 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod의 restartable init container에 `istio-proxy`가 있어야 한다.
 
 ```shell
 kubectl --context cpa -n argo patch application istio-system \
@@ -55,12 +55,17 @@ kubectl --context cpa -n argo wait \
   application/istio-system \
   --timeout=20m
 kubectl --context cpa label namespace argo istio-injection=enabled --overwrite
-kubectl --context cpa -n argo rollout restart deployment --all
-kubectl --context cpa -n argo rollout restart statefulset --all
-kubectl --context cpa -n argo rollout status deployment --all --timeout=10m
-kubectl --context cpa -n argo rollout status statefulset --all --timeout=10m
-kubectl --context cpa -n argo get pods \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].name}{"\n"}{end}'
+kubectl --context cpa -n argo rollout restart deployment \
+  cd-applicationset-controller cd-redis cd-repo-server cd-server
+kubectl --context cpa -n argo rollout restart statefulset cd-application-controller
+kubectl --context cpa -n argo rollout status deployment \
+  cd-applicationset-controller cd-redis cd-repo-server cd-server \
+  --timeout=10m
+kubectl --context cpa -n argo rollout status statefulset \
+  cd-application-controller \
+  --timeout=10m
+kubectl --context cpa -n argo get pods -o json \
+  | jq -r '.items[] | [.metadata.name, ([.spec.initContainers[].name] | join(","))] | @tsv'
 ```
 
 ### 3. Istio ingress와 egress gateway
