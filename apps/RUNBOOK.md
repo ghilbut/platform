@@ -98,11 +98,13 @@ kubectl --context cpa -n ebs get pods
 kubectl --context cpa get storageclass openebs-lvm
 ```
 
-### 5. CoreDNS와 etcd DNS
+### 5. CoreDNS
 
-[CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다.
+`coredns`를 sync한다. CoreDNS가 Ready인지 확인한다.
 
-`coredns`를 sync한다. etcd PersistentVolumeClaim은 `openebs-lvm` StorageClass를 사용한다. CoreDNS와 etcd가 Ready인 뒤 `ghilbut.com`과 `ghilbut.net` zone을 조회한다.
+#### etcd
+
+[CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다. CoreDNS 전용 etcd PersistentVolumeClaim은 `openebs-lvm` StorageClass를 사용한다. CoreDNS와 etcd가 Ready인 뒤 `ghilbut.com`과 `ghilbut.net` zone을 조회한다.
 
 ```shell
 kubectl --context cpa -n argo patch application coredns \
