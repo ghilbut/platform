@@ -80,7 +80,44 @@ kubectl --context cpa -n argo wait \
 kubectl --context cpa -n istio-gateways get deployment,service,gateway
 ```
 
-### 4. external-dns
+### 4. OpenEBS LVM
+
+[OpenEBS 설치](https://openebs.io/docs/main/quickstart-guide/installation)를 참고한다.
+
+`ebs`를 sync한다. OpenEBS LVM controller와 node Pod, `openebs` volume group을 사용하는 `openebs-lvm` StorageClass를 확인한다.
+
+```shell
+kubectl --context cpa -n argo patch application ebs \
+  --type=merge \
+  --patch '{"operation":{"sync":{"prune":true}}}'
+kubectl --context cpa -n argo wait \
+  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
+  application/ebs \
+  --timeout=20m
+kubectl --context cpa -n ebs get pods
+kubectl --context cpa get storageclass openebs-lvm
+```
+
+### 5. CoreDNS와 etcd DNS
+
+[CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다.
+
+`coredns`를 sync한다. etcd PersistentVolumeClaim은 `openebs-lvm` StorageClass를 사용한다. CoreDNS와 etcd가 Ready인 뒤 `ghilbut.com`과 `ghilbut.net` zone을 조회한다.
+
+```shell
+kubectl --context cpa -n argo patch application coredns \
+  --type=merge \
+  --patch '{"operation":{"sync":{"prune":true}}}'
+kubectl --context cpa -n argo wait \
+  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
+  application/coredns \
+  --timeout=20m
+kubectl --context cpa -n coredns get pvc,pod,service
+dig @192.168.254.4 ghilbut.com SOA
+dig @192.168.254.4 ghilbut.net SOA
+```
+
+### 6. external-dns
 
 [ExternalDNS Istio source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/)와 [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
 
@@ -100,7 +137,7 @@ kubectl --context cpa -n argo wait \
 kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
 ```
 
-### 5. cert-manager
+### 7. cert-manager
 
 [cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/)을 참고한다.
 
@@ -122,7 +159,7 @@ kubectl --context cpa -n istio-gateways wait \
   --timeout=20m
 ```
 
-### 6. Private Gateway와 Argo CD route
+### 8. Private Gateway와 Argo CD route
 
 [Istio traffic management](https://istio.io/latest/docs/concepts/traffic-management/)를 참고한다.
 
