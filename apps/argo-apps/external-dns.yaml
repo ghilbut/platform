@@ -68,6 +68,51 @@ spec:
             - istio-gateway
           txtOwnerId: external-dns-cpa
           txtPrefix: external-dns-
+    - chart: external-dns
+      repoURL: https://kubernetes-sigs.github.io/external-dns
+      targetRevision: 1.21.1
+      helm:
+        releaseName: external-dns-private
+        values: |
+          fullnameOverride: external-dns-private
+          annotationFilter: external-dns.alpha.kubernetes.io/target=192.168.254.4
+          domainFilters:
+            - ghilbut.com
+            - ghilbut.net
+          env:
+            - name: ETCD_URLS
+              value: http://etcd.coredns.svc.cluster.local:2379
+          extraArgs:
+            coredns-strictly-owned: true
+          logLevel: info
+          managedRecordTypes:
+            - A
+          policy: sync
+          podSecurityContext:
+            fsGroup: 65534
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+          provider: coredns
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 65532
+            runAsNonRoot: true
+            runAsUser: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          serviceAccount:
+            create: true
+            name: external-dns-private
+          sources:
+            - istio-gateway
+          txtOwnerId: external-dns-cpa-private
+          txtPrefix: external-dns-private-
     - path: apps/argo-apps/external-dns
       repoURL: https://github.com/ghilbut/platform.git
       targetRevision: main

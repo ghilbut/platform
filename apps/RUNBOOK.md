@@ -170,7 +170,7 @@ dig ghilbut.com SOA
 
 `external-dns`는 public Gateway의 CNAME을 Route 53에 관리한다. `external-dns-private`는 private Gateway의 A record를 CoreDNS etcd에 관리한다. [ExternalDNS Istio Gateway source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/), [ExternalDNS CoreDNS etcd backend](https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/coredns-etcd/), [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
 
-Route 53 IAM 역할과 권한을 적용한 뒤 두 Application을 sync한다. Gateway가 아직 없으면 DNS record를 만들지 않는다.
+Route 53 IAM 역할과 권한을 적용한 뒤 `external-dns`를 sync한다. Gateway가 아직 없으면 DNS record를 만들지 않는다.
 
 ```shell
 tofu -chdir=apps/tofu init
@@ -183,20 +183,6 @@ argocd app sync external-dns \
   --plaintext \
   --timeout 1200
 argocd app wait external-dns \
-  --sync \
-  --health \
-  --kube-context cpa \
-  --port-forward \
-  --port-forward-namespace argo \
-  --plaintext \
-  --timeout 1200
-argocd app sync external-dns-private \
-  --kube-context cpa \
-  --port-forward \
-  --port-forward-namespace argo \
-  --plaintext \
-  --timeout 1200
-argocd app wait external-dns-private \
   --sync \
   --health \
   --kube-context cpa \
