@@ -13,6 +13,7 @@ area: k3s
 - [K3s 제거](https://docs.k3s.io/installation/uninstall): server와 agent 제거 script의 영향 범위
 - [Kubernetes ServiceAccount token projection과 issuer discovery](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/): issuer, discovery document, JWKS endpoint, public JWKS URI
 - [LVM physical volume](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-physical-volumes_configuring-and-managing-logical-volumes)과 [volume group](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-volume-groups_configuring-and-managing-logical-volumes): `pvcreate`, `vgcreate`, `pvs`, `vgs`
+- [OpenEBS LVM 설치](https://openebs.io/docs/4.0.x/user-guides/local-storage-user-guide/local-pv-lvm/lvm-installation): `lvm2`, `dm_snapshot` kernel module, LVM volume group
 - [Cilium Helm 설치](https://docs.cilium.io/en/stable/installation/k8s-install-helm/): Helm chart 설치와 node taint
 - [Argo CD 설치](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#helm): Helm chart 설치
 - [Argo CD 초기 로그인](https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli): initial admin password와 password 변경
@@ -40,7 +41,7 @@ Argo CD를 설치하는 클러스터는 `ARGO_CD_VERSION`도 확정한다. token
 
 ### 1. host 준비
 
-K3s 데이터와 OpenEBS LVM physical volume은 서로 다른 block device 또는 파티션을 사용한다. `OPENEBSD_DEVICE`에는 파일시스템, mount, physical volume, volume group이 없어야 한다.
+K3s 데이터와 OpenEBS LVM physical volume은 서로 다른 block device 또는 파티션을 사용한다. `OPENEBSD_DEVICE`에는 파일시스템, mount, physical volume, volume group이 없어야 한다. OpenEBS LVM을 사용하는 node는 `lvm2`와 `dm_snapshot` kernel module을 사용한다.
 
 ```shell
 export CLUSTER='<CLUSTER>'
@@ -54,6 +55,9 @@ ssh "$SSH_USER@$SERVER_IP"
 sudo apt update -y
 sudo apt full-upgrade -y
 sudo apt install -y lvm2 qemu-guest-agent
+printf '%s\n' dm_snapshot | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
+sudo modprobe dm_snapshot
+lsmod | grep '^dm_snapshot '
 sudo systemctl enable --now qemu-guest-agent
 sudo systemctl is-active qemu-guest-agent
 lsblk -o NAME,FSTYPE,SIZE,TYPE,MOUNTPOINTS

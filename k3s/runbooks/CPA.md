@@ -49,6 +49,9 @@ VM은 Synology Virtual Machine Manager에서 `cpa`로 실행한다. VM은 4 vCPU
 # cpa
 sudo apt update -y
 sudo apt install -y lvm2
+printf '%s\n' dm_snapshot | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
+sudo modprobe dm_snapshot
+lsmod | grep '^dm_snapshot '
 sudo pvcreate /dev/sda10
 sudo vgcreate openebs /dev/sda10
 sudo pvs -o pv_name,vg_name,pv_size

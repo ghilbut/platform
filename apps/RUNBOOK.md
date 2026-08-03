@@ -31,6 +31,10 @@ Agent가 다음 순서로 설치를 수행한다.
 | external-dns | DNS record 관리 | — |
 | cert-manager | TLS certificate 관리 | — |
 
+## Pod Security Standards
+
+![[knowledge/rulebooks/k8s/SECURITY#Pod Security Standards]]
+
 ## A. 사전 확인
 
 [[k3s/runbooks/CPA|CPA K3s 재설치 Runbook]]가 `cpa` context, K3s, Cilium, Argo CD 기본 설치와 `openebs` volume group을 준비한 뒤에 이 Runbook을 실행한다.
@@ -83,26 +87,39 @@ kubectl --context cpa -n argo get pods -o json \
 
 ### 3. OpenEBS LVM
 
-[OpenEBS 설치](https://openebs.io/docs/main/quickstart-guide/installation)를 참고한다.
+[OpenEBS LVM 설치](https://openebs.io/docs/4.0.x/user-guides/local-storage-user-guide/local-pv-lvm/lvm-installation), [OpenEBS LVM StorageClass](https://openebs.io/docs/4.0.x/user-guides/local-storage-user-guide/local-pv-lvm/lvm-configuration), [Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/)을 참고한다.
 
 #### 설치 값
 
 | 항목 | 값 |
 | --- | --- |
 | StorageClass | `openebs-lvm` |
+| LVM volume group | `openebs` |
+| Istio sidecar | disabled |
+| Pod Security enforce | `privileged` |
+| Pod Security audit, warn | `restricted` |
 
-[[k3s/runbooks/CPA#B. host와 OpenEBS LVM|CPA OpenEBS LVM 선행 구성]]의 `openebs` volume group이 준비된 뒤 `ebs`를 sync한다. OpenEBS LVM controller와 node Pod, `openebs-lvm` StorageClass를 확인한다.
+[[k3s/runbooks/CPA#B. host와 OpenEBS LVM|CPA OpenEBS LVM 선행 구성]]이 `lvm2`, `dm_snapshot` kernel module, `openebs` volume group을 준비한 뒤 `ebs`를 sync한다. OpenEBS LVM controller와 node Pod, `openebs-lvm` StorageClass를 확인한다.
+
+OpenEBS LVM node Pod는 host device와 kubelet directory에 접근한다. `ebs` Namespace는 Istio sidecar 주입을 비활성화하고 `privileged`를 enforce하며 `restricted`를 audit과 warn으로 적용한다.
 
 ```shell
-kubectl --context cpa -n argo patch application ebs \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/ebs \
-  --timeout=20m
-kubectl --context cpa -n ebs get pods
-kubectl --context cpa get storageclass openebs-lvm
+argocd app sync ebs \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait ebs \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa get storageclass openebs-lvm \
+  -o jsonpath='{.provisioner}{"\t"}{.parameters.volgroup}{"\n"}'
 ```
 
 ### 4. CoreDNS
