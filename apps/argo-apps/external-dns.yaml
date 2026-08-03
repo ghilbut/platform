@@ -11,6 +11,7 @@ spec:
       targetRevision: 1.21.1
       helm:
         releaseName: public
+        skipCrds: true
         values: |
           fullnameOverride: public
           env:
@@ -73,6 +74,7 @@ spec:
       targetRevision: 1.21.1
       helm:
         releaseName: private
+        skipCrds: true
         values: |
           fullnameOverride: private
           annotationFilter: external-dns.alpha.kubernetes.io/target=192.168.254.4
