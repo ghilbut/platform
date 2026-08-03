@@ -1,7 +1,9 @@
 data "aws_ssoadmin_instances" "current" {}
 
 locals {
-  instance_arn = tolist(data.aws_ssoadmin_instances.current.arns)[0]
+  instance_arn      = tolist(data.aws_ssoadmin_instances.current.arns)[0]
+  identity_store_id = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
+  ghilbut_user_id   = "7488a448-2051-70eb-80b8-106a98d83549"
 
   managed_policies = {
     AdministratorAccess        = "arn:aws:iam::aws:policy/AdministratorAccess"
@@ -11,20 +13,31 @@ locals {
   account_assignments = {
     management_devops = {
       account_id     = "384959722788"
-      principal_id   = "94183498-5041-705e-ddc0-aa6c2e714fbc"
+      principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
     platform_ghilbut = {
       account_id     = "869061964712"
-      principal_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+      principal_id   = local.ghilbut_user_id
       principal_type = "USER"
     }
     ultary_domains_ghilbut = {
       account_id     = "971119963968"
-      principal_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+      principal_id   = local.ghilbut_user_id
       principal_type = "USER"
     }
   }
+}
+
+resource "aws_identitystore_group" "devops" {
+  display_name      = "DevOps"
+  identity_store_id = local.identity_store_id
+}
+
+resource "aws_identitystore_group_membership" "devops_ghilbut" {
+  group_id          = aws_identitystore_group.devops.group_id
+  identity_store_id = local.identity_store_id
+  member_id         = local.ghilbut_user_id
 }
 
 resource "aws_ssoadmin_permission_set" "tofu" {
@@ -76,7 +89,7 @@ module "management" {
   account_assignments = {
     management = {
       account_id     = "384959722788"
-      principal_id   = "94183498-5041-705e-ddc0-aa6c2e714fbc"
+      principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
   }
@@ -121,7 +134,7 @@ module "platform" {
   account_assignments = {
     platform = {
       account_id     = "869061964712"
-      principal_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+      principal_id   = local.ghilbut_user_id
       principal_type = "USER"
     }
   }
@@ -139,7 +152,7 @@ module "ultary_domains" {
   account_assignments = {
     ultary_domains = {
       account_id     = "971119963968"
-      principal_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+      principal_id   = local.ghilbut_user_id
       principal_type = "USER"
     }
   }

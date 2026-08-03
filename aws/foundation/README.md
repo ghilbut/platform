@@ -20,9 +20,9 @@ AWS Foundation은 AWS 계정 수명 주기, IAM Identity Center 접근 권한, A
 따라서 Account Management API를 standalone context로 호출하며, AWS Organizations의
 Account Management trusted access를 활성화하지 않는다.
 
-`identity/tofu/`는 IAM Identity Center permission set, AWS 관리형 정책 연결, 계정 할당을
-관리한다. Identity Store의 사용자와 그룹은 외부 IdP 또는 IAM Identity Center의 소유이며,
-이 state에서 생성하거나 삭제하지 않는다.
+`identity/tofu/`는 IAM Identity Center permission set, AWS 관리형 정책 연결, 계정 할당,
+Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
+IdP 또는 IAM Identity Center의 소유이며, 이 state에서 생성하거나 삭제하지 않는다.
 
 ## Identity state import
 

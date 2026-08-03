@@ -1,4 +1,14 @@
 import {
+  to = aws_identitystore_group.devops
+  id = "d-906671970d/94183498-5041-705e-ddc0-aa6c2e714fbc"
+}
+
+import {
+  to = aws_identitystore_group_membership.devops_ghilbut
+  id = "d-906671970d/d4681438-c011-703c-628d-3a176b3f7b1f"
+}
+
+import {
   to = aws_ssoadmin_permission_set.tofu
   id = "arn:aws:sso:::permissionSet/ssoins-7223d00af1910289/ps-7223081e18fe0738,arn:aws:sso:::instance/ssoins-7223d00af1910289"
 }
