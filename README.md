@@ -10,19 +10,20 @@
 
 각 리소스는 하나의 OpenTofu 상태만 관리한다.
 
-| 경로 | 책임 |
-|---|---|
-| `apps/` | 인프라와 플랫폼을 관리하는 어플리케이션들 |
-| `aws/` | AWS 관리 그룹 디렉토리 |
-| [aws/foundation/](aws/foundation/README.md) | AWS 계정, 접근 권한, 조직 거버넌스 기반 설정 |
-| `aws/identity/` | AWS IAM Identity Center 관리 |
-| `aws/cdn/` | AWS CloudFront 기반의 CDN 인프라와 어플리케이션 |
-| `docs/` | 참고 문서 |
-| `domains/` | 도메인과 DNS 서버 관리 |
-| `github/` | Github 계정 관리 |
-| `k3s/` | 온프레미스 K3s 관리 및 클라우드 연동 |
-| `pki/` | Root CA 인증서와 Intermediate 인증서의 작업 공간. 인증서는 git과 동기화하지 않는다. |
-| `ultary/` | `Ultary, Inc.`가 준비될 때까지 일부 관리를 대신해 준다. |
+| 경로                                        | 책임                                                                                |
+|---------------------------------------------|-------------------------------------------------------------------------------------|
+| `apps/`                                     | 인프라와 플랫폼을 관리하는 어플리케이션들                                           |
+| `aws/`                                      | AWS 관리 그룹 디렉토리                                                              |
+| `aws/cdn`                                   | CloudFront와 S3 조합의 CDN                                                          |
+| [aws/foundation/](aws/foundation/README.md) | AWS 계정, 접근 권한, 조직 거버넌스 기반 설정                                        |
+| `aws/identity/`                             | AWS IAM Identity Center 관리                                                        |
+| `aws/cdn/`                                  | AWS CloudFront 기반의 CDN 인프라와 어플리케이션                                     |
+| `docs/`                                     | 참고 문서                                                                           |
+| `domains/`                                  | 도메인과 DNS 서버 관리                                                              |
+| `github/`                                   | Github 계정 관리                                                                    |
+| `k3s/`                                      | 온프레미스 K3s 관리 및 클라우드 연동                                                |
+| `pki/`                                      | Root CA 인증서와 Intermediate 인증서의 작업 공간. 인증서는 git과 동기화하지 않는다. |
+| `ultary/`                                   | `Ultary, Inc.`가 준비될 때까지 일부 관리를 대신해 준다.                             |
 
 ## C. Programming
 
