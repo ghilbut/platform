@@ -8,14 +8,11 @@ cluster: cpa
 
 CPA cluster에 Argo CD Application을 설치하고 `https://argo.ghilbut.com/cd`를 제공한다.
 
-## A. 설치 값
+## A. 공통 설치 값
 
 | 항목 | 값 |
 | --- | --- |
 | Kubernetes context | `cpa` |
-| Argo CD URL | `https://argo.ghilbut.com/cd` |
-| Public DNS target | `ghilbut.asuscomm.com` |
-| Private DNS target | `192.168.254.4` |
 | DNS zones | `ghilbut.com`, `ghilbut.net` |
 
 ## B. 사전 확인
@@ -86,6 +83,13 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 
 [OpenEBS 설치](https://openebs.io/docs/main/quickstart-guide/installation)를 참고한다.
 
+#### 설치 값
+
+| 항목 | 값 |
+| --- | --- |
+| LVM volume group | `openebs` |
+| StorageClass | `openebs-lvm` |
+
 `ebs`를 sync한다. OpenEBS LVM controller와 node Pod, `openebs` volume group을 사용하는 `openebs-lvm` StorageClass를 확인한다.
 
 ```shell
@@ -103,6 +107,12 @@ kubectl --context cpa get storageclass openebs-lvm
 ### 5. CoreDNS
 
 `coredns`를 sync한다. CoreDNS가 Ready인지 확인한다.
+
+#### 설치 값
+
+| 항목 | 값 |
+| --- | --- |
+| CoreDNS listener | `192.168.254.4:53` |
 
 #### etcd
 
@@ -125,6 +135,13 @@ dig @192.168.254.4 ghilbut.net SOA
 
 [ExternalDNS Istio source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/)와 [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
 
+#### 설치 값
+
+| 항목 | 값 |
+| --- | --- |
+| Public DNS target | `ghilbut.asuscomm.com` |
+| Private DNS target | `192.168.254.4` |
+
 external-dns IAM role과 Route 53 권한을 적용한 뒤 `external-dns`를 sync한다. public Gateway는 `ghilbut.asuscomm.com` CNAME target을 사용한다. private Gateway는 `192.168.254.4` A record target을 사용한다.
 
 ```shell
@@ -144,6 +161,12 @@ kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
 ### 7. cert-manager
 
 [cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/)을 참고한다.
+
+#### 설치 값
+
+| 항목 | 값 |
+| --- | --- |
+| Certificate DNS name | `argo.ghilbut.com` |
 
 cert-manager IAM role과 Route 53 DNS-01 권한을 적용한 뒤 `cert-manager`를 sync한다. `argo.ghilbut.com` Certificate가 Ready인지 확인한다.
 
@@ -166,6 +189,12 @@ kubectl --context cpa -n istio-gateways wait \
 ### 8. Private Gateway와 Argo CD route
 
 [Istio traffic management](https://istio.io/latest/docs/concepts/traffic-management/)를 참고한다.
+
+#### 설치 값
+
+| 항목 | 값 |
+| --- | --- |
+| Argo CD URL | `https://argo.ghilbut.com/cd` |
 
 private Gateway와 Argo CD VirtualService를 적용한다. `https://argo.ghilbut.com/cd`의 HTTP 응답과 TLS certificate를 확인한다.
 
