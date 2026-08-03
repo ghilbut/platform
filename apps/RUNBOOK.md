@@ -70,16 +70,15 @@ kubectl --context cpa -n argo get pods -o json \
 
 [Istio gateway 설치](https://istio.io/latest/docs/setup/additional-setup/gateway/)를 참고한다.
 
-`istio-gateways`를 sync한다. ingress와 egress gateway Deployment가 Available인지 확인한다.
+`istio-gateways`를 sync한다. ingress와 egress gateway Deployment의 rollout 상태를 확인한다.
 
 ```shell
-kubectl --context cpa -n argo patch application istio-gateways \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/istio-gateways \
-  --timeout=20m
+argocd app sync istio-gateways \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext
+kubectl --context cpa -n istio-gateways rollout status deployment --timeout=10m
 kubectl --context cpa -n istio-gateways get deployment,service,gateway
 ```
 
