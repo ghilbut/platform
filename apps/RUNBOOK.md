@@ -6,6 +6,21 @@ cluster: cpa
 
 # Applications 설치
 
+## 설치 순서
+
+Agent가 다음 순서로 설치를 수행한다.
+
+| 순서 | 애플리케이션 | 수동 작업 |
+| --- | --- | --- |
+| 1 | [[#1. Argo CD Application bootstrap\|Argo CD Application bootstrap]] | 없음 |
+| 2 | [[#2. Istio system과 Argo CD sidecar\|Istio system과 Argo CD sidecar]] | 없음 |
+| 3 | [[#3. OpenEBS LVM\|OpenEBS LVM]] | 없음 |
+| 4 | [[#4. CoreDNS\|CoreDNS]] | ASUS Router DNS 변경 |
+| 5 | [[#5. external-dns\|external-dns]] | 없음 |
+| 6 | [[#6. cert-manager\|cert-manager]] | 없음 |
+| 7 | [[#7. Istio Gateways\|Istio Gateways]] | 없음 |
+| 8 | [[#8. Private Gateway와 Argo CD route\|Private Gateway와 Argo CD route]] | 없음 |
+
 | 애플리케이션 | 역할 | 사용자 URL |
 | --- | --- | --- |
 | Argo CD | GitOps 관리 | `https://argo.ghilbut.com/cd` |
@@ -66,24 +81,7 @@ kubectl --context cpa -n argo get pods -o json \
   | jq -r '.items[] | [.metadata.name, ([.spec.initContainers[].name] | join(","))] | @tsv'
 ```
 
-### 3. Istio ingress와 egress gateway
-
-[Istio gateway 설치](https://istio.io/latest/docs/setup/additional-setup/gateway/)를 참고한다.
-
-`istio-gateways`를 sync한다. ingress와 egress gateway Deployment가 Available인지 확인한다.
-
-```shell
-kubectl --context cpa -n argo patch application istio-gateways \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/istio-gateways \
-  --timeout=20m
-kubectl --context cpa -n istio-gateways get deployment,service,gateway
-```
-
-### 4. OpenEBS LVM
+### 3. OpenEBS LVM
 
 [OpenEBS 설치](https://openebs.io/docs/main/quickstart-guide/installation)를 참고한다.
 
@@ -107,7 +105,7 @@ kubectl --context cpa -n ebs get pods
 kubectl --context cpa get storageclass openebs-lvm
 ```
 
-### 5. CoreDNS
+### 4. CoreDNS
 
 `coredns`를 sync한다. CoreDNS가 Ready인지 확인한다.
 
@@ -135,7 +133,17 @@ dig @192.168.254.4 ghilbut.com SOA
 dig @192.168.254.4 ghilbut.net SOA
 ```
 
-### 6. external-dns
+설치가 완료되면 사용자가 ASUS Router의 DNS server를 `192.168.254.4`로 변경한다.
+
+ASUS Router 설정을 적용한 뒤 LAN 클라이언트의 네트워크를 다시 연결하고 다음 명령을 실행한다.
+
+```shell
+dig ghilbut.com SOA
+```
+
+출력의 `SERVER`가 `192.168.254.4#53(192.168.254.4)`이면 LAN 클라이언트가 CoreDNS를 기본 DNS server로 사용한다.
+
+### 5. external-dns
 
 [ExternalDNS Istio source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/)와 [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
 
@@ -163,7 +171,7 @@ kubectl --context cpa -n argo wait \
 kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
 ```
 
-### 7. cert-manager
+### 6. cert-manager
 
 [cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/)을 참고한다.
 
@@ -190,6 +198,23 @@ kubectl --context cpa -n argo wait \
 kubectl --context cpa -n istio-gateways wait \
   --for=condition=Ready certificate/argo-https \
   --timeout=20m
+```
+
+### 7. Istio Gateways
+
+[Istio gateway 설치](https://istio.io/latest/docs/setup/additional-setup/gateway/)를 참고한다.
+
+`istio-gateways`를 sync한다. ingress와 egress gateway Deployment가 Available인지 확인한다.
+
+```shell
+kubectl --context cpa -n argo patch application istio-gateways \
+  --type=merge \
+  --patch '{"operation":{"sync":{"prune":true}}}'
+kubectl --context cpa -n argo wait \
+  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
+  application/istio-gateways \
+  --timeout=20m
+kubectl --context cpa -n istio-gateways get deployment,service,gateway
 ```
 
 ### 8. Private Gateway와 Argo CD route
