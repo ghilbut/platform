@@ -24,12 +24,6 @@ Account Management trusted access를 활성화하지 않는다.
 Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
 IdP 또는 IAM Identity Center의 소유이며, 이 state에서 생성하거나 삭제하지 않는다.
 
-## Identity state import
-
-기존 `platform/aws/identity.tfstate` key는 존재하지 않는다. `identity/tofu/`의 import
-선언은 기존 IAM Identity Center 리소스를 `platform/aws/foundation/identity.tfstate`에
-등록한다. 초기 적용은 import만 수행하며 원격 리소스를 생성·변경·삭제하지 않는다.
-
 ## Accounts state migration
 
 기존 `platform/aws/accounts.tfstate` 상태를 새 backend key로 이전할 때는
