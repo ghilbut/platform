@@ -249,7 +249,14 @@ curl --fail --silent --show-error --output /dev/null \
 
 결과: `307 http://localhost:8080/cd/`.
 
-## H. 완료 결과
+## H. Optional: Agent
+
+> [!info] 공통 절차
+> ![[k3s/RUNBOOK#G. Optional: Agent]]
+
+CPA는 단일 control-plane cluster로 실행하므로 agent를 설치하지 않는다.
+
+## I. 완료 결과
 
 | 확인 항목 | 결과 |
 | --- | --- |
@@ -260,3 +267,4 @@ curl --fail --silent --show-error --output /dev/null \
 | OpenEBS LVM | `/dev/sda10` → `openebs`, 약 396GiB |
 | Argo CD local URL | `http://localhost:8080/cd` → `/cd/` HTTP 307 |
 | ServiceAccount OIDC | issuer, 공개 discovery document, JWKS 일치 |
+| Agent, optional | 설치하지 않음 |

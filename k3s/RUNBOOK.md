@@ -296,9 +296,9 @@ curl --fail --silent --show-error --output /dev/null \
   http://localhost:8080/cd
 ```
 
-## G. Agent
+## G. Optional: Agent
 
-agent host는 server와 같은 Ubuntu 준비 절차를 수행한다. agent에는 `/var/lib/kubelet`, `/var/lib/rancher`, `/var/lib/rancher/k3s/agent/containerd` 파일시스템을 사용한다. embedded etcd 전용인 `/var/lib/rancher/k3s/server/db`는 agent에 만들지 않는다.
+Agent는 모든 클러스터에 설치하지 않는다. 추가 workload node가 필요한 클러스터만 이 절차를 실행한다. agent host는 server와 같은 Ubuntu 준비 절차를 수행한다. agent에는 `/var/lib/kubelet`, `/var/lib/rancher`, `/var/lib/rancher/k3s/agent/containerd` 파일시스템을 사용한다. embedded etcd 전용인 `/var/lib/rancher/k3s/server/db`는 agent에 만들지 않는다.
 
 ```shell
 # control-plane
