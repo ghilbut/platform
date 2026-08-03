@@ -79,7 +79,7 @@ argocd app sync istio-gateways \
   --port-forward-namespace argo \
   --plaintext
 kubectl --context cpa -n istio-gateways rollout status deployment --timeout=10m
-kubectl --context cpa -n istio-gateways get deployment,service,gateway
+kubectl --context cpa -n istio-gateways get deployment,service
 ```
 
 ### 4. OpenEBS LVM

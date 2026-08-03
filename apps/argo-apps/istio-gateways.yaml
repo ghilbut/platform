@@ -10,9 +10,9 @@ spec:
       repoURL: https://istio-release.storage.googleapis.com/charts
       targetRevision: 1.30.3
       helm:
-        releaseName: istio-ingressgateway
+        releaseName: ingress
         values: |
-          name: istio-ingressgateway
+          name: ingress
           labels:
             app: istio-ingressgateway
             istio: ingressgateway
@@ -22,6 +22,35 @@ spec:
           service:
             externalTrafficPolicy: Local
             type: LoadBalancer
+          securityContext:
+            sysctls:
+              - name: net.ipv4.ip_unprivileged_port_start
+                value: "0"
+          containerSecurityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            seccompProfile:
+              type: RuntimeDefault
+    - chart: gateway
+      repoURL: https://istio-release.storage.googleapis.com/charts
+      targetRevision: 1.30.3
+      helm:
+        releaseName: egress
+        values: |
+          name: egress
+          labels:
+            app: istio-egressgateway
+            istio: egressgateway
+          autoscaling:
+            enabled: false
+          replicaCount: 1
+          service:
+            type: ClusterIP
           securityContext:
             sysctls:
               - name: net.ipv4.ip_unprivileged_port_start
@@ -47,6 +76,7 @@ spec:
   syncPolicy:
     syncOptions:
       - ApplyOutOfSyncOnly=true
+      - CreateNamespace=true
       - PruneLast=true
       - ServerSideApply=true
       - Validate=true
