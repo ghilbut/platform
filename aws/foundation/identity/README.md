@@ -4,9 +4,7 @@ title: IAM Identity Center
 
 # IAM Identity Center
 
-`tofu/`는 IAM Identity Center permission set과 AWS 계정 할당을 관리한다. 기존 `tofu`,
-`platform-operator`, `ultary-domains-operator` permission set은 대체 권한 세트의 로그인을
-검증할 때까지만 유지한다.
+`tofu/`는 IAM Identity Center permission set과 AWS 계정 할당을 관리한다.
 
 | Permission set | 대상 계정 | Principal | 책임 |
 |---|---|---|---|
@@ -48,5 +46,5 @@ aws sso login --profile ghilbut-ultary-domains-tofu-apply
 aws sts get-caller-identity --profile ghilbut-ultary-domains-tofu-apply
 ```
 
-이 단계는 기존 permission set을 삭제하지 않는다. 검증이 완료되면 다음 변경에서 기존
-permission set과 기존 할당을 제거한다.
+기존 직접 사용자 할당과 legacy permission set은 제거했다. 모든 AWS 계정 접근은 `DevOps`
+그룹 할당을 사용한다.
