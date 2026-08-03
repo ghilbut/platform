@@ -10,7 +10,7 @@ spec:
       repoURL: https://kubernetes-sigs.github.io/external-dns
       targetRevision: 1.21.1
       helm:
-        releaseName: external-dns-public
+        releaseName: public
         values: |
           env:
             - name: AWS_EC2_METADATA_DISABLED
@@ -62,7 +62,7 @@ spec:
           registry: txt
           serviceAccount:
             create: true
-            name: external-dns-public
+            name: public
           sources:
             - istio-gateway
           txtOwnerId: external-dns-cpa
@@ -71,7 +71,7 @@ spec:
       repoURL: https://kubernetes-sigs.github.io/external-dns
       targetRevision: 1.21.1
       helm:
-        releaseName: external-dns-private
+        releaseName: private
         values: |
           annotationFilter: external-dns.alpha.kubernetes.io/target=192.168.254.4
           domainFilters:
@@ -106,7 +106,7 @@ spec:
               type: RuntimeDefault
           serviceAccount:
             create: true
-            name: external-dns-private
+            name: private
           sources:
             - istio-gateway
           txtOwnerId: external-dns-cpa-private
