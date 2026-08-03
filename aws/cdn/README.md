@@ -31,9 +31,9 @@ discovery 문서의 `issuer`와 `jwks_uri`는 공개 CDN URL로 재작성됩니�
 오류 페이지와 Lambda ZIP은 OpenTofu가 S3 객체로 관리합니다. 로컬 첫 배포 전에는
 Lambda 번들만 빌드하면 됩니다.
 
-로컬 인프라 적용에는 `ghilbut-platform` AWS 프로필과 `GH_TOKEN` fine-grained PAT가
-필요합니다. PAT에는 `ghilbut/platform`의 Actions variables 읽기·쓰기 권한이
-필요합니다. 공유 GitHub Actions OIDC provider를 먼저 적용합니다.
+로컬 인프라 적용에는 `TofuApply` 권한 세트를 사용하는 AWS 자격 증명과 `GH_TOKEN`
+fine-grained PAT가 필요합니다. PAT에는 `ghilbut/platform`의 Actions variables 읽기·쓰기
+권한이 필요합니다. 공유 GitHub Actions OIDC provider를 먼저 적용합니다.
 
 ```sh
 cd github/tofu

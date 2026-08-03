@@ -20,6 +20,45 @@ locals {
   ]
 }
 
+module "tofu_execution_role" {
+  source = "../../modules/tofu-execution-role"
+
+  name                       = "platform-tofu-apply"
+  description                = "OpenTofu execution role for Platform workload infrastructure."
+  source_account_id          = "869061964712"
+  source_permission_set_name = "TofuApply"
+  managed_policy_arns = toset([
+    "arn:aws:iam::aws:policy/IAMFullAccess",
+    "arn:aws:iam::aws:policy/PowerUserAccess",
+  ])
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "DenyCentralAdministration"
+      Effect = "Deny"
+      Action = [
+        "account:*",
+        "aws-portal:*",
+        "billing:*",
+        "budgets:*",
+        "ce:*",
+        "consolidatedbilling:*",
+        "cur:*",
+        "identitystore:*",
+        "identitystore-auth:*",
+        "identity-sync:*",
+        "invoicing:*",
+        "organizations:*",
+        "payments:*",
+        "purchase-orders:*",
+        "sso:*",
+        "sso-directory:*",
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
 module "s3" {
   source = "./modules/s3"
 
