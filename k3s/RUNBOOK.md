@@ -15,6 +15,7 @@ area: k3s
 - [LVM physical volume](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-physical-volumes_configuring-and-managing-logical-volumes)과 [volume group](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-volume-groups_configuring-and-managing-logical-volumes): `pvcreate`, `vgcreate`, `pvs`, `vgs`
 - [Cilium Helm 설치](https://docs.cilium.io/en/stable/installation/k8s-install-helm/): Helm chart 설치와 node taint
 - [Argo CD 설치](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#helm): Helm chart 설치
+- [Argo CD 초기 로그인](https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli): initial admin password와 password 변경
 - [AWS IAM OIDC provider 생성](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html): issuer URL과 audience 설정
 
 ## B. 설치 값
@@ -289,12 +290,12 @@ kubectl --context "$CLUSTER" get pods -n argo
 
 ### 1. Admin password
 
-새 admin password는 실행자가 대화형 prompt에 입력한다. password와 Argo CD authentication token은 실행 문서와 저장소에 기록하지 않는다.
+새 admin password는 실행자가 대화형 prompt에 입력한다. `argocd-initial-admin-secret`의 password를 직접 사용한다. password와 Argo CD authentication token은 실행 문서와 저장소에 기록하지 않는다.
 
 ```shell
 argocd login \
   --name "$CLUSTER" \
-  --password "$(argocd admin initial-password --context "$CLUSTER" -n argo)" \
+  --password "$(kubectl --context "$CLUSTER" -n argo get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode)" \
   --username admin \
   --grpc-web-root-path /cd \
   --insecure \

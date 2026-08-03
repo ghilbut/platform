@@ -239,14 +239,14 @@ YAML
 
 ### 1. Admin password
 
-새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 전체 block을 실행한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 전체 block은 `argocd-initial-admin-secret`의 password로 로그인한 뒤 password를 변경한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
 
 ```shell
 set -euo pipefail
 
 argocd login \
   --name cpa \
-  --password "$(argocd admin initial-password --context cpa -n argo)" \
+  --password "$(kubectl --context cpa -n argo get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode)" \
   --username admin \
   --grpc-web-root-path /cd \
   --insecure \
