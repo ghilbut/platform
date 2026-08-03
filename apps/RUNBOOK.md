@@ -8,16 +8,7 @@ cluster: cpa
 
 CPA cluster에 Argo CD Application을 설치하고 `https://argo.ghilbut.com/cd`를 제공한다.
 
-## A. 공식 참고 문서
-
-- [Argo CD Application specification](https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/): Application source, destination, sync policy
-- [Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/): namespace label과 Pod 재생성
-- [Istio gateway 설치](https://istio.io/latest/docs/setup/additional-setup/gateway/): ingress와 egress gateway 배포
-- [ExternalDNS Istio source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/): Istio Gateway host와 DNS record 생성
-- [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target): CNAME, A record target
-- [cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/): Route 53 DNS-01 solver
-
-## B. 설치 값
+## A. 설치 값
 
 | 항목 | 값 |
 | --- | --- |
@@ -27,7 +18,7 @@ CPA cluster에 Argo CD Application을 설치하고 `https://argo.ghilbut.com/cd`
 | Private DNS target | `192.168.254.4` |
 | DNS zones | `ghilbut.com`, `ghilbut.net` |
 
-## C. 사전 확인
+## B. 사전 확인
 
 ```shell
 kubectl --context cpa get nodes
@@ -35,9 +26,11 @@ kubectl --context cpa -n argo get deployment,statefulset,pod
 kubectl --context cpa -n argo get secret argocd-initial-admin-secret
 ```
 
-## D. 설치 순서
+## C. 설치 순서
 
 ### 1. Argo CD Application bootstrap
+
+[Argo CD Application specification](https://argo-cd.readthedocs.io/en/stable/user-guide/application-specification/)을 참고한다.
 
 `argo-apps` Application을 적용한다. 이 명령 뒤에 `argocd app sync` 또는 Application의 `operation.sync`를 실행하지 않는다. `argo-apps`의 automated sync는 child Application 리소스를 생성한다. child Application은 명시적 sync 전까지 workload를 생성하지 않는다.
 
@@ -48,6 +41,8 @@ kubectl --context cpa -n argo get applications
 ```
 
 ### 2. Istio system과 Argo CD sidecar
+
+[Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/)을 참고한다.
 
 `istio-system`을 sync한다. `argo` namespace에 sidecar injection을 설정하고 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod에 `istio-proxy` container가 있어야 한다.
 
@@ -70,6 +65,8 @@ kubectl --context cpa -n argo get pods \
 
 ### 3. Istio ingress와 egress gateway
 
+[Istio gateway 설치](https://istio.io/latest/docs/setup/additional-setup/gateway/)를 참고한다.
+
 `istio-gateways`를 sync한다. ingress와 egress gateway Deployment가 Available인지 확인한다.
 
 ```shell
@@ -84,6 +81,8 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 ```
 
 ### 4. external-dns
+
+[ExternalDNS Istio source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/)와 [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
 
 external-dns IAM role과 Route 53 권한을 적용한 뒤 `external-dns`를 sync한다. public Gateway는 `ghilbut.asuscomm.com` CNAME target을 사용한다. private Gateway는 `192.168.254.4` A record target을 사용한다.
 
@@ -102,6 +101,8 @@ kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
 ```
 
 ### 5. cert-manager
+
+[cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/)을 참고한다.
 
 cert-manager IAM role과 Route 53 DNS-01 권한을 적용한 뒤 `cert-manager`를 sync한다. `argo.ghilbut.com` Certificate가 Ready인지 확인한다.
 
@@ -122,6 +123,8 @@ kubectl --context cpa -n istio-gateways wait \
 ```
 
 ### 6. Private Gateway와 Argo CD route
+
+[Istio traffic management](https://istio.io/latest/docs/concepts/traffic-management/)를 참고한다.
 
 private Gateway와 Argo CD VirtualService를 적용한다. `https://argo.ghilbut.com/cd`의 HTTP 응답과 TLS certificate를 확인한다.
 
