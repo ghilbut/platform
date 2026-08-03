@@ -9,13 +9,13 @@ area: apps
 
 애플리케이션 문서의 진입점은 [Applications](../README.md)다.
 
-CPA OIDC issuer의 공개와 Kubernetes 설정은 [K3s OIDC](../../k3s/OIDC.md)에서, CPA의 실제 설치 값은 [CPA 설치 기록](../../k3s/RUN-CPA-2026-05-18.md)에서 확인한다.
+CPA OIDC issuer의 공개와 Kubernetes 설정은 [[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation|K3s ServiceAccount OIDC RUNBOOK]]에서, CPA의 실제 설치 값은 [[k3s/runbooks/CPA|CPA 실행 Runbook]]에서 확인한다.
 
 ## IAM federation 경계
 
 | 구분 | 소유 위치 | 범위 |
 | --- | --- | --- |
-| CPA OIDC issuer | [K3s OIDC](../../k3s/OIDC.md) | ServiceAccount token의 issuer, discovery 문서, JWKS 공개 |
+| CPA OIDC issuer | [[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation|K3s ServiceAccount OIDC RUNBOOK]] | ServiceAccount token의 issuer, discovery 문서, JWKS 공개 |
 | IAM OIDC provider | [K3s OpenTofu](../../k3s/tofu/) | `https://oidc.k3s.ghilbut.com/cpa`를 신뢰하는 platform 계정의 공용 federation 진입점 |
 | IAM 역할과 권한 정책 | 애플리케이션 module | 한 ServiceAccount와 그 workload에 필요한 AWS 리소스만 허용 |
 
