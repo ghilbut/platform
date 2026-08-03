@@ -20,6 +20,11 @@ CPA cluster에 Argo CD Application을 설치하고 `https://argo.ghilbut.com/cd`
 
 ## B. 사전 확인
 
+> [!info] 선행 설치
+> ![[k3s/runbooks/CPA#A. 적용 값]]
+
+[[k3s/runbooks/CPA|CPA K3s 재설치 Runbook]]의 K3s, Cilium, Argo CD 기본 설치와 `openebs` volume group 구성이 완료된 뒤에 이 Runbook을 실행한다.
+
 ```shell
 kubectl --context cpa get nodes
 kubectl --context cpa -n argo get deployment,statefulset,pod
