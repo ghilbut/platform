@@ -16,6 +16,18 @@ title: IAM Identity Center
 `TofuApply`는 플랫폼 리소스와 IAM 역할을 관리할 수 있지만, inline deny policy로
 Organizations, Billing, Account Management, IAM Identity Center 관리를 명시적으로 거부한다.
 
+## OpenTofu 실행 역할
+
+IAM Identity Center permission set은 사람 또는 CI의 최초 인증에만 사용한다. OpenTofu는
+별도 IAM 실행 역할을 수임해 AWS 리소스를 관리한다. permission set 이름이 바뀌지 않아도
+AWS가 생성하는 `AWSReservedSSO` 역할의 suffix는 바뀔 수 있으므로, 실행 역할의 신뢰 정책은
+permission set 이름과 역할 경로를 조건으로 사용한다.
+
+| 최초 인증 permission set | 실행 역할 | 관리 state |
+|---|---|---|
+| `ManagementTofuApply` | `management-tofu-apply` | Foundation identity와 accounts |
+| `TofuApply` | `platform-tofu-apply` | CDN |
+
 ## CLI profile migration
 
 새 permission set을 적용한 뒤 기존 profile을 유지한 상태에서 검증용 profile로 로그인을
