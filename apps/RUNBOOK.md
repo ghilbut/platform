@@ -124,20 +124,11 @@ kubectl --context cpa get storageclass openebs-lvm \
 
 ### 4. CoreDNS
 
-[CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다. `coredns`를 sync한다. CoreDNS가 Ready인지 확인한다.
-
-#### 설치 값
-
-| 항목 | 값 |
-| --- | --- |
-| CoreDNS listener | `192.168.254.4:53` |
-| DNS zones | `ghilbut.com`, `ghilbut.net` |
-| CoreDNS image | `coredns/coredns:1.14.6` |
-| etcd image | `quay.io/coreos/etcd:v3.6.14` |
+`coredns`를 sync하여 CPA host에서 private DNS를 제공한다. DNS record는 전용 etcd에 저장한다. [CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다.
 
 #### etcd
 
-CoreDNS 전용 etcd PersistentVolumeClaim은 `openebs-lvm` StorageClass와 `1Gi` storage를 사용한다. CPA host의 `192.168.254.4:53` TCP·UDP listener를 확인한 뒤 CoreDNS와 etcd가 Ready인 상태에서 `ghilbut.com`과 `ghilbut.net` zone을 조회한다.
+CPA host의 DNS와 etcd listener를 확인한 뒤 CoreDNS와 etcd가 Ready인 상태에서 DNS zone을 조회한다.
 
 ```shell
 ssh cpa 'sudo ss -lntup | grep -E ":(53|2379|2380)\\b" || true'
