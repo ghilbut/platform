@@ -15,7 +15,7 @@ Agent가 다음 순서로 설치를 수행한다.
 | 1 | [[#1. Argo CD Application bootstrap\|Argo CD Application bootstrap]] | 없음 |
 | 2 | [[#2. Istio system과 Argo CD sidecar\|Istio system과 Argo CD sidecar]] | 없음 |
 | 3 | [[#3. OpenEBS LVM\|OpenEBS LVM]] | 없음 |
-| 4 | [[#4. CoreDNS\|CoreDNS]] | ASUS Router DNS 변경 |
+| 4 | [[#4. CoreDNS\|CoreDNS]] | ASUS Router 설정 |
 | 5 | [[#5. external-dns\|external-dns]] | 없음 |
 | 6 | [[#6. cert-manager\|cert-manager]] | 없음 |
 | 7 | [[#7. Istio Gateways\|Istio Gateways]] | 없음 |
@@ -154,7 +154,9 @@ dig @192.168.254.4 ghilbut.com SOA
 dig @192.168.254.4 ghilbut.net SOA
 ```
 
-설치가 완료되면 사용자가 ASUS Router의 DNS server를 `192.168.254.4`로 변경한다.
+설치가 완료되면 사용자가 ASUS Router의 `LAN > DHCP Server > DNS Server`를 `192.168.254.4`로 변경한다.
+
+`Advertise router’s IP in addition to user specified DNS`를 `No`로 설정한다. LAN 클라이언트는 CoreDNS만 DNS server로 사용한다. 이 옵션을 적용하면 `www.asusrouter.com`으로 Router 관리 화면에 접속할 수 없다. Router의 LAN IP를 사용한다. [ASUS Router DHCP DNS 설정](https://www.asus.com/us/support/faq/1050080/)을 참고한다.
 
 ASUS Router 설정을 적용한 뒤 LAN 클라이언트의 네트워크를 다시 연결하고 다음 명령을 실행한다.
 
