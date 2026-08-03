@@ -5,7 +5,7 @@ area: k3s
 
 # K3s 설치 RUNBOOK
 
-문서 규칙은 [RULEBOOK](RULEBOOK.md)을 따른다. 실행별 값과 실제 명령은 `runbooks/`에 기록한다.
+실행별 값과 실제 명령은 `runbooks/`에 기록한다.
 
 ## A. 공식 참고 문서
 
@@ -331,3 +331,20 @@ kubectl --context "$CLUSTER" get nodes -o wide
 kubectl --context "$CLUSTER" get pods -n kube-system \
   -l k8s-app=cilium -o wide
 ```
+
+## H. 실행 Runbook
+
+실행 전 `runbooks/<CLUSTER>.md`를 작성한다. 이 문서는 해당 클러스터의 실제 값, 순서대로 실행할 전체 shell command, 검증 결과를 포함한다.
+
+실행 Runbook은 다음 properties를 사용한다.
+
+| Property | 값 |
+| --- | --- |
+| `type` | `run` |
+| `area` | `k3s` |
+| `cluster` | 클러스터 이름 |
+| `status` | `planned`, `failed`, `completed` 중 하나 |
+| `planned_at` | 계획 작성일, `YYYY-MM-DD` |
+| `completed_at` | 설치 완료일, `YYYY-MM-DD` |
+
+실행 중인 문서는 `status: planned`를 사용한다. 설치를 마친 문서는 `status: completed`와 `completed_at`을 기록한다. 실패한 문서는 `status: failed`와 발생 위치 및 관찰 결과를 기록한다.
