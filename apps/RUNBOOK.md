@@ -6,7 +6,15 @@ cluster: cpa
 
 # Applications 설치
 
-CPA cluster에 기반 애플리케이션을 설치한다.
+| 애플리케이션 | 역할 | 사용자 URL |
+| --- | --- | --- |
+| Argo CD | GitOps 관리 | `https://argo.ghilbut.com/cd` |
+| Istio system | 서비스 메시 control plane | — |
+| Istio gateways | ingress와 egress traffic 처리 | — |
+| OpenEBS LVM | local persistent volume | — |
+| CoreDNS | `ghilbut.com`, `ghilbut.net` DNS | — |
+| external-dns | DNS record 관리 | — |
+| cert-manager | TLS certificate 관리 | — |
 
 ## A. 사전 확인
 
