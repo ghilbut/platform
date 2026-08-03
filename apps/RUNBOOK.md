@@ -8,13 +8,7 @@ cluster: cpa
 
 CPA cluster에 Argo CD Application을 설치하고 `https://argo.ghilbut.com/cd`를 제공한다.
 
-## A. 공통 도메인 값
-
-| 항목 | 값 |
-| --- | --- |
-| DNS zones | `ghilbut.com`, `ghilbut.net` |
-
-## B. 사전 확인
+## A. 사전 확인
 
 [[k3s/runbooks/CPA|CPA K3s 재설치 Runbook]]가 `cpa` context, K3s, Cilium, Argo CD 기본 설치와 `openebs` volume group을 준비한 뒤에 이 Runbook을 실행한다.
 
@@ -24,7 +18,7 @@ kubectl --context cpa -n argo get deployment,statefulset,pod
 kubectl --context cpa -n argo get secret argocd-initial-admin-secret
 ```
 
-## C. 설치 순서
+## B. 설치 순서
 
 ### 1. Argo CD Application bootstrap
 
@@ -112,6 +106,7 @@ kubectl --context cpa get storageclass openebs-lvm
 | 항목 | 값 |
 | --- | --- |
 | CoreDNS listener | `192.168.254.4:53` |
+| DNS zones | `ghilbut.com`, `ghilbut.net` |
 
 #### etcd
 
@@ -138,6 +133,7 @@ dig @192.168.254.4 ghilbut.net SOA
 
 | 항목 | 값 |
 | --- | --- |
+| DNS zones | `ghilbut.com`, `ghilbut.net` |
 | Public DNS target | `ghilbut.asuscomm.com` |
 | Private DNS target | `192.168.254.4` |
 
@@ -166,6 +162,7 @@ kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
 | 항목 | 값 |
 | --- | --- |
 | Certificate DNS name | `argo.ghilbut.com` |
+| Route 53 hosted zones | `ghilbut.com`, `ghilbut.net` |
 
 cert-manager IAM role과 Route 53 DNS-01 권한을 적용한 뒤 `cert-manager`를 sync한다. `argo.ghilbut.com` Certificate가 Ready인지 확인한다.
 

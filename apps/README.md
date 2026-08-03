@@ -9,7 +9,7 @@ area: apps
 
 ## Bootstrap
 
-CPA 초기 설치 순서는 [[RUNBOOK#C. 설치 순서]]를 따른다. `apps/docs/`는 참고 자료로만 사용한다.
+CPA 초기 설치 순서는 [[RUNBOOK#B. 설치 순서]]를 따른다. `apps/docs/`는 참고 자료로만 사용한다.
 
 ## 문서
 
