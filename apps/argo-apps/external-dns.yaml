@@ -10,9 +10,8 @@ spec:
       repoURL: https://kubernetes-sigs.github.io/external-dns
       targetRevision: 1.21.1
       helm:
-        releaseName: external-dns
+        releaseName: external-dns-public
         values: |
-          fullnameOverride: external-dns
           env:
             - name: AWS_EC2_METADATA_DISABLED
               value: "true"
@@ -63,7 +62,7 @@ spec:
           registry: txt
           serviceAccount:
             create: true
-            name: external-dns
+            name: external-dns-public
           sources:
             - istio-gateway
           txtOwnerId: external-dns-cpa
@@ -74,7 +73,6 @@ spec:
       helm:
         releaseName: external-dns-private
         values: |
-          fullnameOverride: external-dns-private
           annotationFilter: external-dns.alpha.kubernetes.io/target=192.168.254.4
           domainFilters:
             - ghilbut.com

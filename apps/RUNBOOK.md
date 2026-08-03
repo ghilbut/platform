@@ -191,7 +191,7 @@ argocd app wait external-dns \
   --plaintext \
   --timeout 1200
 kubectl --context cpa -n external-dns get deployment,pod,serviceaccount
-kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
+kubectl --context cpa -n external-dns logs deployment/external-dns-public --tail=100
 kubectl --context cpa -n external-dns logs deployment/external-dns-private --tail=100
 ```
 
