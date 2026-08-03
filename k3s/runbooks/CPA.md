@@ -242,8 +242,6 @@ YAML
 새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 전체 block은 `argocd admin initial-password`의 첫 행으로 로그인한 뒤 password를 변경한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
 
 ```shell
-set -euo pipefail
-
 argocd login \
   --name cpa \
   --password "$(argocd admin initial-password --context cpa -n argo | sed -n '1p')" \
