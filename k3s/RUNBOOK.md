@@ -290,12 +290,12 @@ kubectl --context "$CLUSTER" get pods -n argo
 
 ### 1. Admin password
 
-새 admin password는 실행자가 대화형 prompt에 입력한다. `argocd-initial-admin-secret`의 password를 직접 사용한다. password와 Argo CD authentication token은 실행 문서와 저장소에 기록하지 않는다.
+새 admin password는 실행자가 대화형 prompt에 입력한다. `argocd admin initial-password`의 첫 행만 initial password로 사용한다. password와 Argo CD authentication token은 실행 문서와 저장소에 기록하지 않는다.
 
 ```shell
 argocd login \
   --name "$CLUSTER" \
-  --password "$(kubectl --context "$CLUSTER" -n argo get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode)" \
+  --password "$(argocd admin initial-password --context "$CLUSTER" -n argo | sed -n '1p')" \
   --username admin \
   --grpc-web-root-path /cd \
   --insecure \
