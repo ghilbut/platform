@@ -12,6 +12,7 @@ spec:
       helm:
         releaseName: public
         values: |
+          fullnameOverride: public
           env:
             - name: AWS_EC2_METADATA_DISABLED
               value: "true"
@@ -73,6 +74,7 @@ spec:
       helm:
         releaseName: private
         values: |
+          fullnameOverride: private
           annotationFilter: external-dns.alpha.kubernetes.io/target=192.168.254.4
           domainFilters:
             - ghilbut.com
