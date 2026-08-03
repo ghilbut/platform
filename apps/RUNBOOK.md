@@ -42,25 +42,28 @@ kubectl --context cpa -n argo get applications
 
 ### 2. Istio system과 Argo CD sidecar
 
-[Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/)을 참고한다.
+[Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/)과 [Istiod Helm chart values](https://raw.githubusercontent.com/istio/istio/1.30.3/manifests/charts/istio-control/istio-discovery/values.yaml)를 참고한다.
 
-`istio-system`을 sync한다. `argo` namespace에 sidecar injection을 설정하고 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod에 `istio-proxy` container가 있어야 한다.
+다음 Namespace를 제외하고 항상 sidecar를 주입한다.
+
+- `kube-system`
+- `kube-public`
+- `kube-node-lease`
+- `local-path-storage`
+- `istio-system`
+
+`istio-system`을 sync한 뒤 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod의 restartable init container에 `istio-proxy`가 있어야 한다.
 
 ```shell
-kubectl --context cpa -n argo patch application istio-system \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/istio-system \
-  --timeout=20m
-kubectl --context cpa label namespace argo istio-injection=enabled --overwrite
-kubectl --context cpa -n argo rollout restart deployment --all
-kubectl --context cpa -n argo rollout restart statefulset --all
-kubectl --context cpa -n argo rollout status deployment --all --timeout=10m
-kubectl --context cpa -n argo rollout status statefulset --all --timeout=10m
-kubectl --context cpa -n argo get pods \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].name}{"\n"}{end}'
+argocd app sync istio-system \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext
+kubectl --context cpa -n argo rollout restart deployment,statefulset
+kubectl --context cpa -n argo rollout status deployment,statefulset --timeout=10m
+kubectl --context cpa -n argo get pods -o json \
+  | jq -r '.items[] | [.metadata.name, ([.spec.initContainers[].name] | join(","))] | @tsv'
 ```
 
 ### 3. Istio ingress와 egress gateway

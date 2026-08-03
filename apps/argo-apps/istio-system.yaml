@@ -24,7 +24,7 @@ spec:
           seccompProfile:
             type: RuntimeDefault
           sidecarInjectorWebhook:
-            enableNamespacesByDefault: false
+            enableNamespacesByDefault: true
     - path: apps/argo-apps/istio-system
       repoURL: https://github.com/ghilbut/platform.git
       targetRevision: main
