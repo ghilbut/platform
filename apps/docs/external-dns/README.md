@@ -14,4 +14,4 @@ CPA Istio `public` Gateway의 `id.ghilbut.com`, `vault.ghilbut.com` CNAME과 TXT
 - [external-dns manifest 디렉터리](../../argo-apps/external-dns/)
 - [external-dns OpenTofu module](../../tofu/modules/external-dns/)
 - [Istio gateways manifest 디렉터리](../../argo-apps/istio-gateways/)
-- [K3s ServiceAccount OIDC RUNBOOK](../../../k3s/RUNBOOK.md#d-serviceaccount-oidc와-aws-iam-federation)
+- [[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation|K3s ServiceAccount OIDC RUNBOOK]]

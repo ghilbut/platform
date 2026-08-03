@@ -13,4 +13,4 @@ CPA cluster에서 `ghilbut.com`, `ghilbut.net` DNS-01 challenge로 Istio 공용 
 - [Argo CD Application](../../argo-apps/cert-manager.yaml)
 - [cert-manager manifest 디렉터리](../../argo-apps/cert-manager/)
 - [cert-manager OpenTofu module](../../tofu/modules/cert-manager/)
-- [K3s ServiceAccount OIDC RUNBOOK](../../../k3s/RUNBOOK.md#d-serviceaccount-oidc와-aws-iam-federation)
+- [[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation|K3s ServiceAccount OIDC RUNBOOK]]
