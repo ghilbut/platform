@@ -5,95 +5,78 @@ area: k3s
 
 # K3s 설치 RUNBOOK
 
-- [A. Common](#a-common)
-- [B. Server](#b-server)
-- [C. Agent](#c-agent)
+문서 규칙은 [RULEBOOK](RULEBOOK.md)을 따른다. 실행별 값과 실제 명령은 `runbooks/`에 기록한다.
 
-문서 규칙: [RULEBOOK](RULEBOOK.md)
+## A. 설치 값
 
-## A. Common
-
-### 1. 설치 값
-
-실행 기록에서 아래 값을 확정한다. CIDR이나 URL이 확정되지 않은 클러스터는 설치하지 않는다.
+설치 전에 다음 값을 확정한다. Service CIDR, Pod CIDR, 물리 네트워크 CIDR은 서로 겹치지 않는다. 실행 컴퓨터에는 `kubectl`과 `helm`이 있어야 한다.
 
 | 항목 | 설명 |
 | --- | --- |
-| CLUSTER | Kubernetes context와 K3s node name. 예: cpa |
-| SERVER_IP | control-plane의 고정 IPv4 주소 |
-| SERVICE_CIDR | Kubernetes Service CIDR |
-| CLUSTER_DNS_IP | SERVICE_CIDR 안의 CoreDNS Service IP |
-| POD_CIDR | Cilium cluster-pool Pod CIDR. Service CIDR과 겹치지 않아야 함 |
-| OIDC_ISSUER | K3s ServiceAccount issuer URL |
-| HOST_DISK_LAYOUT | 파일시스템별 용량과 OpenEBS LVM용 미마운트 영역 |
-| AGENTS | agent별 node name, 고정 IP, label, taint |
-| K3S_VERSION | 설치 후 k3s --version으로 기록하는 참고 값. 설치 시 지정하지 않음 |
-| CILIUM_VERSION | Helm chart 버전 |
+| `CLUSTER` | Kubernetes context와 server node 이름 |
+| `SERVER_IP` | control-plane의 고정 IPv4 주소 |
+| `SERVICE_CIDR` | Kubernetes Service CIDR |
+| `CLUSTER_DNS_IP` | `SERVICE_CIDR`에 속한 CoreDNS Service IP |
+| `POD_CIDR` | Cilium cluster-pool Pod CIDR |
+| `OIDC_ISSUER` | ServiceAccount issuer URL |
+| `CILIUM_VERSION` | Cilium Helm chart 버전 |
+| `ARGO_CD_VERSION` | Argo CD Helm chart 버전 |
+| `OPENEBSD_DEVICE` | OpenEBS LVM physical volume으로 초기화할 미마운트 block device |
+| `OPENEBSD_VG` | OpenEBS LVM volume group 이름 |
 
-AWS IAM federation에 사용하는 OIDC issuer의 공개 범위, 검증 절차, 애플리케이션 역할 분리는 [OIDC](OIDC.md)를 따른다.
-
-다음을 확인한다. 값 표의 모든 값을 실행 기록에 채운 뒤, 아래 명령의 꺾쇠괄호 값을 해당 값으로 바꾼다.
-
-- SERVER_IP:6443에 관리자 컴퓨터와 모든 agent가 연결할 수 있다.
-- SERVICE_CIDR, POD_CIDR, 물리 네트워크 CIDR가 겹치지 않는다.
-- 관리자 컴퓨터에 kubectl과 helm이 있다.
-
-실행 기록에는 실제 버전, host 사양, CIDR, issuer URL, 수행 시각, 검증 결과와 보류 항목만 기록한다. token과 kubeconfig 인증서·private key는 기록하지 않는다.
+ServiceAccount OIDC discovery 문서와 JWKS 공개 절차는 [OIDC](OIDC.md)를 따른다. token, kubeconfig 인증서, private key는 실행 문서와 저장소에 기록하지 않는다.
 
 ## B. Server
 
-[K3s Server configuration options](https://docs.k3s.io/cli/server)
+### 1. host 준비
 
-### 1. server host와 Ubuntu 준비
-
-server는 물리 장비 또는 VM으로 준비할 수 있다. 실행 기록에는 host 유형, 이름, CPU, 메모리, 디스크, 고정 IP를 적는다. K3s에는 별도 파일시스템을 사용한다.
-
-| 경로 | 용도 |
-| --- | --- |
-| /var/lib/kubelet | kubelet 상태와 볼륨 마운트 |
-| /var/lib/rancher | K3s 데이터 루트 |
-| /var/lib/rancher/k3s/server/db | embedded etcd 데이터 |
-| /var/lib/rancher/k3s/agent/containerd | containerd 이미지와 레이어 |
-| 미마운트 영역 | OpenEBS LVM의 PV 영역 |
-
-Ubuntu 설치 후 SSH 공개키 로그인을 설정하고 상태를 확인한다.
+K3s 데이터와 OpenEBS LVM physical volume은 서로 다른 block device 또는 파티션을 사용한다. `OPENEBSD_DEVICE`에는 파일시스템, mount, physical volume, volume group이 없어야 한다.
 
 ```shell
 export CLUSTER='<CLUSTER>'
 export SERVER_IP='<SERVER_IP>'
 export SSH_USER='<SSH_USER>'
-export SSH_IDENTITY_FILE="$HOME/.ssh/id_ed25519"
-export KUBECONFIG_PATH="$HOME/.kube/$CLUSTER.yaml"
+export OPENEBSD_DEVICE='<OPENEBSD_DEVICE>'
+export OPENEBSD_VG='openebs'
 
-ssh-copy-id -i "$SSH_IDENTITY_FILE.pub" "$SSH_USER@$SERVER_IP"
 ssh "$SSH_USER@$SERVER_IP"
 
 sudo apt update -y
 sudo apt full-upgrade -y
-sudo apt install -y qemu-guest-agent
+sudo apt install -y lvm2 qemu-guest-agent
 sudo systemctl enable --now qemu-guest-agent
 sudo systemctl is-active qemu-guest-agent
 lsblk -o NAME,FSTYPE,SIZE,TYPE,MOUNTPOINTS
+sudo wipefs -n "$OPENEBSD_DEVICE"
+sudo pvs
+sudo vgs
 ```
 
-관리자 kubeconfig를 원격에서 읽으려면 SSH 사용자가 sudo를 비밀번호 없이 실행할 수 있어야 한다. 사용자별 sudoers 파일을 만들고 문법을 검증한다.
+### 2. OpenEBS LVM volume group 생성
+
+`pvcreate`는 대상 device의 기존 서명을 LVM metadata로 바꾼다. `wipefs -n`, `pvs`, `vgs` 결과가 대상 device가 비어 있음을 보여 줄 때만 실행한다.
 
 ```shell
-echo "$SSH_USER ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee "/etc/sudoers.d/$SSH_USER" >/dev/null
-sudo chmod 440 "/etc/sudoers.d/$SSH_USER"
-sudo visudo -cf "/etc/sudoers.d/$SSH_USER"
+sudo pvcreate "$OPENEBSD_DEVICE"
+sudo vgcreate "$OPENEBSD_VG" "$OPENEBSD_DEVICE"
+sudo pvs -o pv_name,vg_name,pv_size
+sudo vgs -o vg_name,pv_count,vg_size
 ```
 
-### 2. K3s server 설치
+### 3. K3s server 설치
 
-다음은 control-plane에서 실행한다.
+재설치는 기존 K3s 상태를 삭제한다. 기존 클러스터의 필요한 데이터는 재설치 전에 별도 백업한다.
 
 ```shell
 export CLUSTER='<CLUSTER>'
 export SERVER_IP='<SERVER_IP>'
 export SERVICE_CIDR='<SERVICE_CIDR>'
 export CLUSTER_DNS_IP='<CLUSTER_DNS_IP>'
-export OIDC_ISSUER='https://oidc.k3s.ghilbut.com/<CLUSTER>'
+export OIDC_ISSUER='<OIDC_ISSUER>'
+
+if [ -x /usr/local/bin/k3s-uninstall.sh ]; then
+  sudo /usr/local/bin/k3s-uninstall.sh
+fi
 
 export INSTALL_K3S_EXEC="\
 --cluster-dns $CLUSTER_DNS_IP \
@@ -112,95 +95,160 @@ export INSTALL_K3S_EXEC="\
 --service-cidr $SERVICE_CIDR"
 
 curl -sfL https://get.k3s.io | sh -
-
 sudo systemctl is-active k3s
-sudo journalctl -u k3s -n 100 --no-pager
 sudo k3s --version
 ```
 
-서버의 /etc/rancher/k3s/k3s.yaml에는 관리자 인증서와 private key가 있다. 저장소에 넣지 않는다. 인증서는 갱신될 수 있으므로 원격 kubeconfig가 동작하지 않으면 서버에서 최신 파일을 다시 복사한다.
+K3s 설치 script는 stable channel의 최신 release를 설치한다. `k3s --version` 결과를 실행 문서에 기록한다.
+
+### 4. 관리자 kubeconfig 갱신
+
+서버의 `/etc/rancher/k3s/k3s.yaml`은 관리자 인증 정보를 포함한다. 다음 명령은 로컬 `~/.kube/config`의 `CLUSTER` cluster, user, context를 새 K3s 인증 정보로 바꾸고 다른 항목을 유지한다.
 
 ```shell
+export CLUSTER='<CLUSTER>'
+export SERVER_IP='<SERVER_IP>'
+
 mkdir -p ~/.kube
+KUBECONFIG_SOURCE=$(mktemp)
+KUBECONFIG_NEW=$(mktemp)
+
 ssh "$SSH_USER@$SERVER_IP" 'sudo cat /etc/rancher/k3s/k3s.yaml' \
-  | sed "s#https://127.0.0.1:6443#https://$SERVER_IP:6443#" \
-  > "$KUBECONFIG_PATH"
-chmod 600 "$KUBECONFIG_PATH"
-KUBECONFIG="$KUBECONFIG_PATH" kubectl config rename-context default "$CLUSTER"
-KUBECONFIG="$KUBECONFIG_PATH" kubectl get nodes
+  | sed \
+      -e "s#https://127.0.0.1:6443#https://$SERVER_IP:6443#" \
+      -e "s/name: default/name: $CLUSTER/g" \
+      -e "s/cluster: default/cluster: $CLUSTER/g" \
+      -e "s/user: default/user: $CLUSTER/g" \
+      -e "s/current-context: default/current-context: $CLUSTER/" \
+  > "$KUBECONFIG_SOURCE"
+
+chmod 600 "$KUBECONFIG_SOURCE"
+KUBECONFIG="$KUBECONFIG_SOURCE:$HOME/.kube/config" \
+  kubectl config view --merge --flatten --raw > "$KUBECONFIG_NEW"
+chmod 600 "$KUBECONFIG_NEW"
+mv "$KUBECONFIG_NEW" ~/.kube/config
+kubectl config use-context "$CLUSTER"
+kubectl config view --minify --raw \
+  -o jsonpath='{.contexts[0].context.cluster}{" "}{.contexts[0].context.user}{"\n"}'
+kubectl get nodes -o wide
 ```
 
-CNI 이전의 NotReady는 예상되는 상태다. Cilium 설치 후 Ready를 확인한다.
+K3s가 CNI를 기다리는 동안 server node는 `NotReady`다. Cilium 설치 뒤 node `Ready`를 확인한다.
 
-### 3. Cilium 설치
+## C. Cilium 최소 구성
 
-CNI가 없으면 Helm Controller Job도 실행되지 않으므로 Cilium은 Helm CLI로 먼저 설치한다.
+CNI가 없으면 Helm Controller Job도 실행하지 못한다. Cilium은 Helm CLI로 먼저 설치한다.
 
 ```shell
-export KUBECONFIG="$KUBECONFIG_PATH"
+export CLUSTER='<CLUSTER>'
+export SERVER_IP='<SERVER_IP>'
 export POD_CIDR='<POD_CIDR>'
 export CILIUM_VERSION='<CILIUM_VERSION>'
-export CILIUM_SERVICE_PORT='6443'
-export CILIUM_POD_MASK_SIZE='24'
-export CILIUM_OPERATOR_REPLICAS='1'
 
-kubectl taint nodes --all node.cilium.io/agent-not-ready=true:NoExecute
-kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/mcs-api/master/config/crd/multicluster.x-k8s.io_serviceexports.yaml
-kubectl apply -f https://raw.githubusercontent.com/kubernetes-sigs/mcs-api/master/config/crd/multicluster.x-k8s.io_serviceimports.yaml
+kubectl --context "$CLUSTER" taint nodes --all \
+  node.cilium.io/agent-not-ready=true:NoExecute
+kubectl --context "$CLUSTER" apply -f \
+  https://raw.githubusercontent.com/kubernetes-sigs/mcs-api/master/config/crd/multicluster.x-k8s.io_serviceexports.yaml
+kubectl --context "$CLUSTER" apply -f \
+  https://raw.githubusercontent.com/kubernetes-sigs/mcs-api/master/config/crd/multicluster.x-k8s.io_serviceimports.yaml
 
 helm repo add cilium https://helm.cilium.io/
 helm repo update
-helm upgrade --install cilium cilium/cilium \
+helm upgrade --kube-context "$CLUSTER" --install cilium cilium/cilium \
   --version "$CILIUM_VERSION" \
   --namespace kube-system \
   --values /dev/stdin <<YAML
 k8sServiceHost: $SERVER_IP
-k8sServicePort: $CILIUM_SERVICE_PORT
+k8sServicePort: 6443
 ipam:
   operator:
     mode: cluster-pool
-    clusterPoolIPv4MaskSize: $CILIUM_POD_MASK_SIZE
+    clusterPoolIPv4MaskSize: 24
     clusterPoolIPv4PodCIDRList: $POD_CIDR
 kubeProxyReplacement: true
 l7Proxy: false
 operator:
-  replicas: $CILIUM_OPERATOR_REPLICAS
+  replicas: 1
 YAML
 
-kubectl rollout status daemonset/cilium -n kube-system --timeout=10m
-kubectl rollout status deployment/cilium-operator -n kube-system --timeout=10m
-kubectl get nodes
-kubectl get pods -A
-```
-
-CoreDNS 또는 metrics-server가 CNI 이전에 Pending으로 생성됐다면 삭제해 다시 생성한다.
-
-```shell
-kubectl get pods -A \
+kubectl --context "$CLUSTER" rollout status daemonset/cilium \
+  -n kube-system --timeout=10m
+kubectl --context "$CLUSTER" rollout status deployment/cilium-operator \
+  -n kube-system --timeout=10m
+kubectl --context "$CLUSTER" get pods -A \
   -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,HOSTNETWORK:.spec.hostNetwork \
   --no-headers=true \
   | awk '$3 == "<none>" {print "-n " $1 " " $2}' \
-  | xargs -r -L 1 kubectl delete pod
+  | xargs -r -L 1 kubectl --context "$CLUSTER" delete pod
+kubectl --context "$CLUSTER" wait --for=condition=Ready node \
+  --all --timeout=10m
 ```
 
-K3s server 설치는 server 노드가 Ready이고 Cilium DaemonSet과 Operator가 준비되면 완료다.
+## D. Argo CD 최소 구성
 
-## C. Agent
+Argo CD는 `argo` namespace에 설치한다. 이 구성은 Dex와 notifications를 사용하지 않는다.
 
-[K3s Agent configuration options](https://docs.k3s.io/cli/agent)
+```shell
+export CLUSTER='<CLUSTER>'
+export ARGO_CD_VERSION='<ARGO_CD_VERSION>'
 
-### 1. K3s agent 설치
+kubectl --context "$CLUSTER" create namespace argo
+kubectl --context "$CLUSTER" apply -f - <<'YAML'
+apiVersion: v1
+kind: Secret
+metadata:
+  name: argocd-secret
+  namespace: argo
+type: Opaque
+YAML
 
-agent host도 [B. Server](#b-server)의 Ubuntu 준비 절차를 수행한다. agent에는 /var/lib/kubelet, /var/lib/rancher, /var/lib/rancher/k3s/agent/containerd 파일시스템을 구성한다. embedded etcd 전용인 /var/lib/rancher/k3s/server/db는 agent에 만들지 않는다.
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+helm upgrade --kube-context "$CLUSTER" --install cd argo/argo-cd \
+  --version "$ARGO_CD_VERSION" \
+  --namespace argo \
+  --wait \
+  --timeout 10m \
+  --values /dev/stdin <<'YAML'
+fullnameOverride: cd
+global:
+  logging:
+    level: warn
+configs:
+  cm:
+    application.resourceTrackingMethod: annotation+label
+  params:
+    server.insecure: true
+    server.basehref: /cd
+    server.rootpath: /cd
+  secret:
+    createSecret: false
+dex:
+  enabled: false
+notifications:
+  enabled: false
+YAML
 
-control-plane에서 join token을 읽는다. token은 실행 기록과 저장소에 기록하지 않는다.
+kubectl --context "$CLUSTER" get pods -n argo
+kubectl --context "$CLUSTER" -n argo port-forward service/cd-server 8080:80
+```
+
+`http://localhost:8080/cd`는 `http://localhost:8080/cd/`로 redirect한다. 별도 terminal에서 다음 명령으로 응답을 확인한다.
+
+```shell
+curl --fail --silent --show-error --output /dev/null \
+  --write-out '%{http_code} %{redirect_url}\n' \
+  http://localhost:8080/cd
+```
+
+## E. Agent
+
+agent host는 server와 같은 Ubuntu 준비 절차를 수행한다. agent에는 `/var/lib/kubelet`, `/var/lib/rancher`, `/var/lib/rancher/k3s/agent/containerd` 파일시스템을 사용한다. embedded etcd 전용인 `/var/lib/rancher/k3s/server/db`는 agent에 만들지 않는다.
 
 ```shell
 # control-plane
 sudo cat /var/lib/rancher/k3s/server/node-token
 ```
-
-각 agent에서 다음 공통 설정을 실행한다.
 
 ```shell
 # agent
@@ -208,7 +256,7 @@ export CLUSTER='<CLUSTER>'
 export SERVER_IP='<SERVER_IP>'
 export AGENT_NAME='<AGENT_NAME>'
 export AGENT_IP='<AGENT_IP>'
-export K3S_TOKEN='<token from control-plane>'
+export K3S_TOKEN='<control-plane node token>'
 
 export INSTALL_K3S_EXEC="\
 agent \
@@ -216,39 +264,15 @@ agent \
 --node-name $AGENT_NAME \
 --node-ip $AGENT_IP \
 --kubelet-arg allowed-unsafe-sysctls=net.ipv4.*"
-```
 
-일반 workload agent는 다음 명령을 실행한다.
-
-```shell
 curl -sfL https://get.k3s.io | sh -
-```
-
-역할 전용 agent는 label과 taint를 추가한 뒤 설치한다. 일반 workload agent에는 이 명령을 실행하지 않는다.
-
-```shell
-export AGENT_LABEL='node-role.example.io/gateway=true'
-export AGENT_TAINT='node-role.example.io/gateway=true:NoSchedule'
-
-export INSTALL_K3S_EXEC="$INSTALL_K3S_EXEC \
---node-label $AGENT_LABEL \
---node-taint $AGENT_TAINT"
-curl -sfL https://get.k3s.io | sh -
-```
-
-각 agent에서 설치 후 상태를 확인한다.
-
-```shell
 sudo systemctl is-active k3s-agent
-sudo journalctl -u k3s-agent -n 100 --no-pager
 sudo k3s --version
 ```
 
-관리자 컴퓨터에서 노드 등록과 Cilium Pod 배치를 확인한다.
-
 ```shell
-KUBECONFIG="$KUBECONFIG_PATH" kubectl get nodes -o wide
-KUBECONFIG="$KUBECONFIG_PATH" kubectl get pods -n kube-system -l k8s-app=cilium -o wide
+# administrator computer
+kubectl --context "$CLUSTER" get nodes -o wide
+kubectl --context "$CLUSTER" get pods -n kube-system \
+  -l k8s-app=cilium -o wide
 ```
-
-agent 설치는 대상 agent가 Ready이고 해당 agent의 Cilium Pod가 Ready이면 완료다.

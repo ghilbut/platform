@@ -21,7 +21,7 @@ ServiceAccount token, Kubernetes Secret, token 서명 private key는 공개하�
 
 ## 구성과 변경 추적
 
-K3s 설치 시 `service-account-issuer`와 `service-account-jwks-uri`에 이 issuer를 설정한다. 상세 절차는 [K3s 설치 RUNBOOK](RUNBOOK.md#b-server)의 server 설치를 따른다. CPA의 적용 값은 [CPA 설치 기록](RUN-CPA-2026-05-18.md#1-범위)에 기록한다.
+K3s 설치 시 `service-account-issuer`와 `service-account-jwks-uri`에 이 issuer를 설정한다. 상세 절차는 [K3s 설치 RUNBOOK](RUNBOOK.md#b-server)의 server 설치를 따른다. CPA의 적용 값은 [CPA 실행 Runbook](runbooks/CPA.md#a-적용-값)에 기록한다.
 
 `k3s/tofu`는 Kubernetes API에서 discovery 문서와 JWKS를 읽어 CDN object로 동기화하고, CPA issuer의 IAM OIDC provider를 만든다. 공개 endpoint의 CDN과 object 경로는 [AWS CDN](../aws/cdn/README.md)을 따른다.
 
