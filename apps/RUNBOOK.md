@@ -8,16 +8,15 @@ cluster: cpa
 
 CPA cluster에 Argo CD Application을 설치하고 `https://argo.ghilbut.com/cd`를 제공한다.
 
-## A. 공통 설치 값
+## A. 공통 도메인 값
 
 | 항목 | 값 |
 | --- | --- |
-| Kubernetes context | `cpa` |
 | DNS zones | `ghilbut.com`, `ghilbut.net` |
 
 ## B. 사전 확인
 
-[[k3s/runbooks/CPA|CPA K3s 재설치 Runbook]]의 K3s, Cilium, Argo CD 기본 설치와 `openebs` volume group 구성이 완료된 뒤에 이 Runbook을 실행한다.
+[[k3s/runbooks/CPA|CPA K3s 재설치 Runbook]]가 `cpa` context, K3s, Cilium, Argo CD 기본 설치와 `openebs` volume group을 준비한 뒤에 이 Runbook을 실행한다.
 
 ```shell
 kubectl --context cpa get nodes
