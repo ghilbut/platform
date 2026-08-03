@@ -239,7 +239,31 @@ YAML
 
 ### 1. Admin password
 
-새 admin password는 실행자가 등록한다. [K3s RUNBOOK의 admin password 절차](../RUNBOOK.md#1-admin-password)를 실행한 뒤 `argocd-initial-admin-secret`을 삭제한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+새 admin password는 실행자가 대화형 prompt에 입력한다. 다음 전체 block을 실행한다. `argocd account update-password`는 현재 password, 새 password, 새 password 확인을 차례로 요청한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+
+```shell
+set -euo pipefail
+
+argocd login \
+  --name cpa \
+  --password "$(argocd admin initial-password --context cpa -n argo)" \
+  --username admin \
+  --grpc-web-root-path /cd \
+  --insecure \
+  --kube-context cpa \
+  --plaintext \
+  --port-forward \
+  --port-forward-namespace argo
+
+argocd account update-password \
+  --argocd-context cpa \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo
+
+kubectl --context cpa -n argo delete secret argocd-initial-admin-secret
+argocd logout cpa
+```
 
 ### 2. Local UI
 
