@@ -9,7 +9,7 @@ permission set은 새 역할별 permission set의 로그인을 검증할 때까�
 
 | Permission set | 대상 계정 | Principal | 책임 |
 |---|---|---|---|
-| `foundation-management` | management | `devops` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
+| `foundation-management` | management | `DevOps` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
 | `platform-operator` | platform | `ghilbut` 사용자 | 플랫폼 워크로드 인프라 관리 |
 | `ultary-domains-operator` | ultary-domains | `ghilbut` 사용자 | 도메인 등록과 Route 53 DNS 관리 |
 
