@@ -285,6 +285,38 @@ notifications:
 YAML
 
 kubectl --context "$CLUSTER" get pods -n argo
+```
+
+### 1. Admin password
+
+새 admin password는 실행자가 대화형 prompt에 입력한다. password와 Argo CD authentication token은 실행 문서와 저장소에 기록하지 않는다.
+
+```shell
+argocd login \
+  --name "$CLUSTER" \
+  --password "$(argocd admin initial-password --context "$CLUSTER" -n argo)" \
+  --username admin \
+  --grpc-web-root-path /cd \
+  --insecure \
+  --kube-context "$CLUSTER" \
+  --plaintext \
+  --port-forward \
+  --port-forward-namespace argo
+
+argocd account update-password \
+  --argocd-context "$CLUSTER" \
+  --kube-context "$CLUSTER" \
+  --port-forward \
+  --port-forward-namespace argo
+
+kubectl --context "$CLUSTER" -n argo \
+  delete secret argocd-initial-admin-secret
+argocd logout "$CLUSTER"
+```
+
+### 2. Local UI
+
+```shell
 kubectl --context "$CLUSTER" -n argo port-forward service/cd-server 8080:80
 ```
 

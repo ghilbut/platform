@@ -235,7 +235,15 @@ dex:
 notifications:
   enabled: false
 YAML
+```
 
+### 1. Admin password
+
+새 admin password는 실행자가 등록한다. [K3s RUNBOOK의 admin password 절차](../RUNBOOK.md#1-admin-password)를 실행한 뒤 `argocd-initial-admin-secret`을 삭제한다. password와 authentication token은 이 실행 Runbook에 기록하지 않는다.
+
+### 2. Local UI
+
+```shell
 kubectl --context cpa -n argo port-forward service/cd-server 8080:80
 ```
 
