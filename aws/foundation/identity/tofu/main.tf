@@ -13,7 +13,7 @@ locals {
   account_assignments = {
     management_devops = {
       account_id     = "384959722788"
-      principal_id   = aws_identitystore_group.dev_ops.group_id
+      principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
     platform_ghilbut = {
@@ -29,13 +29,13 @@ locals {
   }
 }
 
-resource "aws_identitystore_group" "dev_ops" {
+resource "aws_identitystore_group" "devops" {
   display_name      = "DevOps"
   identity_store_id = local.identity_store_id
 }
 
-resource "aws_identitystore_group_membership" "dev_ops_ghilbut" {
-  group_id          = aws_identitystore_group.dev_ops.group_id
+resource "aws_identitystore_group_membership" "devops_ghilbut" {
+  group_id          = aws_identitystore_group.devops.group_id
   identity_store_id = local.identity_store_id
   member_id         = local.ghilbut_user_id
 }
@@ -89,7 +89,7 @@ module "management" {
   account_assignments = {
     management = {
       account_id     = "384959722788"
-      principal_id   = aws_identitystore_group.dev_ops.group_id
+      principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
   }
