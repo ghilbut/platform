@@ -124,7 +124,7 @@ kubectl --context cpa get storageclass openebs-lvm \
 
 ### 4. CoreDNS
 
-`coredns`를 sync한다. CoreDNS가 Ready인지 확인한다.
+[CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다. `coredns`를 sync한다. CoreDNS가 Ready인지 확인한다.
 
 #### 설치 값
 
@@ -132,20 +132,33 @@ kubectl --context cpa get storageclass openebs-lvm \
 | --- | --- |
 | CoreDNS listener | `192.168.254.4:53` |
 | DNS zones | `ghilbut.com`, `ghilbut.net` |
+| CoreDNS image | `coredns/coredns:1.14.6` |
+| etcd image | `quay.io/coreos/etcd:v3.6.14` |
 
 #### etcd
 
-[CoreDNS etcd plugin](https://coredns.io/plugins/etcd/)을 참고한다. CoreDNS 전용 etcd PersistentVolumeClaim은 `openebs-lvm` StorageClass를 사용한다. CoreDNS와 etcd가 Ready인 뒤 `ghilbut.com`과 `ghilbut.net` zone을 조회한다.
+CoreDNS 전용 etcd PersistentVolumeClaim은 `openebs-lvm` StorageClass와 `1Gi` storage를 사용한다. CPA host의 `192.168.254.4:53` TCP·UDP listener를 확인한 뒤 CoreDNS와 etcd가 Ready인 상태에서 `ghilbut.com`과 `ghilbut.net` zone을 조회한다.
 
 ```shell
-kubectl --context cpa -n argo patch application coredns \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/coredns \
-  --timeout=20m
-kubectl --context cpa -n coredns get pvc,pod,service
+ssh cpa 'sudo ss -lntup | grep -E ":(53|2379|2380)\\b" || true'
+argocd app sync coredns \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait coredns \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n coredns wait \
+  --for=jsonpath='{.status.phase}'=Bound \
+  persistentvolumeclaim/data-etcd-0 \
+  --timeout=10m
 dig @192.168.254.4 ghilbut.com SOA
 dig @192.168.254.4 ghilbut.net SOA
 ```
