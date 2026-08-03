@@ -3,8 +3,6 @@ kind: ConfigMap
 metadata:
   name: coredns
   namespace: coredns
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
   labels:
     app.kubernetes.io/component: dns
     app.kubernetes.io/name: coredns
@@ -72,8 +70,6 @@ kind: Service
 metadata:
   name: coredns
   namespace: coredns
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
   labels:
     app.kubernetes.io/component: dns
     app.kubernetes.io/name: coredns
