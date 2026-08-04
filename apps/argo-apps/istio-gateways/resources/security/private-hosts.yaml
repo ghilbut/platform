@@ -2,7 +2,6 @@ apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
   name: private-hosts
-  namespace: istio-gateways
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
