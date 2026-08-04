@@ -51,20 +51,22 @@ state에 접근하고, AWS provider는 이어서 Management 계정의 `tofu-appl
 실행 환경에서 source profile을 선택하고 AWS SDK가 shared config를 읽도록 설정한다.
 
 ```sh
-export AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains
+export AWS_PROFILE=ghilbut-tofu-apply-for-management
 export AWS_SDK_LOAD_CONFIG=1
 
-cd aws/foundation/state/tofu
+cd aws/foundation/accounts/tofu
+tofu init -reconfigure
+tofu plan
+tofu apply
+
+export AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains
+
+cd ../../state/tofu
 tofu init -reconfigure
 tofu plan
 tofu apply
 
 export AWS_PROFILE=ghilbut-tofu-apply-for-management
-
-cd ../../accounts/tofu
-tofu init -reconfigure
-tofu plan
-tofu apply
 
 cd ../../identity/tofu
 tofu init -reconfigure
