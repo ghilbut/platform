@@ -145,7 +145,7 @@ module "github_actions" {
   origin_access_control_arn        = module.cloudfront.origin_access_control_arn
   repository_full_name             = "${var.github_owner}/${var.github_repository}"
   repo                             = local.repo
-  state_bucket                     = "ghilbut-tfstates"
+  state_bucket                     = "ghilbut-tfstates-v2"
   state_key                        = "platform/aws/cdn.tfstate"
   zone_ids                         = module.certificate.zone_ids
 }

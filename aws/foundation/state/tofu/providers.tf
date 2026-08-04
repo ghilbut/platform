@@ -2,7 +2,7 @@ provider "aws" {
   region = "us-east-1"
 
   assume_role {
-    role_arn = "arn:aws:iam::869061964712:role/tofu-apply"
+    role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
   }
 
   default_tags {

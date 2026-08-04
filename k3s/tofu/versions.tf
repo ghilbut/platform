@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.12"
 
   backend "s3" {
-    bucket       = "ghilbut-tfstates"
+    bucket       = "ghilbut-tfstates-v2"
     encrypt      = true
     key          = "k3s.tfstate"
     profile      = "ghilbut-platform"

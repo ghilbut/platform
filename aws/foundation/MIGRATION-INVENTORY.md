@@ -50,6 +50,7 @@ AWS Organizations 이름은 `869061964712`가 `domains`, `012646747332`가 `plat
 | `platform/aws/foundation/accounts.tfstate` | `aws/foundation/accounts/tofu/` | Management | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. |
 | `platform/aws/foundation/identity.tfstate` | `aws/foundation/identity/tofu/` | Management | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. Account assignment는 [Issue #96](https://github.com/ghilbut/platform/issues/96)과 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 변경한다. |
 | `platform/aws/foundation/state.tfstate` | `aws/foundation/state/tofu/` | Platform | [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 새 bucket policy state로 교체한다. |
+| `platform/aws/foundation/workload.tfstate` | `aws/foundation/workload/tofu/` | Platform | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. Platform 실행 역할은 [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 생성했다. |
 | `platform/domains.tfstate` | `domains/tofu/` | Domains | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. 도메인과 hosted zone은 Domains에 유지한다. |
 | `platform/github.tfstate` | `github/tofu/` | Platform | Backend는 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전하고 GitHub Actions OIDC provider는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
 | `ultary/domains.tfstate` | `ultary/domains/tofu/` | UltaryDomains | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. |
