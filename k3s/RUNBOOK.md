@@ -138,7 +138,7 @@ export INSTALL_K3S_EXEC="\
 --node-name=$CLUSTER \
 --service-cidr $SERVICE_CIDR"
 
-curl -sfL https://get.k3s.io | sh -
+curl -sfL https://get.k3s.io | sudo env INSTALL_K3S_EXEC="$INSTALL_K3S_EXEC" sh -
 sudo systemctl is-active k3s
 sudo k3s --version
 ```
@@ -190,6 +190,9 @@ K3s server는 `service-account-issuer`와 `service-account-jwks-uri`로 ServiceA
 CPA의 `k3s/tofu`는 Kubernetes API에서 discovery document와 JWKS를 읽어 CDN origin object로 동기화하고, `https://oidc.k3s.ghilbut.com/cpa` IAM OIDC provider를 관리한다.
 
 ```shell
+export AWS_SDK_LOAD_CONFIG=1
+export AWS_PROFILE='ghilbut-tofu-apply-for-workloads-domains'
+
 tofu -chdir=k3s/tofu init
 tofu -chdir=k3s/tofu plan
 tofu -chdir=k3s/tofu apply
