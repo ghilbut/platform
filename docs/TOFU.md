@@ -26,7 +26,7 @@
 - CDN module은 `local.default_tags`에 `opentofu/module/repo`,
   `opentofu/module/path`만 추가한다. `var.default_tags`를 module input으로 전달하지
   않는다.
-- CDN 리소스 이름과 `Name` 태그는 `platform-cdn`을 기준으로 한다. 저장소 소유자를
+- CDN 리소스 이름과 `Name` 태그는 `cdn-platform`을 기준으로 한다. 저장소 소유자를
   중복한 `ghilbut-` 접두사는 S3의 전역 버킷 이름처럼 충돌 방지가 필요한 경우에만 쓴다.
 - S3 객체에는 `Name` 태그를 붙이지 않는다. 객체 태그는 10개 제한을 넘지 않아야 한다.
 

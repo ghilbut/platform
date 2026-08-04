@@ -34,27 +34,12 @@ locals {
       account_id            = local.domains_account_id
       principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
       object_keys = [
-        "k3s.tfstate",
-        "k3s.tfstate.tflock",
         "platform/apps.tfstate",
         "platform/apps.tfstate.tflock",
-        "platform/aws/cdn.tfstate",
-        "platform/aws/cdn.tfstate.tflock",
         "platform/domains.tfstate",
         "platform/domains.tfstate.tflock",
-        "platform/github.tfstate",
-        "platform/github.tfstate.tflock",
         "ultary/domains.tfstate",
         "ultary/domains.tfstate.tflock",
-      ]
-    }
-    domains_cdn_github_actions = {
-      sid_prefix            = "DomainsCdnGitHubActions"
-      account_id            = local.domains_account_id
-      principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/platform-cdn-github-actions"
-      object_keys = [
-        "platform/aws/cdn.tfstate",
-        "platform/aws/cdn.tfstate.tflock",
       ]
     }
     platform = {

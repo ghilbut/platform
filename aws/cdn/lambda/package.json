@@ -4,7 +4,7 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:@aws-sdk/* --define:CDN_BUCKET='\"ghilbut-platform-cdn\"' && esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index-platform.mjs --format=esm --external:@aws-sdk/* --define:CDN_BUCKET='\"__CDN_BUCKET__\"'",
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --outfile=dist/index.mjs --format=esm --external:@aws-sdk/* --define:CDN_BUCKET='\"__CDN_BUCKET__\"'",
     "test": "node --experimental-test-module-mocks --import tsx --test test/*.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
