@@ -18,7 +18,7 @@ resource "aws_iam_role" "this" {
       Action = "sts:AssumeRole"
       Condition = {
         ArnLike = {
-          "aws:PrincipalArn" = "arn:aws:iam::${var.source_account_id}:role/aws-reserved/sso.amazonaws.com/${var.sso_region}/AWSReservedSSO_${var.source_permission_set_name}_*"
+          "aws:PrincipalArn" = "arn:aws:iam::${var.source_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_${var.source_permission_set_name}_*"
         }
       }
     }]

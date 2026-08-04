@@ -19,9 +19,13 @@ variable "source_permission_set_name" {
 }
 
 variable "sso_region" {
-  description = "IAM Identity Center 리전입니다."
+  description = "IAM Identity Center 리전입니다. 이 module은 us-east-1의 AWSReservedSSO 역할 ARN 형식만 지원합니다."
   type        = string
-  default     = "us-east-1"
+
+  validation {
+    condition     = var.sso_region == "us-east-1"
+    error_message = "tofu-execution-role module은 IAM Identity Center 리전으로 us-east-1만 지원합니다."
+  }
 }
 
 variable "managed_policy_arns" {

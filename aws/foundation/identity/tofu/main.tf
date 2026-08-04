@@ -115,6 +115,7 @@ module "management_tofu_execution_role" {
   description                = "OpenTofu execution role for Foundation management-account resources."
   source_account_id          = "384959722788"
   source_permission_set_name = "TofuApplyForManagement"
+  sso_region                 = "us-east-1"
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
     "arn:aws:iam::aws:policy/AWSSSOMasterAccountAdministrator",
