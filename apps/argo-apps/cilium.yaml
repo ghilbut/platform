@@ -37,6 +37,10 @@ spec:
           operator:
             clusterPoolIPv4PodCIDRList: 172.31.0.0/16
         kubeProxyReplacement: true
+        socketLB:
+          hostNamespaceOnly: true
+        cni:
+          exclusive: false
         l7Proxy: false
         operator:
           replicas: 1
