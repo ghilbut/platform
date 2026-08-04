@@ -1,15 +1,31 @@
 data "aws_ssoadmin_instances" "current" {}
 
+data "terraform_remote_state" "accounts" {
+  backend = "s3"
+
+  config = {
+    bucket = "ghilbut-tfstates"
+    key    = "platform/aws/foundation/accounts.tfstate"
+    region = "us-east-1"
+  }
+}
+
 locals {
   instance_arn            = tolist(data.aws_ssoadmin_instances.current.arns)[0]
   identity_store_id       = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
   ghilbut_user_id         = "7488a448-2051-70eb-80b8-106a98d83549"
+  domains_account_id      = data.terraform_remote_state.accounts.outputs.domains_account_id
+  platform_account_id     = data.terraform_remote_state.accounts.outputs.platform_account_id
   foundation_state_bucket = "ghilbut-tfstates"
   foundation_state_object_keys = [
     "platform/aws/foundation/accounts.tfstate",
     "platform/aws/foundation/accounts.tfstate.tflock",
     "platform/aws/foundation/identity.tfstate",
     "platform/aws/foundation/identity.tfstate.tflock",
+  ]
+  workload_state_object_keys = [
+    "platform/aws/foundation/workload.tfstate",
+    "platform/aws/foundation/workload.tfstate.tflock",
   ]
 
   central_administration_denied_actions = [
@@ -31,6 +47,16 @@ locals {
     "sso-directory:*",
   ]
 
+}
+
+moved {
+  from = module.tofu_apply_for_domains.aws_ssoadmin_account_assignment.this["platform"]
+  to   = module.tofu_apply_for_domains.aws_ssoadmin_account_assignment.this["domains"]
+}
+
+moved {
+  from = module.tofu_apply_for_workloads.aws_ssoadmin_account_assignment.this["platform"]
+  to   = module.tofu_apply_for_workloads.aws_ssoadmin_account_assignment.this["domains"]
 }
 
 resource "aws_identitystore_group" "devops" {
@@ -178,8 +204,8 @@ module "tofu_apply_for_domains" {
     "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
   ])
   account_assignments = {
-    platform = {
-      account_id     = "869061964712"
+    domains = {
+      account_id     = local.domains_account_id
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
@@ -206,16 +232,47 @@ module "tofu_apply_for_workloads" {
         Resource = "*"
       },
       {
-        Sid      = "AssumeTofuExecutionRole"
+        Sid    = "AssumeTofuExecutionRole"
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Resource = [
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply",
+          "arn:aws:iam::${local.platform_account_id}:role/tofu-apply",
+        ]
+      },
+      {
+        Sid      = "WorkloadStateObjects"
         Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::869061964712:role/tofu-apply"
+        Action   = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = [for key in local.workload_state_object_keys : "arn:aws:s3:::${local.foundation_state_bucket}/${key}"]
+      },
+      {
+        Sid      = "WorkloadStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+      },
+      {
+        Sid      = "WorkloadStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.workload_state_object_keys
+          }
+        }
       },
     ]
   })
   account_assignments = {
+    domains = {
+      account_id     = local.domains_account_id
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
     platform = {
-      account_id     = "869061964712"
+      account_id     = local.platform_account_id
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }

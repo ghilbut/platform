@@ -11,9 +11,14 @@ resource "aws_organizations_account" "management" {
   }
 }
 
-resource "aws_organizations_account" "platform" {
-  name  = "platform"
-  email = "aws-platform@ghilbut.com"
+moved {
+  from = aws_organizations_account.platform
+  to   = aws_organizations_account.domains
+}
+
+resource "aws_organizations_account" "domains" {
+  name  = "domains"
+  email = "aws-domains@ghilbut.com"
 
   tags = {
     created_by = "manual"
@@ -24,8 +29,17 @@ resource "aws_organizations_account" "platform" {
   }
 }
 
+resource "aws_organizations_account" "new_platform" {
+  name  = "platform"
+  email = "aws-platform@ghilbut.com"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_organizations_account" "ultary" {
-  name  = "ultary-domains"
+  name  = "UltaryDomains"
   email = "aws-ultary-domains@ghilbut.com"
 
   tags = {
