@@ -42,10 +42,12 @@ permission set 이름과 역할 경로를 조건으로 사용한다.
 | `TofuApplyForManagement` | `tofu-apply` | Foundation identity와 accounts |
 | `TofuApplyForWorkloads` | `tofu-apply` | CDN |
 
-## CLI profile migration
+## CLI source profile
 
-새 permission set은 기존 profile과 별도의 검증용 profile로 로그인한다. provider와 backend를
-전환하기 전에는 기존 permission set과 profile을 제거하지 않는다.
+새 permission set은 기존 profile과 별도의 source profile로 로그인한다. Foundation backend는
+`TofuApplyForManagement` source profile로 state에 접근하고, provider는 Management
+`tofu-apply` 역할을 수임한다. CDN은 `TofuApplyForWorkloads` source profile로 state에
+접근하고 Platform `tofu-apply` 역할을 수임한다.
 
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-management

@@ -30,16 +30,32 @@ Management source permission set에는 Foundation accounts·identity state와 lo
 cross-account 접근을 허용한다. state bucket의 lifecycle과 그 밖의 state key는 관리하지
 않는다.
 
-## State bucket policy 실행
+## OpenTofu 실행
 
 `state/tofu/`는 Platform의 `TofuApplyForWorkloads` source profile로 backend에 접근하고,
 Platform `tofu-apply` 역할을 수임해 bucket policy를 관리한다.
+
+Foundation accounts·identity state의 backend는 `TofuApplyForManagement` source profile로
+state에 접근하고, AWS provider는 이어서 Management 계정의 `tofu-apply` 역할을 수임한다.
+실행 환경에서 source profile을 선택하고 AWS SDK가 shared config를 읽도록 설정한다.
 
 ```sh
 export AWS_PROFILE=ghilbut-tofu-apply-for-workloads
 export AWS_SDK_LOAD_CONFIG=1
 
 cd aws/foundation/state/tofu
+tofu init -reconfigure
+tofu plan
+tofu apply
+
+export AWS_PROFILE=ghilbut-tofu-apply-for-management
+
+cd ../../accounts/tofu
+tofu init -reconfigure
+tofu plan
+tofu apply
+
+cd ../../identity/tofu
 tofu init -reconfigure
 tofu plan
 tofu apply
