@@ -12,4 +12,3 @@ variable "repository_full_name" { type = string }
 variable "repo" { type = string }
 variable "state_bucket" { type = string }
 variable "state_key" { type = string }
-variable "zone_ids" { type = map(string) }

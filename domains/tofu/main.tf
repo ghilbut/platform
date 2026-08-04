@@ -31,6 +31,51 @@ locals {
   zone_id = aws_route53_zone.this[local.root_domain].zone_id
 }
 
+data "terraform_remote_state" "cdn" {
+  backend = "s3"
+
+  config = {
+    bucket  = "ghilbut-tfstates-v2"
+    encrypt = true
+    key     = "platform/aws/cdn.tfstate"
+    profile = "ghilbut-tofu-apply-for-domains"
+    region  = "us-east-1"
+  }
+}
+
+module "tofu_execution_role" {
+  source = "../../aws/modules/tofu-execution-role"
+
+  name                       = "tofu-apply-domains"
+  description                = "OpenTofu execution role for Domains account Route 53 resources."
+  source_account_id          = "869061964712"
+  source_permission_set_name = "TofuApplyForDomains"
+  sso_region                 = "us-east-1"
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "Route53Management"
+        Effect   = "Allow"
+        Action   = ["route53:*", "route53domains:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "ReadExecutionRole"
+        Effect = "Allow"
+        Action = [
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:ListRolePolicies",
+        ]
+        Resource = "arn:aws:iam::869061964712:role/tofu-apply-domains"
+      },
+    ]
+  })
+}
+
 resource "aws_route53domains_registered_domain" "this" {
   for_each = local.domains
 
@@ -162,4 +207,53 @@ resource "aws_route53_record" "google_apps" {
   ttl     = local.ttl
   type    = "CNAME"
   zone_id = local.zone_id
+}
+
+################################################################
+##  CDN records
+################################################################
+
+resource "aws_route53_record" "cdn_certificate_validation" {
+  for_each = data.terraform_remote_state.cdn.outputs.certificate_validation_options
+
+  name    = each.value.name
+  records = [each.value.record]
+  ttl     = 60
+  type    = each.value.type
+  zone_id = aws_route53_zone.this[one([
+    for domain in local.domains : domain
+    if each.key == domain || endswith(each.key, ".${domain}")
+  ])].zone_id
+}
+
+resource "aws_route53_record" "cdn_alias" {
+  for_each = toset(data.terraform_remote_state.cdn.outputs.fqdns)
+
+  name = each.key
+  type = "A"
+  zone_id = aws_route53_zone.this[one([
+    for domain in local.domains : domain
+    if each.key == domain || endswith(each.key, ".${domain}")
+  ])].zone_id
+
+  alias {
+    evaluate_target_health = false
+    name                   = data.terraform_remote_state.cdn.outputs.cloudfront_domain_name
+    zone_id                = data.terraform_remote_state.cdn.outputs.cloudfront_hosted_zone_id
+  }
+}
+
+import {
+  to = aws_route53_record.cdn_certificate_validation["ghilbut.com"]
+  id = "Z193YX3H31OEZV__1f3bc0e46ca05d312b303b35e6c8d69b.ghilbut.com._CNAME"
+}
+
+import {
+  to = aws_route53_record.cdn_certificate_validation["oidc.k3s.ghilbut.com"]
+  id = "Z193YX3H31OEZV__249f0cc45cee4112146a0bb348aa145a.oidc.k3s.ghilbut.com._CNAME"
+}
+
+import {
+  to = aws_route53_record.cdn_alias["oidc.k3s.ghilbut.com"]
+  id = "Z193YX3H31OEZV_oidc.k3s.ghilbut.com_A"
 }

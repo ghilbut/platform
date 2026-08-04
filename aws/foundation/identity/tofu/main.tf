@@ -33,6 +33,9 @@ locals {
     "platform/domains.tfstate",
     "platform/domains.tfstate.tflock",
   ]
+  domains_remote_state_object_keys = [
+    "platform/aws/cdn.tfstate",
+  ]
   ultary_domains_state_object_keys = [
     "ultary/domains.tfstate",
     "ultary/domains.tfstate.tflock",
@@ -202,12 +205,15 @@ module "tofu_apply_for_domains" {
   instance_arn = local.instance_arn
   name         = "TofuApplyForDomains"
   description  = "OpenTofu apply access for Domains account Route 53 resources."
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
-  ])
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      {
+        Sid      = "AssumeDomainsExecutionRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains"
+      },
       {
         Sid    = "DomainsStateObjects"
         Effect = "Allow"
@@ -223,13 +229,21 @@ module "tofu_apply_for_domains" {
         Resource = "arn:aws:s3:::${local.state_bucket}"
       },
       {
+        Sid    = "DomainsRemoteStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = [
+          for key in local.domains_remote_state_object_keys : "arn:aws:s3:::${local.state_bucket}/${key}"
+        ]
+      },
+      {
         Sid      = "DomainsStateBucket"
         Effect   = "Allow"
         Action   = "s3:ListBucket"
         Resource = "arn:aws:s3:::${local.state_bucket}"
         Condition = {
           StringLike = {
-            "s3:prefix" = local.domains_state_object_keys
+            "s3:prefix" = concat(local.domains_state_object_keys, local.domains_remote_state_object_keys)
           }
         }
       },

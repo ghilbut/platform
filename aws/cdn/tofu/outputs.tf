@@ -3,6 +3,11 @@ output "cloudfront_domain_name" {
   value       = module.cloudfront.domain_name
 }
 
+output "cloudfront_hosted_zone_id" {
+  description = "CloudFront distribution Route 53 hosted zone ID."
+  value       = module.cloudfront.hosted_zone_id
+}
+
 output "cloudfront_distribution_id" {
   description = "CloudFront distribution ID"
   value       = module.cloudfront.id
@@ -26,6 +31,16 @@ output "lambda_function_arn" {
 output "acm_certificate_arn" {
   description = "ACM certificate ARN"
   value       = module.certificate.arn
+}
+
+output "certificate_validation_options" {
+  description = "DNS validation records required by the ACM certificate."
+  value       = module.certificate.validation_options
+}
+
+output "fqdns" {
+  description = "CDN host names published through Route 53."
+  value       = local.fqdns
 }
 
 output "github_actions_role_arn" {

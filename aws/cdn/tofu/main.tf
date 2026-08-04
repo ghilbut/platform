@@ -34,29 +34,37 @@ module "tofu_execution_role" {
   ])
   inline_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid    = "DenyCentralAdministration"
-      Effect = "Deny"
-      Action = [
-        "account:*",
-        "aws-portal:*",
-        "billing:*",
-        "budgets:*",
-        "ce:*",
-        "consolidatedbilling:*",
-        "cur:*",
-        "identitystore:*",
-        "identitystore-auth:*",
-        "identity-sync:*",
-        "invoicing:*",
-        "organizations:*",
-        "payments:*",
-        "purchase-orders:*",
-        "sso:*",
-        "sso-directory:*",
-      ]
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Sid    = "DenyCentralAdministration"
+        Effect = "Deny"
+        Action = [
+          "account:*",
+          "aws-portal:*",
+          "billing:*",
+          "budgets:*",
+          "ce:*",
+          "consolidatedbilling:*",
+          "cur:*",
+          "identitystore:*",
+          "identitystore-auth:*",
+          "identity-sync:*",
+          "invoicing:*",
+          "organizations:*",
+          "payments:*",
+          "purchase-orders:*",
+          "sso:*",
+          "sso-directory:*",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid      = "DenyDomainsManagement"
+        Effect   = "Deny"
+        Action   = ["route53:*", "route53domains:*"]
+        Resource = "*"
+      },
+    ]
   })
 }
 
@@ -80,7 +88,6 @@ module "certificate" {
   fqdns           = local.fqdns
   name            = var.name
   repo            = local.repo
-  zones           = var.zones
 }
 
 module "edge" {
@@ -120,14 +127,12 @@ module "origin_access" {
   depends_on = [module.s3]
 }
 
-module "dns" {
-  source = "./modules/dns"
+removed {
+  from = module.dns
 
-  cloudfront_domain_name    = module.cloudfront.domain_name
-  cloudfront_hosted_zone_id = module.cloudfront.hosted_zone_id
-  fqdns                     = local.fqdns
-  zone_ids                  = module.certificate.zone_ids
-  zones                     = var.zones
+  lifecycle {
+    destroy = false
+  }
 }
 
 module "github_actions" {
@@ -147,5 +152,4 @@ module "github_actions" {
   repo                             = local.repo
   state_bucket                     = "ghilbut-tfstates-v2"
   state_key                        = "platform/aws/cdn.tfstate"
-  zone_ids                         = module.certificate.zone_ids
 }

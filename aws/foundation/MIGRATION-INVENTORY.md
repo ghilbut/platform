@@ -44,7 +44,7 @@ Platform 계정의 `ghilbut-tfstates-v2`에는 다음 활성 state object 열 �
 |---|---|---|---|
 | `k3s.tfstate` | `k3s/tofu/` | Domains와 Platform | Backend는 v2다. CPA OIDC provider는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 두 account의 책임으로 분리하고 CDN object는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 이전한다. |
 | `platform/apps.tfstate` | `apps/tofu/` | Domains와 Platform | Backend는 v2다. Route 53 역할은 Domains에 유지하고 Vault 리소스는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Platform에 재생성한다. |
-| `platform/aws/cdn.tfstate` | `aws/cdn/tofu/` | Domains와 Platform | Backend는 v2다. Route 53 record 소유권은 [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains state로 옮긴다. `tofu-apply` 역할은 [Issue #96](https://github.com/ghilbut/platform/issues/96)과 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 분리하고 나머지 CDN 리소스는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
+| `platform/aws/cdn.tfstate` | `aws/cdn/tofu/` | Domains와 Platform | Backend는 v2다. CDN 관련 Route 53 record는 Domains state가 소유한다. `tofu-apply` 역할은 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 정리하고 나머지 CDN 리소스는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
 | `platform/aws/foundation/accounts.tfstate` | `aws/foundation/accounts/tofu/` | Management | Backend는 v2다. |
 | `platform/aws/foundation/identity.tfstate` | `aws/foundation/identity/tofu/` | Management | Backend는 v2다. Account assignment는 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 정리한다. |
 | `platform/aws/foundation/state.tfstate` | `aws/foundation/state/tofu/` | Platform | Platform의 v2 bucket과 bucket policy를 관리한다. |
@@ -62,7 +62,7 @@ Platform 계정의 `ghilbut-tfstates-v2`에는 다음 활성 state object 열 �
 | Route 53 Domains | `ghilbut.com`, `ghilbut.net` | Domains | Registered domain은 Domains 책임이다. |
 | Route 53 hosted zone | `Z193YX3H31OEZV` (`ghilbut.com`) | Domains | DNS record와 ACM validation record를 유지한다. |
 | Route 53 hosted zone | `Z3951CLN9YN7OQ` (`ghilbut.net`) | Domains | DNS record를 유지한다. |
-| IAM Identity Center role | `AWSReservedSSO_TofuApplyForDomains_*` | Domains | Domains의 source identity다. 실행 역할은 아직 없으며 [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 전용 `tofu-apply` 역할을 만든다. |
+| IAM Identity Center role | `AWSReservedSSO_TofuApplyForDomains_*` | Domains | Domains의 source identity다. 전용 `tofu-apply-domains` 실행 역할만 수임한다. |
 | CPA IAM OIDC provider | `oidc.k3s.ghilbut.com/cpa` | Domains | cert-manager와 external-dns의 Route 53 역할이 사용한다. [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Platform에도 별도로 등록한다. |
 | cert-manager IAM role | `platform-cpa-cert-manager` | Domains | Route 53 DNS-01 전용 역할이다. [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 최종 이름과 manifest ARN을 갱신한다. |
 | external-dns IAM role | `platform-cpa-external-dns` | Domains | Route 53 record 전용 역할이다. [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 최종 이름과 manifest ARN을 갱신한다. |
@@ -92,7 +92,7 @@ Platform 계정의 `ghilbut-tfstates-v2`에는 다음 활성 state object 열 �
 | ECS task definition | `finpc-nginx:1`, `finpc-nextjs:1-3` in `ap-northeast-2` | `finpc-nextjs:2-3`은 active이고 나머지 두 revision은 inactive다. 실행 중 ECS cluster, ECR repository, IAM execution role이 없다. [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 active revision을 deregister하고 네 revision을 삭제한다. |
 | Budget notification resources | CloudWatch alarm `Budgets_Actual_1467215008539`, SNS topic `aws_budget_da141ba7-4c82-4095-8f6e-e7a9d0d8c63f` | [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 account budget 연결을 확인하고 사용하지 않으면 삭제한다. |
 | IAM Identity Center workload role | `AWSReservedSSO_TofuApplyForWorkloads_*` | [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 Domains assignment를 제거하면 IAM Identity Center가 삭제한다. |
-| Local AWS profile | `ghilbut-platform` → account `869061964712`, removed permission set `TofuApply` | 현재 provider와 backend 참조는 새 SSO profile과 실행 역할 경로로 교체한다. Domains는 [Issue #103](https://github.com/ghilbut/platform/issues/103), apps와 K3s는 [Issue #102](https://github.com/ghilbut/platform/issues/102), GitHub는 [Issue #98](https://github.com/ghilbut/platform/issues/98), backend는 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 처리한다. |
+| Local AWS profile | `ghilbut-platform` → account `869061964712`, removed permission set `TofuApply` | Domains와 backend는 새 SSO profile과 실행 역할 경로를 사용한다. Apps와 K3s는 [Issue #102](https://github.com/ghilbut/platform/issues/102), GitHub는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 교체한다. |
 | CDN log group and service-linked roles | `eu-central-1`, `eu-west-1`, `eu-west-2`, `us-east-1`, `us-east-2`, `us-west-1`, `us-west-2`의 Lambda@Edge log group과 CloudFront 관련 role | [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 CDN 삭제와 replica 정리를 끝낸 뒤 사용하지 않는 항목을 삭제한다. |
 | AWS Organizations account configuration | `aws/foundation/accounts/tofu/main.tf`의 `869061964712` root email이 `aws-platform@ghilbut.com`으로 남아 있다. | [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 다음 accounts plan 전에 live 값 `aws-domains@ghilbut.com`으로 맞추고 account 이름과 resource address를 정리한다. |
 
@@ -122,9 +122,9 @@ Tagging API가 반환한 종료된 SSM session은 활성 리소스가 아니다.
 |---|---|---|
 | `ghilbut-platform` | Account `869061964712`의 삭제된 `TofuApply` permission set을 가리킨다. 새 role credential을 발급할 수 없다. | 모든 provider와 backend에서 제거한다. |
 | `ghilbut-tofu-apply-for-workloads` | Account `869061964712`의 `TofuApplyForWorkloads`를 사용한다. | [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 기존 설정은 임시 `ghilbut-tofu-apply-for-workloads-domains`로 이름을 바꾸고 원래 profile 이름은 새 Platform account에 연결한다. [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 임시 profile과 Domains 할당을 제거한다. |
-| `ghilbut-tofu-apply-for-domains` | Domains의 `TofuApplyForDomains`를 사용하고 Domains state backend에 접근한다. | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains `tofu-apply` 역할 수임 경로를 추가한다. |
+| `ghilbut-tofu-apply-for-domains` | Domains의 `TofuApplyForDomains`를 사용한다. | Domains state backend와 CDN remote state를 읽고 `tofu-apply-domains`를 수임한다. |
 | `ghilbut-tofu-apply-for-ultary-domains` | UltaryDomains의 `TofuApplyForUltaryDomains`를 사용하고 UltaryDomains state backend에 접근한다. | UltaryDomains의 도메인 인프라 실행 경로로 유지한다. |
-| `TofuApplyForDomains` | Domains account에 할당되어 있고 `AmazonRoute53FullAccess`와 state 접근 정책이 연결되어 있다. | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains 실행 역할 수임 권한을 추가한다. |
+| `TofuApplyForDomains` | Domains account에 할당되어 있다. | Domains state read/write, CDN state read-only, `tofu-apply-domains` 수임만 허용한다. |
 
 ## GitHub inventory
 
@@ -145,7 +145,7 @@ GitHub token에는 Actions secret metadata 읽기 권한이 없다. 저장소 �
 | Vault on CPA | `platform-vault` role과 KMS seal key | [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 recovery-key holder가 seal migration을 실행하고 새 ARN을 `apps/argo-apps/vault.yaml`에 반영한다. |
 | cert-manager on CPA | `platform-cpa-cert-manager` role | [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Domains의 최종 role ARN을 `apps/argo-apps/cert-manager/issuer.yaml`에 반영한다. |
 | external-dns on CPA | `platform-cpa-external-dns` role | [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Domains의 최종 role ARN을 `apps/argo-apps/external-dns.yaml`에 반영한다. |
-| CDN OpenTofu | Domains hosted zone의 ACM validation record와 CDN alias | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 두 record 종류를 Domains state로 옮긴다. [Issue #98](https://github.com/ghilbut/platform/issues/98)은 certificate 요청, validation record 적용, CDN 생성, alias 전환 순서로 실행한다. |
+| CDN OpenTofu | Domains state의 ACM validation record와 CDN alias | Domains state가 CDN output을 읽어 record를 관리한다. [Issue #98](https://github.com/ghilbut/platform/issues/98)은 certificate 요청, validation record 적용, CDN 생성, alias 전환 순서로 실행한다. |
 | K3s ServiceAccount federation | `https://oidc.k3s.ghilbut.com/cpa` discovery 문서와 JWKS | [Issue #98](https://github.com/ghilbut/platform/issues/98) CDN 전환 중에도 issuer URL과 문서 내용을 유지한다. |
 | GitHub Actions | repository variable의 IAM role ARN | [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 variable 갱신과 OIDC 배포를 같은 전환으로 검증한다. |
 | IAM Identity Center local profiles | account ID와 permission set assignment | [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 새 Platform account ID를 추가하고 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 Domains workload profile을 제거한다. |
