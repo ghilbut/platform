@@ -30,7 +30,7 @@ permission set 이름과 역할 경로를 조건으로 사용한다.
 |---|---|---|
 | `TofuApplyForManagement` | `tofu-apply` | Foundation identity와 accounts |
 | `TofuApplyForWorkloads` | Domains `tofu-apply` | 기존 CDN과 workload |
-| `TofuApplyForWorkloads` | Platform `tofu-apply` | 새 Platform workload |
+| `TofuApplyForWorkloads` | Platform `tofu-apply` | Platform |
 
 ## CLI source profile
 
