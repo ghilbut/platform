@@ -271,7 +271,7 @@ module "tofu_apply_for_workloads" {
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
-    platform = {
+    platform_workload = {
       account_id     = local.platform_account_id
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"

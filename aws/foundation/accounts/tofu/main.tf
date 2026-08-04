@@ -29,7 +29,7 @@ resource "aws_organizations_account" "domains" {
   }
 }
 
-resource "aws_organizations_account" "new_platform" {
+resource "aws_organizations_account" "platform_workload" {
   name  = "platform"
   email = "aws-platform@ghilbut.com"
 
