@@ -40,8 +40,8 @@ locals {
       cpa = {
         hosted_zone_names         = ["ghilbut.com", "ghilbut.net"]
         oidc_issuer               = var.cpa_oidc_issuer
-        record_names              = ["id.ghilbut.com", "vault.ghilbut.com"]
-        service_account_name      = "external-dns"
+        record_names              = ["id.ghilbut.com"]
+        service_account_name      = "public"
         service_account_namespace = "external-dns"
         txt_prefix                = "external-dns-"
       }

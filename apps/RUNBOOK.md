@@ -168,30 +168,31 @@ dig ghilbut.com SOA
 
 ### 5. external-dns
 
-[ExternalDNS Istio source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/)와 [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
+`external-dns`는 public Gateway의 CNAME을 Route 53에 관리한다. `external-dns-private`는 private Gateway의 A record를 CoreDNS etcd에 관리한다. [ExternalDNS Istio Gateway source](https://kubernetes-sigs.github.io/external-dns/latest/docs/sources/istio/), [ExternalDNS CoreDNS etcd backend](https://kubernetes-sigs.github.io/external-dns/latest/docs/tutorials/coredns-etcd/), [ExternalDNS target annotation](https://kubernetes-sigs.github.io/external-dns/latest/docs/annotations/annotations/#external-dnsalpha-kubernetes-io-target)을 참고한다.
 
-#### 설치 값
-
-| 항목 | 값 |
-| --- | --- |
-| DNS zones | `ghilbut.com`, `ghilbut.net` |
-| Public DNS target | `ghilbut.asuscomm.com` |
-| Private DNS target | `192.168.254.4` |
-
-external-dns IAM role과 Route 53 권한을 적용한 뒤 `external-dns`를 sync한다. public Gateway는 `ghilbut.asuscomm.com` CNAME target을 사용한다. private Gateway는 `192.168.254.4` A record target을 사용한다.
+Route 53 IAM 역할과 권한을 적용한 뒤 `external-dns`를 sync한다. Gateway가 아직 없으면 DNS record를 만들지 않는다.
 
 ```shell
 tofu -chdir=apps/tofu init
 tofu -chdir=apps/tofu plan
 tofu -chdir=apps/tofu apply
-kubectl --context cpa -n argo patch application external-dns \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/external-dns \
-  --timeout=20m
-kubectl --context cpa -n external-dns logs deployment/external-dns --tail=100
+argocd app sync external-dns \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait external-dns \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n external-dns get deployment,pod,serviceaccount
+kubectl --context cpa -n external-dns logs deployment/public --tail=100
+kubectl --context cpa -n external-dns logs deployment/private --tail=100
 ```
 
 ### 6. cert-manager

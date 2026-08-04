@@ -45,6 +45,6 @@ Vault chart의 StatefulSet은 `data-vault-0` PVC를 사용한다. PVC는 chart�
 
 ## external-dns 구성
 
-- `modules/external-dns/`는 `external_dns_clusters`의 cluster마다 `platform-<cluster>-external-dns` IAM 역할을 만든다. 현재 root는 CPA의 `id.ghilbut.com`, `vault.ghilbut.com` CNAME과 TXT ownership record만 변경할 수 있다.
+- `modules/external-dns/`는 `external_dns_clusters`의 cluster마다 `platform-<cluster>-external-dns` IAM 역할을 만든다. 현재 root는 CPA의 `id.ghilbut.com` CNAME과 TXT ownership record만 변경할 수 있다.
 - 각 역할은 해당 cluster의 OIDC issuer와 지정한 ServiceAccount subject, `sts.amazonaws.com` audience를 모두 요구한다.
 - `policy: sync`는 Gateway에서 hostname을 제거하면 같은 owner ID의 record와 TXT ownership record를 함께 삭제한다. 다른 owner ID 또는 선언하지 않은 record는 변경하지 않는다.
