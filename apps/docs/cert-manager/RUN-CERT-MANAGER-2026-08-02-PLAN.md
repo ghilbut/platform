@@ -21,7 +21,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [cert-manager READM
 | --- | --- |
 | Kubernetes context | `cpa` |
 | cert-manager version | `v1.21.1` |
-| IAM role | `platform-cpa-cert-manager` |
+| IAM role | `domains-cpa-cert-manager` |
 | DNS-01 ServiceAccount | `istio-gateways/cert-manager-dns01` |
 | Route 53 hosted zones | `ghilbut.com`, `ghilbut.net` |
 | Issuer | `istio-gateways/aws-route53` |
@@ -37,12 +37,12 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [cert-manager READM
    kubectl --context cpa get namespace istio-gateways
    ```
 
-2. platform 계정에서 CPA cert-manager 전용 IAM 역할을 만든다. plan에는 CPA OIDC provider 조회, `platform-cpa-cert-manager` 역할, `ghilbut.com`과 `ghilbut.net` Route 53 DNS-01 권한만 포함되어야 한다.
+2. Domains 계정에서 CPA cert-manager 전용 IAM 역할을 만든다. plan에는 CPA OIDC provider, `domains-cpa-cert-manager` 역할, `ghilbut.com`과 `ghilbut.net` Route 53 DNS-01 권한만 포함되어야 한다.
 
    ```sh
-   tofu -chdir=apps/tofu init
-   tofu -chdir=apps/tofu plan
-   tofu -chdir=apps/tofu apply
+   AWS_PROFILE=ghilbut-tofu-apply-for-domains tofu -chdir=domains/tofu init
+   AWS_PROFILE=ghilbut-tofu-apply-for-domains tofu -chdir=domains/tofu plan
+   AWS_PROFILE=ghilbut-tofu-apply-for-domains tofu -chdir=domains/tofu apply
    ```
 
 3. cert-manager Application을 동기화하고 chart와 `istio-gateways` DNS-01 ServiceAccount RBAC가 준비됐는지 확인한다. 이 단계는 AWS access key Secret을 만들거나 참조하지 않는다.
@@ -75,7 +75,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [cert-manager READM
    kubectl --context cpa get order,challenge -A
    ```
 
-5. Certificate가 Ready인 뒤 Istio Gateway가 참조하는 Secret 이름과 SAN을 확인한다. DNS record 공개와 Keycloak·Vault route는 후속 이슈에서 실행한다.
+5. Certificate가 Ready인 뒤 Istio Gateway가 참조하는 Secret 이름과 SAN을 확인한다. DNS record 공개와 Keycloak route는 후속 작업에서 실행한다.
 
    ```sh
    kubectl --context cpa -n istio-gateways get certificate public-https \
@@ -92,4 +92,4 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [cert-manager READM
 - cert-manager Application과 DNS-01 ServiceAccount RBAC 확인:
 - Issuer와 Certificate Ready 확인:
 - `public-https-tls` Secret 확인:
-- external-dns, Keycloak, Vault 공개 route 작업 대기:
+- external-dns와 Keycloak 공개 route 작업 대기:

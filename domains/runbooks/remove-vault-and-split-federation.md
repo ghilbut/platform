@@ -24,6 +24,17 @@ tags:
 
 KMS key 삭제는 30일 대기 상태로 전환한다. `PendingDeletion` 상태와 삭제 날짜를 확인한다.
 
+## 현재 CPA 상태
+
+CPA에는 K3s 서비스가 없다. K3s server database 크기는 4 KiB이고 OpenEBS volume group의
+logical volume 수는 0개다. 삭제할 Kubernetes workload, PVC, PV가 없다.
+
+```sh
+ssh cpa systemctl status k3s
+ssh cpa sudo du -sh /var/lib/rancher/k3s/server/db
+ssh cpa sudo vgs openebs -o vg_name,lv_count,vg_size,vg_free
+```
+
 ## 1. Domains 실행 역할 Bootstrap
 
 Bootstrap commit은 Domains provider의 `assume_role` block을 제거하고
@@ -62,29 +73,66 @@ AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
    ```
 
 4. provider의 `assume_role` block을 복원한다.
-5. Platform workload state에 CPA IAM OIDC provider를 만든다.
+5. Platform state에 CPA IAM OIDC provider를 만든다.
 6. Domains 계획이 역할 2개와 inline policy 2개의 `4 add, 0 change, 0 destroy`인지 확인한다.
 7. Domains state에 `domains-cpa-cert-manager`, `domains-cpa-external-dns` 역할을 만든다.
 8. cert-manager와 external-dns manifest를 최종 Domains 역할 ARN으로 바꾼다.
-9. CPA에서 두 workload가 새 역할을 수임하는지 확인한다.
+9. K3s를 설치한 뒤 CPA에서 두 workload가 새 역할을 수임하는지 확인한다.
 
 ## 3. Vault 삭제
 
-CPA Kubernetes API가 연결되는 상태에서 다음 순서로 삭제한다.
+CPA에 Kubernetes 리소스와 OpenEBS logical volume이 없으므로 AWS와 Git 리소스만 삭제한다.
 
-1. Vault Argo CD Application과 Helm workload를 삭제한다.
-2. `data-vault-0` PVC와 연결된 PV를 삭제한다.
-3. `vault` namespace가 비어 있는지 확인하고 namespace를 삭제한다.
-4. Apps OpenTofu 구성에서 Vault module 선언과 resource block을 완전히 제거한다.
-5. `tofu destroy -target`은 사용하지 않는다. KMS key의 `prevent_destroy`는 resource block이 남아
-   있으면 삭제 계획을 차단한다.
-6. Apps OpenTofu plan에서 Vault 역할, 역할 정책, KMS alias, KMS key만 삭제하는지 확인한다.
-7. saved plan을 적용한다.
-8. KMS key가 `PendingDeletion`이고 alias와 IAM 역할이 없는지 확인한다.
+1. Apps OpenTofu 구성에서 Vault, cert-manager, external-dns module을 제거한다.
+2. Apps saved plan이 `0 add, 0 change, 8 destroy`인지 확인한다.
+3. saved plan을 적용한다.
+4. Apps state의 관리 리소스가 0개인지 확인한다.
+5. KMS key 상태가 `PendingDeletion`이고 삭제 날짜가 `2026-09-04T01:16:50.578000+09:00`인지
+   확인한다.
+6. `alias/platform-vault`, `platform-vault`, `platform-cpa-cert-manager`,
+   `platform-cpa-external-dns`가 없는지 확인한다.
+7. Vault manifest와 문서를 삭제한다.
+8. ingress, certificate, external-dns 설정에서 `vault.ghilbut.com`을 제거한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=apps/tofu state list
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  aws kms describe-key --key-id 6ebc75ad-c084-4c1a-842e-b45482e5e668
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  aws kms list-aliases --query "Aliases[?AliasName=='alias/platform-vault']"
+```
 
 ## 4. 기존 federation 정리
 
-1. K3s state에서 Domains CPA IAM OIDC provider를 `destroy = false`로 제거한다.
-2. 같은 provider ARN을 Domains state로 import한다.
-3. Apps state의 기존 `platform-cpa-cert-manager`와 `platform-cpa-external-dns` 역할을 삭제한다.
-4. Apps state에 관리 리소스가 없고 Domains, Platform workload, K3s root가 무변경인지 확인한다.
+K3s Kubernetes API가 없으므로 전체 plan 대신 state에서 OIDC provider 한 개만 해제한다. S3 state의
+해제 전 version ID는 `nvARpQasp9Q_o1aKPTM08gUaGpCi3VKD`다.
+
+```sh
+AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=k3s/tofu state rm -dry-run 'aws_iam_openid_connect_provider.cpa'
+AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=k3s/tofu state rm 'aws_iam_openid_connect_provider.cpa'
+```
+
+Domains의 import block으로 같은 ARN을 가져온다. 계획과 적용 결과는 `1 import, 0 add, 0 change,
+0 destroy`여야 한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+  tofu -chdir=domains/tofu plan -out=/tmp/issue-102-domains-oidc-import.tfplan
+AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+  tofu -chdir=domains/tofu apply /tmp/issue-102-domains-oidc-import.tfplan
+```
+
+## 5. 완료 확인
+
+- Domains state는 CPA IAM OIDC provider와 `domains-cpa-cert-manager`,
+  `domains-cpa-external-dns` 역할을 관리한다.
+- Platform state는 Platform 계정의 CPA IAM OIDC provider를 관리한다.
+- K3s state는 OIDC discovery object와 JWKS object만 관리한다.
+- Apps state의 관리 리소스는 0개다.
+- Domains, Platform, Apps 계획에는 변경 사항이 없다.
+- KMS key는 `PendingDeletion` 상태다.
+- Vault KMS alias와 기존 IAM 역할은 없다.
+- Domains Route 53 hosted zone에는 Vault record가 없다.

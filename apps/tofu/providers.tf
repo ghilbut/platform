@@ -1,6 +1,7 @@
 provider "aws" {
-  profile = var.aws_profile
-  region  = var.aws_region
+  allowed_account_ids = ["869061964712"]
+  profile             = var.aws_profile
+  region              = var.aws_region
 
   default_tags {
     tags = {
