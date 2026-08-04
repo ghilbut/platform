@@ -312,6 +312,19 @@ resource "aws_route53_record" "cdn_certificate_validation" {
   ])].zone_id
 }
 
+resource "aws_route53_record" "cdn_platform_certificate_validation" {
+  for_each = data.terraform_remote_state.cdn.outputs.platform_certificate_validation_options
+
+  name    = each.value.name
+  records = [each.value.record]
+  ttl     = 60
+  type    = each.value.type
+  zone_id = aws_route53_zone.this[one([
+    for domain in local.domains : domain
+    if each.key == domain || endswith(each.key, ".${domain}")
+  ])].zone_id
+}
+
 resource "aws_route53_record" "cdn_alias" {
   for_each = toset(data.terraform_remote_state.cdn.outputs.fqdns)
 

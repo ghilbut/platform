@@ -11,6 +11,9 @@ status: running
 이 Runbook은 `oidc.k3s.ghilbut.com` CDN을 Platform 계정에 만들고 Domains 계정의 기존 CDN을
 삭제한다. Route 53 hosted zone과 record는 Domains가 관리한다.
 
+현재 실행 가능한 범위는 1단계다. 다음 단계의 OpenTofu 구성과 저장된 계획을 준비한 뒤 해당
+단계를 실행한다.
+
 ## 실행 값
 
 | 항목 | 값 |
@@ -37,6 +40,9 @@ AWS는 활성화된 교차 계정 CloudFront distribution 사이의 subdomain �
 3. `aws/cdn/tofu`에서 Platform ACM certificate만 요청한다. certificate는 `ghilbut.com`,
    `oidc.k3s.ghilbut.com`, `*.k3s.ghilbut.com`을 포함한다.
 4. 두 계획이 각각 `1 add, 0 change, 0 destroy`인지 확인하고 적용한다.
+
+CDN state 해제 전 version ID는 `NsxgJxqZ1HA4Rn2YLpbKQ6e6x3prPhp1`이다. state 주소 복구가
+필요하면 이 version을 현재 `platform/aws/cdn.tfstate`로 복원한다.
 
 ```sh
 AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
@@ -105,6 +111,9 @@ AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
 4. 새 distribution에 exact hostname을 추가하고 wildcard를 제거한다.
 5. DNS, TLS, discovery document, JWKS를 확인한다.
 
+3단계 뒤 검증에 실패하면 A alias를 기존 distribution으로 복원한다. 4단계에서 exact hostname
+추가에 실패하면 기존 distribution에 exact hostname을 다시 추가하고 A alias를 복원한다.
+
 ## 5. 배포 경로 전환
 
 GitHub repository variable을 새 Platform 역할 ARN으로 바꾼다. workflow 대상은 Platform CDN
@@ -119,12 +128,16 @@ gh variable set AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN \
 ## 6. 기존 CDN 삭제
 
 1. K3s state의 기존 OIDC S3 object 두 주소를 dry run으로 확인하고 state에서 해제한다.
-2. `k3s/tofu`의 bucket을 `ghilbut-cdn-platform`으로 바꾼다.
+2. `k3s/tofu`의 backend와 AWS provider를 Platform source profile로 바꾸고 bucket을
+   `ghilbut-cdn-platform`으로 바꾼다. 이 단계는 hostname 전환 전에 끝낸다.
 3. 기존 bucket을 비운다.
 4. Domains의 기존 distribution, certificate, Lambda@Edge, CloudFront Function, OAC, bucket,
    GitHub Actions 역할을 삭제한다.
-5. Lambda@Edge replica 제거가 끝난 뒤 Lambda 함수와 실행 역할 삭제를 확인한다.
-6. `github/tofu`에서 Domains GitHub Actions OIDC provider를 삭제한다.
+5. 첫 삭제에서 Lambda@Edge replica가 남아 있으면 replica 제거를 확인한 뒤 같은 계획을 다시
+   만든다.
+6. Domains root에서 기존 certificate validation CNAME과 임시 TXT record를 제거한다.
+7. Foundation state bucket policy에서 기존 Domains GitHub Actions 역할의 접근을 제거한다.
+8. `github/tofu`에서 Domains GitHub Actions OIDC provider와 기존 output을 삭제한다.
 
 ## 7. 완료 확인
 

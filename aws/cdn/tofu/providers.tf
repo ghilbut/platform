@@ -26,10 +26,6 @@ provider "aws" {
   }
 }
 
-provider "github" {
-  owner = var.github_owner
-}
-
 provider "aws" {
   alias               = "platform"
   allowed_account_ids = ["012646747332"]
