@@ -121,6 +121,23 @@ module "tofu_execution_role" {
   })
 }
 
+resource "aws_iam_openid_connect_provider" "cpa" {
+  url             = "https://oidc.k3s.ghilbut.com/cpa"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [var.cpa_oidc_thumbprint]
+
+  tags = {
+    component       = "oidc"
+    service         = "k3s"
+    "opentofu/path" = "k3s/tofu/"
+  }
+}
+
+import {
+  to = aws_iam_openid_connect_provider.cpa
+  id = "arn:aws:iam::869061964712:oidc-provider/oidc.k3s.ghilbut.com/cpa"
+}
+
 module "cpa_cert_manager" {
   source = "./modules/cert-manager"
 
