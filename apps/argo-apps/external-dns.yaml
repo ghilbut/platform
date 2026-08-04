@@ -60,7 +60,10 @@ spec:
           domainFilters:
             - ghilbut.com
             - ghilbut.net
-          annotationFilter: external-dns.alpha.kubernetes.io/target=ghilbut.asuscomm.com
+          annotationFilter: ghilbut.com/external-dns=public
+          extraArgs:
+            default-targets:
+              - ghilbut.asuscomm.com
           registry: txt
           serviceAccount:
             create: true
@@ -77,7 +80,7 @@ spec:
         skipCrds: false
         values: |
           fullnameOverride: private
-          annotationFilter: external-dns.alpha.kubernetes.io/target=192.168.254.4
+          annotationFilter: ghilbut.com/external-dns=private
           domainFilters:
             - ghilbut.com
             - ghilbut.net
@@ -86,6 +89,8 @@ spec:
               value: http://etcd.coredns.svc.cluster.local:2379
           extraArgs:
             coredns-strictly-owned: true
+            default-targets:
+              - 192.168.254.4
           logLevel: info
           managedRecordTypes:
             - A

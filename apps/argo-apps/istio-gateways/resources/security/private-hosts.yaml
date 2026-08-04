@@ -1,7 +1,7 @@
 apiVersion: security.istio.io/v1
 kind: AuthorizationPolicy
 metadata:
-  name: public-hosts
+  name: private-hosts
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
@@ -10,8 +10,16 @@ spec:
       istio: ingressgateway
   action: ALLOW
   rules:
-    - to:
+    - from:
+        - source:
+            remoteIpBlocks:
+              - 192.168.254.0/24
+      to:
         - operation:
             hosts:
               - id.ghilbut.com
               - id.ghilbut.com:*
+              - argo.ghilbut.com
+              - argo.ghilbut.com:*
+              - vault.ghilbut.com
+              - vault.ghilbut.com:*

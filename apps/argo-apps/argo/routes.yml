@@ -1,12 +1,12 @@
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: ultary-argo-vs
+  name: argo
 spec:
   hosts:
-    - argo.ultary.co
+    - argo.ghilbut.com
   gateways:
-    - istio-gateways/ultary-core
+    - istio-gateways/private
   http:
     - match:
         - uri:
@@ -18,28 +18,4 @@ spec:
             host: cd-server.argo.svc.cluster.local
             port:
               number: 80
----
-# AuthorizationPolicy should be applied to ingress instance directly
-# You can't apply to Gateway manifest
-apiVersion: security.istio.io/v1
-kind: AuthorizationPolicy
-metadata:
-  name: ultary-core-argo-internet-facing
-  namespace: istio-gateways
-spec:
-  selector:
-    matchLabels:
-      istio: ingressgateway
-  action: ALLOW
-  rules:
-    - to:
-        - operation:
-            hosts:
-              - argo.ultary.co
-              - argo.ultary.co:*
-            methods:
-              - POST
-            paths:
-              - /cd/api/webhook
-              - /cd/api/webhook/*
 ---

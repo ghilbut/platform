@@ -1,9 +1,9 @@
 apiVersion: networking.istio.io/v1
 kind: Gateway
 metadata:
-  name: public
+  name: private
   annotations:
-    ghilbut.com/external-dns: public
+    ghilbut.com/external-dns: private
     external-dns.alpha.kubernetes.io/ttl: "300"
     argocd.argoproj.io/sync-wave: "3"
 spec:
@@ -12,6 +12,8 @@ spec:
   servers:
     - hosts:
         - id.ghilbut.com
+        - argo.ghilbut.com
+        - vault.ghilbut.com
       port:
         name: http
         number: 80
@@ -20,6 +22,8 @@ spec:
         httpsRedirect: true
     - hosts:
         - id.ghilbut.com
+        - argo.ghilbut.com
+        - vault.ghilbut.com
       port:
         name: https
         number: 443

@@ -23,7 +23,7 @@ Agent가 다음 순서로 설치를 수행한다.
 
 | 애플리케이션 | 역할 | 사용자 URL |
 | --- | --- | --- |
-| Argo CD | GitOps 관리 | `https://argo.ghilbut.com/cd` |
+| Argo CD | GitOps 관리 | [https://argo.ghilbut.com/cd](https://argo.ghilbut.com/cd) |
 | Istio system | 서비스 메시 control plane | — |
 | Istio gateways | ingress와 egress traffic 처리 | — |
 | OpenEBS LVM | local persistent volume | — |
@@ -239,24 +239,44 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 
 ### 8. Private Gateway와 Argo CD route
 
-[Istio traffic management](https://istio.io/latest/docs/concepts/traffic-management/)를 참고한다.
-
-#### 설치 값
-
-| 항목 | 값 |
-| --- | --- |
-| Argo CD URL | `https://argo.ghilbut.com/cd` |
-
-private Gateway와 Argo CD VirtualService를 적용한다. `https://argo.ghilbut.com/cd`의 HTTP 응답과 TLS certificate를 확인한다.
+private Gateway를 통해 Argo CD를 `https://argo.ghilbut.com/cd`로 제공한다.
 
 ```shell
-kubectl --context cpa -n argo patch application argo \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/argo \
-  --timeout=20m
+argocd app sync istio-gateways \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait istio-gateways \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-gateways wait \
+  --for=condition=Ready certificate/ingress-https \
+  --timeout=10m
+argocd app sync argo \
+  --resource networking.istio.io:VirtualService:argo/argo \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait argo \
+  --sync \
+  --health \
+  --resource networking.istio.io:VirtualService:argo/argo \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-gateways get gateway,certificate,secret
+kubectl --context cpa -n argo get virtualservice argo
 curl --fail --silent --show-error --output /dev/null \
   --write-out '%{http_code}\n' \
   https://argo.ghilbut.com/cd
