@@ -33,8 +33,10 @@ Bootstrap commit은 다음 변경만 포함한다.
   추가한다.
 - Domains provider는 source credential을 직접 사용한다.
 
-기존 Domains workload source identity로 역할을 만든다. Backend는
-`ghilbut-tofu-apply-for-domains` profile을 계속 사용한다.
+`tofu-apply-domains` 역할과 역할 정책은 자기 자신에게 IAM 변경 권한을 주지 않는다. 이 역할과
+역할 정책을 만들거나 변경할 때는 임시 Bootstrap 경로인
+`ghilbut-tofu-apply-for-workloads-domains` profile을 사용한다. Backend는
+`ghilbut-tofu-apply-for-domains` profile을 사용한다.
 
 ```sh
 export AWS_SDK_LOAD_CONFIG=1
@@ -72,8 +74,10 @@ AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
 - source identity에는 v2의 Domains state read/write, CDN state read-only,
   `tofu-apply-domains` 수임만 허용한다.
 - Domains provider는 `tofu-apply-domains`를 수임한다.
-- Domains root는 CDN state output으로 validation record와 alias를 선언한다.
+- Domains root는 `ghilbut-tofu-apply-for-domains` profile로 CDN state를 읽고 validation record와
+  alias를 선언한다.
 - CDN root는 Route 53 resource를 state에서만 제거하고 Route 53 변경 권한을 제거한다.
+- CDN certificate validation resource는 ACM validation option의 record name을 직접 사용한다.
 
 Identity 변경을 먼저 적용한다. 이어서 caller와 실행 역할을 확인한다.
 
@@ -118,9 +122,18 @@ AWS_PROFILE=ghilbut-tofu-apply-for-domains \
 
 새 certificate와 distribution을 만들 때 다음 순서를 사용한다.
 
-1. CDN root에서 ACM certificate만 먼저 만든다.
+1. CDN root에서 ACM certificate만 명시적으로 선택해 만든다.
 2. Domains root가 CDN state의 validation option으로 CNAME record를 만든다.
 3. CDN root가 certificate validation과 CloudFront distribution을 완료한다.
 4. Domains root가 CDN state의 CloudFront domain과 hosted zone ID로 alias를 전환한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=aws/cdn/tofu plan \
+  -target=module.certificate.aws_acm_certificate.this \
+  -out=cdn-certificate.tfplan
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=aws/cdn/tofu apply cdn-certificate.tfplan
+```
 
 CDN root는 Route 53 record를 선언하지 않는다. Domains root만 hosted zone과 record를 변경한다.

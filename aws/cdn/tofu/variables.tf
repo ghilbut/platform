@@ -32,9 +32,6 @@ variable "acm_domain_name" {
     Apex domain for the ACM certificate primary domain (e.g. "ghilbut.com").
     This MUST be the organisation's apex domain — not a subdomain — so that
     a single certificate can cover all CDN hosts via SANs.
-    A public Route53 hosted zone for this domain must exist in the same AWS
-    account; it is looked up independently and does not need to be a key in
-    var.zones.
   EOT
   default     = "ghilbut.com"
 }

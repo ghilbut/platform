@@ -120,20 +120,6 @@ data "aws_iam_policy_document" "apply" {
     resources = [var.acm_certificate_arn]
   }
 
-  statement {
-    actions   = ["route53:GetHostedZone", "route53:ListHostedZones"]
-    resources = concat(["*"], [for zone_id in distinct(values(var.zone_ids)) : "arn:aws:route53:::hostedzone/${zone_id}"])
-  }
-
-  statement {
-    actions   = ["route53:ChangeResourceRecordSets", "route53:ListResourceRecordSets", "route53:ListTagsForResource"]
-    resources = [for zone_id in distinct(values(var.zone_ids)) : "arn:aws:route53:::hostedzone/${zone_id}"]
-  }
-
-  statement {
-    actions   = ["route53:GetChange"]
-    resources = ["arn:aws:route53:::change/*"]
-  }
 }
 
 resource "aws_iam_role_policy" "apply" {

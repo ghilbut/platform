@@ -205,12 +205,15 @@ module "tofu_apply_for_domains" {
   instance_arn = local.instance_arn
   name         = "TofuApplyForDomains"
   description  = "OpenTofu apply access for Domains account Route 53 resources."
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
-  ])
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
+      {
+        Sid      = "AssumeDomainsExecutionRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains"
+      },
       {
         Sid    = "DomainsStateObjects"
         Effect = "Allow"
