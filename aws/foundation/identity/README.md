@@ -8,9 +8,7 @@ title: IAM Identity Center
 
 | Permission set | 대상 계정 | Principal | 책임 |
 |---|---|---|---|
-| `foundation-management` | management | `DevOps` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
-| Permission set | 대상 계정 | Principal | 책임 |
-|---|---|---|---|
+| `FoundationManagement` | management | `DevOps` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
 | `TofuApplyForManagement` | management | `DevOps` 그룹 | Management 계정 OpenTofu 적용 |
 | `TofuApplyForDomains` | platform | `DevOps` 그룹 | Domains 이전 전 Route 53 관리 |
 | `TofuApplyForWorkloads` | platform | `DevOps` 그룹 | 현재 Platform 워크로드 OpenTofu 적용 |
@@ -34,10 +32,12 @@ permission set 이름과 역할 경로를 조건으로 사용한다.
 
 ## CLI source profile
 
-각 permission set은 별도의 source profile로 로그인한다. Foundation backend는
+각 `TofuApply*` permission set은 별도의 source profile로 로그인한다. Foundation backend는
 `TofuApplyForManagement` source profile로 state에 접근하고, provider는 Management
 `tofu-apply` 역할을 수임한다. CDN은 `TofuApplyForWorkloads` source profile로 state에
 접근하고 Platform `tofu-apply` 역할을 수임한다.
+
+`FoundationManagement`는 AWS access portal에서 Management 계정의 콘솔 접근에 사용한다.
 
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-management
