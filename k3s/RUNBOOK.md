@@ -411,7 +411,8 @@ agent \
 --node-ip $AGENT_IP \
 --kubelet-arg allowed-unsafe-sysctls=net.ipv4.*"
 
-curl -sfL https://get.k3s.io | sh -
+curl -sfL https://get.k3s.io | \
+  sudo env INSTALL_K3S_EXEC="$INSTALL_K3S_EXEC" K3S_TOKEN="$K3S_TOKEN" sh -
 sudo systemctl is-active k3s-agent
 sudo k3s --version
 ```
