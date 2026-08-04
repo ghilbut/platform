@@ -72,6 +72,53 @@ module "tofu_execution_role" {
         ]
         Resource = "arn:aws:iam::869061964712:role/tofu-apply-domains"
       },
+      {
+        Sid    = "ManageDnsFederationRoles"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:DeleteRolePolicy",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:ListRolePolicies",
+          "iam:PutRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+        ]
+        Resource = [
+          "arn:aws:iam::869061964712:role/domains-cpa-cert-manager",
+          "arn:aws:iam::869061964712:role/domains-cpa-external-dns",
+        ]
+      },
+      {
+        Sid    = "CreateCpaOidcProvider"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateOpenIDConnectProvider",
+          "iam:ListOpenIDConnectProviders",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ManageCpaOidcProvider"
+        Effect = "Allow"
+        Action = [
+          "iam:AddClientIDToOpenIDConnectProvider",
+          "iam:DeleteOpenIDConnectProvider",
+          "iam:GetOpenIDConnectProvider",
+          "iam:RemoveClientIDFromOpenIDConnectProvider",
+          "iam:TagOpenIDConnectProvider",
+          "iam:UntagOpenIDConnectProvider",
+          "iam:UpdateOpenIDConnectProviderThumbprint",
+        ]
+        Resource = "arn:aws:iam::869061964712:oidc-provider/oidc.k3s.ghilbut.com/cpa"
+      },
     ]
   })
 }
