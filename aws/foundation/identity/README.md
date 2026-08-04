@@ -9,22 +9,12 @@ title: IAM Identity Center
 | Permission set | 대상 계정 | Principal | 책임 |
 |---|---|---|---|
 | `foundation-management` | management | `DevOps` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
-| `ManagementTofuApply` | management | `DevOps` 그룹 | Foundation 계정·Identity OpenTofu 적용 |
-| `TofuApply` | platform | `DevOps` 그룹 | Platform 워크로드 OpenTofu 적용 |
-| `UltaryDomainsTofuApply` | ultary-domains | `DevOps` 그룹 | Ultary 도메인과 Route 53 OpenTofu 적용 |
-
-새 permission set은 기존 할당을 유지한 채 추가한다. provider 인증과 실행 역할 신뢰 정책을
-전환한 뒤 기존 permission set을 제거한다.
-
 | Permission set | 대상 계정 | Principal | 책임 |
 |---|---|---|---|
 | `TofuApplyForManagement` | management | `DevOps` 그룹 | Management 계정 OpenTofu 적용 |
 | `TofuApplyForDomains` | platform | `DevOps` 그룹 | Domains 이전 전 Route 53 관리 |
 | `TofuApplyForWorkloads` | platform | `DevOps` 그룹 | 현재 Platform 워크로드 OpenTofu 적용 |
 | `TofuApplyForUltaryDomains` | ultary-domains | `DevOps` 그룹 | Ultary Domains Route 53 관리 |
-
-`TofuApply`는 플랫폼 리소스와 IAM 역할을 관리할 수 있지만, inline deny policy로
-Organizations, Billing, Account Management, IAM Identity Center 관리를 명시적으로 거부한다.
 
 ## OpenTofu 실행 역할
 
@@ -44,7 +34,7 @@ permission set 이름과 역할 경로를 조건으로 사용한다.
 
 ## CLI source profile
 
-새 permission set은 기존 profile과 별도의 source profile로 로그인한다. Foundation backend는
+각 permission set은 별도의 source profile로 로그인한다. Foundation backend는
 `TofuApplyForManagement` source profile로 state에 접근하고, provider는 Management
 `tofu-apply` 역할을 수임한다. CDN은 `TofuApplyForWorkloads` source profile로 state에
 접근하고 Platform `tofu-apply` 역할을 수임한다.
@@ -81,4 +71,4 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains
 ```
 
 permission set 할당은 계정 책임과 운영 인원에 따라 사용자 직접 할당 또는 그룹 할당을
-선택한다. legacy permission set은 provider와 backend 전환을 검증한 후 제거한다.
+선택한다.
