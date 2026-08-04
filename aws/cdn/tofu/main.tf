@@ -23,7 +23,7 @@ locals {
 module "tofu_execution_role" {
   source = "../../modules/tofu-execution-role"
 
-  name                       = "platform-tofu-apply"
+  name                       = "tofu-apply"
   description                = "OpenTofu execution role for Platform workload infrastructure."
   source_account_id          = "869061964712"
   source_permission_set_name = "TofuApply"

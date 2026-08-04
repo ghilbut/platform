@@ -2,6 +2,11 @@ resource "aws_iam_role" "this" {
   name                 = var.name
   description          = var.description
   max_session_duration = var.max_session_duration
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
