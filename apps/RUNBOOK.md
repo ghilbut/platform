@@ -247,7 +247,7 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 | --- | --- |
 | Argo CD URL | `https://argo.ghilbut.com/cd` |
 
-public과 private Gateway, `ingress-https` Certificate, Argo CD VirtualService를 적용한다. Certificate가 Ready이고 `https://argo.ghilbut.com/cd`가 응답하는지 확인한다.
+public과 private Gateway, `ingress-https` Certificate, Argo CD VirtualService를 적용한다. Certificate가 Ready이고 `https://argo.ghilbut.com/cd`가 응답하는지 확인한다. `argo` Application에서는 `VirtualService/argo`만 동기화한다.
 
 ```shell
 argocd app sync istio-gateways \
@@ -268,6 +268,7 @@ kubectl --context cpa -n istio-gateways wait \
   --for=condition=Ready certificate/ingress-https \
   --timeout=10m
 argocd app sync argo \
+  --resource networking.istio.io:VirtualService:argo/argo \
   --kube-context cpa \
   --port-forward \
   --port-forward-namespace argo \
@@ -276,6 +277,7 @@ argocd app sync argo \
 argocd app wait argo \
   --sync \
   --health \
+  --resource networking.istio.io:VirtualService:argo/argo \
   --kube-context cpa \
   --port-forward \
   --port-forward-namespace argo \
