@@ -11,6 +11,8 @@ interface S3Response {
 
 const s3Responses: Map<string, S3Response | "NOT_FOUND"> = new Map();
 
+Object.assign(globalThis, { CDN_BUCKET: "test-cdn" });
+
 const mockSend = mock.fn(async (command: { input: { Key: string } }) => {
   const key = command.input.Key;
   const result = s3Responses.get(key);

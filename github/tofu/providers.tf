@@ -1,6 +1,11 @@
 provider "aws" {
-  profile = "ghilbut-platform"
-  region  = "us-east-1"
+  allowed_account_ids = ["012646747332"]
+  profile             = "ghilbut-tofu-apply-for-workloads"
+  region              = "us-east-1"
+
+  assume_role {
+    role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
+  }
 
   default_tags {
     tags = {

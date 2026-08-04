@@ -6,3 +6,7 @@ variable "redirect_map" { type = map(string) }
 variable "repo" { type = string }
 variable "spa_hosts" { type = list(string) }
 variable "lambda_source_file" { type = string }
+variable "lambda_source_contains_bucket_placeholder" {
+  type    = bool
+  default = false
+}

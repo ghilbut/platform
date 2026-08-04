@@ -8,6 +8,12 @@ variable "service" {
   default = "cdn"
 }
 
+variable "aws_execution_role_arn" {
+  type        = string
+  description = "IAM role assumed for local OpenTofu operations; use an empty value with direct workload credentials"
+  default     = "arn:aws:iam::012646747332:role/tofu-apply"
+}
+
 variable "github_owner" {
   type        = string
   description = "GitHub organization or user that owns the repository"
@@ -23,7 +29,7 @@ variable "github_repository" {
 variable "name" {
   type        = string
   description = "Short CDN identifier used in resource names and Name tags"
-  default     = "platform-cdn"
+  default     = "cdn-platform"
 }
 
 variable "acm_domain_name" {

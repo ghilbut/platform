@@ -9,6 +9,9 @@ locals {
 
   fqdns = keys(local.fqdn_hosts)
 
+  # The wildcard SAN supports verification hostnames for future parallel distributions.
+  certificate_fqdns = distinct(concat(local.fqdns, ["*.k3s.ghilbut.com"]))
+
   viewer_request_allowlist = keys(local.fqdn_hosts)
   viewer_request_redirect_map = {
     for fqdn, config in local.fqdn_hosts : fqdn => config.redirect_host
@@ -20,74 +23,25 @@ locals {
   ]
 }
 
-module "tofu_execution_role" {
-  source = "../../modules/tofu-execution-role"
+module "certificate" {
+  source = "./modules/certificate"
 
-  name                       = "tofu-apply"
-  description                = "OpenTofu execution role for Platform workload infrastructure."
-  source_account_id          = "869061964712"
-  source_permission_set_name = "TofuApplyForWorkloads"
-  sso_region                 = "us-east-1"
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/IAMFullAccess",
-    "arn:aws:iam::aws:policy/PowerUserAccess",
-  ])
-  inline_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "DenyCentralAdministration"
-        Effect = "Deny"
-        Action = [
-          "account:*",
-          "aws-portal:*",
-          "billing:*",
-          "budgets:*",
-          "ce:*",
-          "consolidatedbilling:*",
-          "cur:*",
-          "identitystore:*",
-          "identitystore-auth:*",
-          "identity-sync:*",
-          "invoicing:*",
-          "organizations:*",
-          "payments:*",
-          "purchase-orders:*",
-          "sso:*",
-          "sso-directory:*",
-        ]
-        Resource = "*"
-      },
-      {
-        Sid      = "DenyDomainsManagement"
-        Effect   = "Deny"
-        Action   = ["route53:*", "route53domains:*"]
-        Resource = "*"
-      },
-    ]
-  })
+  acm_domain_name = var.acm_domain_name
+  fqdns           = local.certificate_fqdns
+  name            = var.name
+  repo            = local.repo
 }
 
 module "s3" {
   source = "./modules/s3"
 
-  # S3 bucket names share a global namespace, so include the repository owner.
-  bucket_name = "${var.github_owner}-${var.name}"
+  bucket_name = "ghilbut-cdn-platform"
   error_page_files = {
     "404.html" = "${path.root}/../404.html"
     "503.html" = "${path.root}/../503.html"
   }
   name = var.name
   repo = local.repo
-}
-
-module "certificate" {
-  source = "./modules/certificate"
-
-  acm_domain_name = var.acm_domain_name
-  fqdns           = local.fqdns
-  name            = var.name
-  repo            = local.repo
 }
 
 module "edge" {
@@ -101,6 +55,8 @@ module "edge" {
   repo               = local.repo
   spa_hosts          = local.viewer_request_spa_hosts
   lambda_source_file = "${path.root}/../lambda/dist/index.mjs"
+
+  lambda_source_contains_bucket_placeholder = true
 }
 
 module "cloudfront" {
@@ -127,14 +83,6 @@ module "origin_access" {
   depends_on = [module.s3]
 }
 
-removed {
-  from = module.dns
-
-  lifecycle {
-    destroy = false
-  }
-}
-
 module "github_actions" {
   source = "./modules/github-actions"
 
@@ -142,7 +90,6 @@ module "github_actions" {
   cdn_bucket_arn                   = module.s3.arn
   cloudfront_distribution_arn      = module.cloudfront.arn
   cloudfront_function_arn          = module.edge.viewer_request_function_arn
-  github_repository                = var.github_repository
   github_actions_oidc_provider_arn = data.terraform_remote_state.github.outputs.github_actions_oidc_provider_arn
   lambda_function_arn              = module.edge.lambda_function_base_arn
   lambda_role_arn                  = module.edge.lambda_role_arn

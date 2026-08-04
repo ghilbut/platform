@@ -193,7 +193,7 @@ CPA의 `k3s/tofu`는 Kubernetes API에서 discovery document와 JWKS를 읽어 C
 
 ```shell
 export AWS_SDK_LOAD_CONFIG=1
-export AWS_PROFILE='ghilbut-tofu-apply-for-workloads-domains'
+export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
 
 tofu -chdir=k3s/tofu init
 tofu -chdir=k3s/tofu plan

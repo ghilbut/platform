@@ -5,7 +5,7 @@ terraform {
     bucket       = "ghilbut-tfstates-v2"
     encrypt      = true
     key          = "k3s.tfstate"
-    profile      = "ghilbut-tofu-apply-for-workloads-domains"
+    profile      = "ghilbut-tofu-apply-for-workloads"
     region       = "us-east-1"
     use_lockfile = true
   }

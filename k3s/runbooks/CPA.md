@@ -157,7 +157,7 @@ kubectl get nodes -o wide
 ```shell
 # administrator computer
 export AWS_SDK_LOAD_CONFIG=1
-export AWS_PROFILE='ghilbut-tofu-apply-for-workloads-domains'
+export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
 
 tofu -chdir=k3s/tofu init
 tofu -chdir=k3s/tofu apply

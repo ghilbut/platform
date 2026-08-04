@@ -4,7 +4,7 @@
 
 ## GitHub Actions OIDC
 
-`tofu/`는 AWS 계정 전체에서 공유하는 GitHub Actions OIDC provider를 관리합니다.
+`tofu/`는 Platform 계정에서 공유하는 GitHub Actions OIDC provider를 관리합니다.
 provider URL은 `https://token.actions.githubusercontent.com`이고, 허용 audience는
 `sts.amazonaws.com`입니다.
 
@@ -31,4 +31,4 @@ tofu apply
 ```
 
 OpenTofu 상태는 `s3://ghilbut-tfstates-v2/platform/github.tfstate`에 저장되며,
-`ghilbut-platform` AWS 프로필을 사용합니다.
+`ghilbut-tofu-apply-for-workloads` AWS 프로필을 사용합니다.

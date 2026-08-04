@@ -12,8 +12,8 @@
 ## 상태 소유권
 
 - `github/tofu`는 계정 공용 GitHub Actions OIDC provider만 관리한다.
-- 서비스별 GitHub repository variable과 IAM 역할은 그 서비스 root가 관리한다. CDN의
-  `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN`은 `aws/cdn/tofu`의 소유다.
+- 서비스별 GitHub Actions IAM 역할은 그 서비스 root가 관리한다. GitHub repository variable은
+  실행 Runbook에서 `gh variable set`으로 관리한다.
 - 공용 OIDC provider ARN과 Foundation account ID처럼 root 사이에 필요한 식별자만
   `terraform_remote_state` output으로 소비한다. 한 리소스를 두 state에서 선언하지 않는다.
 - backend key를 옮길 때는 `tofu init -migrate-state`로 state만 이전한다. 원격 리소스를
@@ -26,7 +26,7 @@
 - CDN module은 `local.default_tags`에 `opentofu/module/repo`,
   `opentofu/module/path`만 추가한다. `var.default_tags`를 module input으로 전달하지
   않는다.
-- CDN 리소스 이름과 `Name` 태그는 `platform-cdn`을 기준으로 한다. 저장소 소유자를
+- CDN 리소스 이름과 `Name` 태그는 `cdn-platform`을 기준으로 한다. 저장소 소유자를
   중복한 `ghilbut-` 접두사는 S3의 전역 버킷 이름처럼 충돌 방지가 필요한 경우에만 쓴다.
 - S3 객체에는 `Name` 태그를 붙이지 않는다. 객체 태그는 10개 제한을 넘지 않아야 한다.
 

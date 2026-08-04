@@ -23,6 +23,8 @@ jobs:
   deploy:
     name: Test, build, and deploy
     runs-on: ubuntu-latest
+    env:
+      TF_VAR_aws_execution_role_arn: ""
 
     permissions:
       contents: read

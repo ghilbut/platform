@@ -27,11 +27,11 @@ tags:
 | `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | `ghilbut-tofu-apply-for-management` |
 | `aws/foundation/state/tofu/` | `platform/aws/foundation/state.tfstate` | `ghilbut-tofu-apply-for-workloads` |
 | `aws/foundation/workload/tofu/` | `platform/aws/foundation/workload.tfstate` | `ghilbut-tofu-apply-for-workloads` |
-| `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | `ghilbut-tofu-apply-for-workloads-domains` |
+| `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | `ghilbut-tofu-apply-for-workloads` |
 | `domains/tofu/` | `platform/domains.tfstate` | `ghilbut-tofu-apply-for-domains` |
 | `apps/tofu/` | `platform/apps.tfstate` | `ghilbut-tofu-apply-for-workloads-domains` |
-| `github/tofu/` | `platform/github.tfstate` | `ghilbut-tofu-apply-for-workloads-domains` |
-| `k3s/tofu/` | `k3s.tfstate` | `ghilbut-tofu-apply-for-workloads-domains` |
+| `github/tofu/` | `platform/github.tfstate` | `ghilbut-tofu-apply-for-workloads` |
+| `k3s/tofu/` | `k3s.tfstate` | `ghilbut-tofu-apply-for-workloads` |
 | `ultary/domains/tofu/` | `ultary/domains.tfstate` | `ghilbut-tofu-apply-for-ultary-domains` |
 
 `platform/aws/accounts.tfstate`는 이전 대상에서 제외한다. 해당 state의 account ID가 활성
