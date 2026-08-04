@@ -9,6 +9,7 @@ locals {
 
   fqdns = keys(local.fqdn_hosts)
 
+  # The wildcard SAN supports verification hostnames for future parallel distributions.
   certificate_fqdns = distinct(concat(local.fqdns, ["*.k3s.ghilbut.com"]))
 
   viewer_request_allowlist = keys(local.fqdn_hosts)

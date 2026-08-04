@@ -85,11 +85,18 @@ CNAME은 Platform certificate의 세 record만 유지한다.
 ## 4. 배포 경로 확인
 
 ```sh
+gh variable set AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN \
+  --repo ghilbut/platform \
+  --body 'arn:aws:iam::012646747332:role/cdn-platform-github-actions'
+
 gh api repos/ghilbut/platform/actions/variables/AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN
 
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
   tofu -chdir=aws/cdn/tofu plan
 ```
+
+Certificate의 wildcard SAN은 다음 parallel distribution 검증용 hostname을 지원한다. Distribution
+alias는 `oidc.k3s.ghilbut.com` 하나만 유지한다.
 
 repository variable 값은 `arn:aws:iam::012646747332:role/cdn-platform-github-actions`다.
 GitHub Actions는 workload role을 직접 사용하므로 `TF_VAR_aws_execution_role_arn`을 빈 문자열로
