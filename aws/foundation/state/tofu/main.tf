@@ -7,9 +7,9 @@ locals {
 
   state_access = {
     management = {
-      sid_prefix          = "Management"
-      account_id          = local.management_account_id
-      permission_set_name = "TofuApplyForManagement"
+      sid_prefix            = "Management"
+      account_id            = local.management_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.management_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForManagement_*"
       object_keys = [
         "platform/aws/foundation/accounts.tfstate",
         "platform/aws/foundation/accounts.tfstate.tflock",
@@ -18,18 +18,18 @@ locals {
       ]
     }
     domains = {
-      sid_prefix          = "Domains"
-      account_id          = local.domains_account_id
-      permission_set_name = "TofuApplyForDomains"
+      sid_prefix            = "Domains"
+      account_id            = local.domains_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForDomains_*"
       object_keys = [
         "platform/domains.tfstate",
         "platform/domains.tfstate.tflock",
       ]
     }
     domains_workloads = {
-      sid_prefix          = "DomainsWorkloads"
-      account_id          = local.domains_account_id
-      permission_set_name = "TofuApplyForWorkloads"
+      sid_prefix            = "DomainsWorkloads"
+      account_id            = local.domains_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
       object_keys = [
         "k3s.tfstate",
         "k3s.tfstate.tflock",
@@ -45,10 +45,19 @@ locals {
         "ultary/domains.tfstate.tflock",
       ]
     }
+    domains_cdn_github_actions = {
+      sid_prefix            = "DomainsCdnGitHubActions"
+      account_id            = local.domains_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/platform-cdn-github-actions"
+      object_keys = [
+        "platform/aws/cdn.tfstate",
+        "platform/aws/cdn.tfstate.tflock",
+      ]
+    }
     platform = {
-      sid_prefix          = "Platform"
-      account_id          = local.platform_account_id
-      permission_set_name = "TofuApplyForWorkloads"
+      sid_prefix            = "Platform"
+      account_id            = local.platform_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.platform_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
       object_keys = [
         "k3s.tfstate",
         "k3s.tfstate.tflock",
@@ -65,9 +74,9 @@ locals {
       ]
     }
     ultary_domains = {
-      sid_prefix          = "UltaryDomains"
-      account_id          = local.ultary_account_id
-      permission_set_name = "TofuApplyForUltaryDomains"
+      sid_prefix            = "UltaryDomains"
+      account_id            = local.ultary_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.ultary_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForUltaryDomains_*"
       object_keys = [
         "ultary/domains.tfstate",
         "ultary/domains.tfstate.tflock",
@@ -165,7 +174,7 @@ data "aws_iam_policy_document" "state" {
       condition {
         test     = "ArnLike"
         variable = "aws:PrincipalArn"
-        values   = ["arn:aws:iam::${statement.value.account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_${statement.value.permission_set_name}_*"]
+        values   = [statement.value.principal_arn_pattern]
       }
     }
   }
@@ -188,7 +197,7 @@ data "aws_iam_policy_document" "state" {
       condition {
         test     = "ArnLike"
         variable = "aws:PrincipalArn"
-        values   = ["arn:aws:iam::${statement.value.account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_${statement.value.permission_set_name}_*"]
+        values   = [statement.value.principal_arn_pattern]
       }
     }
   }
@@ -211,7 +220,7 @@ data "aws_iam_policy_document" "state" {
       condition {
         test     = "ArnLike"
         variable = "aws:PrincipalArn"
-        values   = ["arn:aws:iam::${statement.value.account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_${statement.value.permission_set_name}_*"]
+        values   = [statement.value.principal_arn_pattern]
       }
 
       condition {
