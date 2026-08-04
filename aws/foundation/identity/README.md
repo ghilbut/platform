@@ -8,9 +8,7 @@ title: IAM Identity Center
 
 | Permission set | 대상 계정 | Principal | 책임 |
 |---|---|---|---|
-| `foundation-management` | management | `DevOps` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
-| Permission set | 대상 계정 | Principal | 책임 |
-|---|---|---|---|
+| `FoundationManagement` | management | `DevOps` 그룹 | Organizations, 계정, 결제, IAM Identity Center 관리 |
 | `TofuApplyForManagement` | management | `DevOps` 그룹 | Management 계정 OpenTofu 적용 |
 | `TofuApplyForDomains` | platform | `DevOps` 그룹 | Domains 이전 전 Route 53 관리 |
 | `TofuApplyForWorkloads` | platform | `DevOps` 그룹 | 현재 Platform 워크로드 OpenTofu 적용 |

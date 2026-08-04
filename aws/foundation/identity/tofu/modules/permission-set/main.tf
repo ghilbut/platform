@@ -3,6 +3,10 @@ resource "aws_ssoadmin_permission_set" "this" {
   name             = var.name
   description      = var.description
   session_duration = var.session_duration
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_ssoadmin_managed_policy_attachment" "this" {
@@ -11,6 +15,10 @@ resource "aws_ssoadmin_managed_policy_attachment" "this" {
   instance_arn       = var.instance_arn
   managed_policy_arn = each.value
   permission_set_arn = aws_ssoadmin_permission_set.this.arn
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_ssoadmin_permission_set_inline_policy" "this" {
@@ -19,6 +27,10 @@ resource "aws_ssoadmin_permission_set_inline_policy" "this" {
   inline_policy      = var.inline_policy
   instance_arn       = var.instance_arn
   permission_set_arn = aws_ssoadmin_permission_set.this.arn
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_ssoadmin_account_assignment" "this" {
@@ -30,6 +42,10 @@ resource "aws_ssoadmin_account_assignment" "this" {
   principal_type     = each.value.principal_type
   target_id          = each.value.account_id
   target_type        = "AWS_ACCOUNT"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   depends_on = [
     aws_ssoadmin_managed_policy_attachment.this,

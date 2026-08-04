@@ -48,7 +48,7 @@ module "management" {
   source = "./modules/permission-set"
 
   instance_arn = local.instance_arn
-  name         = "foundation-management"
+  name         = "FoundationManagement"
   description  = "AWS Organizations, account, billing, and IAM Identity Center administration."
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
