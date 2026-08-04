@@ -7,6 +7,9 @@ title: AWS Foundation
 AWS Foundation은 AWS 계정 수명 주기, IAM Identity Center 접근 권한, AWS Organizations
 거버넌스를 관리한다. 각 책임은 별도 OpenTofu 상태로 관리한다.
 
+Platform account 분리 대상과 처리 순서는
+[[MIGRATION-INVENTORY|AWS account split migration inventory]]에서 관리한다.
+
 | 경로 | 책임 | Backend key |
 |---|---|---|
 | `accounts/tofu/` | AWS Organizations 계정 수명 주기와 관리 계정 opt-in 리전 | `platform/aws/foundation/accounts.tfstate` |
