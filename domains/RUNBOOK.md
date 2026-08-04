@@ -38,6 +38,12 @@ Bootstrap commit은 다음 변경만 포함한다.
 `ghilbut-tofu-apply-for-workloads-domains` profile을 사용한다. Backend는
 `ghilbut-tofu-apply-for-domains` profile을 사용한다.
 
+CDN root의 전체 plan에는 repository Actions variable 읽기 권한이 있는 GitHub token이 필요하다.
+그 권한이 없는 로컬 token을 사용할 때는 AWS 변경 plan에서
+`-exclude=module.github_actions.github_actions_variable.cdn_role_arn`을 지정하고, 같은 variable은
+권한이 있는 CI 또는 [Issue #98](https://github.com/ghilbut/platform/issues/98)의 전환 절차에서
+검증한다.
+
 ```sh
 export AWS_SDK_LOAD_CONFIG=1
 
@@ -57,7 +63,8 @@ AWS_PROFILE=ghilbut-tofu-apply-for-management \
   tofu -chdir=aws/foundation/identity/tofu apply
 
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
-  tofu -chdir=aws/cdn/tofu plan
+  tofu -chdir=aws/cdn/tofu plan \
+  -exclude=module.github_actions.github_actions_variable.cdn_role_arn
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
   tofu -chdir=aws/cdn/tofu apply
 ```
@@ -104,7 +111,9 @@ CDN plan을 먼저 적용하고 즉시 Domains import plan을 적용한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
-  tofu -chdir=aws/cdn/tofu plan -out=cdn-dns-release.tfplan
+  tofu -chdir=aws/cdn/tofu plan \
+  -exclude=module.github_actions.github_actions_variable.cdn_role_arn \
+  -out=cdn-dns-release.tfplan
 AWS_PROFILE=ghilbut-tofu-apply-for-domains \
   tofu -chdir=domains/tofu plan -out=domains-dns-import.tfplan
 
