@@ -34,9 +34,11 @@ Bootstrap commit은 다음 변경만 포함한다.
 - Domains provider는 source credential을 직접 사용한다.
 
 `tofu-apply-domains` 역할과 역할 정책은 자기 자신에게 IAM 변경 권한을 주지 않는다. 이 역할과
-역할 정책을 만들거나 변경할 때는 임시 Bootstrap 경로인
-`ghilbut-tofu-apply-for-workloads-domains` profile을 사용한다. Backend는
-`ghilbut-tofu-apply-for-domains` profile을 사용한다.
+역할 정책을 만들거나 변경할 때는 별도 Bootstrap commit에서 provider의 `assume_role` block을
+제거하고 `allowed_account_ids = ["869061964712"]`를 유지한다. 그 commit은
+`ghilbut-tofu-apply-for-workloads-domains` profile로 plan과 apply를 실행한다. 역할 변경을 끝낸
+commit은 `assume_role` block을 복원한다. Backend는 항상 `ghilbut-tofu-apply-for-domains`
+profile을 사용한다.
 
 CDN root의 전체 plan에는 repository Actions variable 읽기 권한이 있는 GitHub token이 필요하다.
 그 권한이 없는 로컬 token을 사용할 때는 AWS 변경 plan에서
