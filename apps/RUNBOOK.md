@@ -247,16 +247,42 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 | --- | --- |
 | Argo CD URL | `https://argo.ghilbut.com/cd` |
 
-private Gateway와 Argo CD VirtualService를 적용한다. `https://argo.ghilbut.com/cd`의 HTTP 응답과 TLS certificate를 확인한다.
+public과 private Gateway, `ingress-https` Certificate, Argo CD VirtualService를 적용한다. Certificate가 Ready이고 `https://argo.ghilbut.com/cd`가 응답하는지 확인한다.
 
 ```shell
-kubectl --context cpa -n argo patch application argo \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/argo \
-  --timeout=20m
+argocd app sync istio-gateways \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait istio-gateways \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-gateways wait \
+  --for=condition=Ready certificate/ingress-https \
+  --timeout=10m
+argocd app sync argo \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait argo \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-gateways get gateway,certificate,secret
+kubectl --context cpa -n argo get virtualservice argo
 curl --fail --silent --show-error --output /dev/null \
   --write-out '%{http_code}\n' \
   https://argo.ghilbut.com/cd
