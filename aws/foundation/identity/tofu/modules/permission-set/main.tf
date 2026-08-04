@@ -4,6 +4,8 @@ resource "aws_ssoadmin_permission_set" "this" {
   description      = var.description
   session_duration = var.session_duration
 
+  # 이름 변경은 새 permission set을 먼저 만들고 기존 permission set을 나중에 제거한다.
+  # 같은 이름으로 강제 교체하면 AWS의 permission set 이름 중복 제한 때문에 실패한다.
   lifecycle {
     create_before_destroy = true
   }
