@@ -47,10 +47,40 @@ K3s 데이터와 OpenEBS LVM physical volume은 서로 다른 block device 또�
 export CLUSTER='<CLUSTER>'
 export SERVER_IP='<SERVER_IP>'
 export SSH_USER='<SSH_USER>'
+export SERVER_INTERFACE='<SERVER_INTERFACE>'
+export SERVER_CIDR='<SERVER_CIDR>'
+export SERVER_GATEWAY='<SERVER_GATEWAY>'
+export HOST_DNS_PRIMARY='<HOST_DNS_PRIMARY>'
+export HOST_DNS_SECONDARY='<HOST_DNS_SECONDARY>'
 export OPENEBSD_DEVICE='<OPENEBSD_DEVICE>'
 export OPENEBSD_VG='openebs'
 
 ssh "$SSH_USER@$SERVER_IP"
+
+sudo install -D -m 644 /dev/stdin /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg <<'YAML'
+network: {config: disabled}
+YAML
+sudo install -m 600 /dev/stdin /etc/netplan/50-cloud-init.yaml <<YAML
+network:
+  version: 2
+  ethernets:
+    $SERVER_INTERFACE:
+      dhcp4: false
+      addresses:
+        - $SERVER_CIDR
+      routes:
+        - to: default
+          via: $SERVER_GATEWAY
+      nameservers:
+        addresses:
+          - $HOST_DNS_PRIMARY
+          - $HOST_DNS_SECONDARY
+      optional: true
+YAML
+sudo netplan generate
+sudo netplan apply
+ip -brief address show "$SERVER_INTERFACE"
+ip route show default
 
 sudo apt update -y
 sudo apt full-upgrade -y
@@ -226,6 +256,10 @@ ipam:
     clusterPoolIPv4MaskSize: 24
     clusterPoolIPv4PodCIDRList: $POD_CIDR
 kubeProxyReplacement: true
+socketLB:
+  hostNamespaceOnly: true
+cni:
+  exclusive: false
 l7Proxy: false
 operator:
   replicas: 1

@@ -2,13 +2,11 @@
 type: run
 area: k3s
 cluster: cpa
-status: completed
-completed_at: 2026-08-03
 ---
 
-# CPA K3s 재설치
+# CPA K3s 설치
 
-CPA는 단일 control-plane K3s 클러스터다. 이 문서는 2026-08-03에 실행한 명령과 값을 기록한다. 인증 정보와 token은 기록하지 않는다.
+CPA는 단일 control-plane K3s 클러스터다. 인증 정보와 token은 기록하지 않는다.
 
 > [!info] 공통 절차
 > ![[k3s/RUNBOOK#B. 설치 값]]
@@ -24,7 +22,7 @@ CPA는 단일 control-plane K3s 클러스터다. 이 문서는 2026-08-03에 실
 | Cilium Pod CIDR | `172.31.0.0/17` |
 | ServiceAccount issuer | `https://oidc.k3s.ghilbut.com/cpa` |
 | K3s | `v1.36.2+k3s1` |
-| Cilium chart | `1.19.3` |
+| Cilium chart | `1.20.0` |
 | Argo CD chart | `9.5.13` |
 | OpenEBS LVM device | `/dev/sda10` |
 | OpenEBS LVM volume group | `openebs` |
@@ -47,6 +45,34 @@ VM은 Synology Virtual Machine Manager에서 `cpa`로 실행한다. VM은 4 vCPU
 
 ```shell
 # cpa
+sudo install -D -m 644 /dev/stdin /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg <<'YAML'
+network: {config: disabled}
+YAML
+sudo install -m 600 /dev/stdin /etc/netplan/50-cloud-init.yaml <<'YAML'
+network:
+  version: 2
+  ethernets:
+    ens3:
+      dhcp4: false
+      addresses:
+        - 192.168.254.4/24
+      routes:
+        - to: default
+          via: 192.168.254.1
+      nameservers:
+        addresses:
+          - 8.8.8.8
+          - 1.1.1.1
+      optional: true
+YAML
+sudo netplan generate
+sudo netplan apply
+ip -brief address show ens3
+ip route show default
+```
+
+```shell
+# cpa
 sudo apt update -y
 sudo apt install -y lvm2
 printf '%s\n' dm_snapshot | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
@@ -57,8 +83,6 @@ sudo vgcreate openebs /dev/sda10
 sudo pvs -o pv_name,vg_name,pv_size
 sudo vgs -o vg_name,pv_count,vg_size
 ```
-
-결과: `/dev/sda10`은 `openebs` volume group의 유일한 physical volume이며 volume group 크기는 약 396GiB다.
 
 ## C. K3s server
 
@@ -125,8 +149,6 @@ kubectl config view --minify --raw \
 kubectl get nodes -o wide
 ```
 
-결과: `cpa` context는 `cpa` cluster와 `cpa` user를 사용한다.
-
 ## E. ServiceAccount OIDC와 AWS IAM federation
 
 > [!info] 공통 절차
@@ -150,8 +172,6 @@ diff \
     https://oidc.k3s.ghilbut.com/cpa/openid/v1/jwks | jq -S .)
 ```
 
-K3s server에는 CPA issuer와 공개 JWKS URL을 적용했다. `tofu -chdir=k3s/tofu apply`는 공개 JWKS를 새 K3s 서명 키로 동기화했다. Kubernetes API와 공개 issuer의 discovery document, JWKS `diff`가 성공했다.
-
 ## F. Cilium
 
 ```shell
@@ -165,7 +185,7 @@ kubectl --context cpa apply -f \
 helm repo add cilium https://helm.cilium.io/
 helm repo update
 helm upgrade --kube-context cpa --install cilium cilium/cilium \
-  --version 1.19.3 \
+  --version 1.20.0 \
   --namespace kube-system \
   --values /dev/stdin <<'YAML'
 k8sServiceHost: 192.168.254.4
@@ -176,6 +196,10 @@ ipam:
     clusterPoolIPv4MaskSize: 24
     clusterPoolIPv4PodCIDRList: 172.31.0.0/17
 kubeProxyReplacement: true
+socketLB:
+  hostNamespaceOnly: true
+cni:
+  exclusive: false
 l7Proxy: false
 operator:
   replicas: 1
@@ -190,8 +214,6 @@ kubectl --context cpa get pods -A \
   | xargs -r -L 1 kubectl --context cpa delete pod
 kubectl --context cpa wait --for=condition=Ready node/cpa --timeout=10m
 ```
-
-결과: cpa node, Cilium DaemonSet, Cilium Operator, CoreDNS, metrics-server가 Ready다.
 
 ## G. Optional: Argo CD
 
@@ -299,24 +321,9 @@ curl --fail --silent --show-error --output /dev/null \
   http://localhost:8080/cd
 ```
 
-결과: `307 http://localhost:8080/cd/`.
-
 ## H. Optional: Agent
 
 > [!info] 공통 절차
 > ![[k3s/RUNBOOK#G. Optional: Agent]]
 
 CPA는 단일 control-plane cluster로 실행하므로 agent를 설치하지 않는다.
-
-## I. 완료 결과
-
-| 확인 항목 | 결과 |
-| --- | --- |
-| K3s server | `v1.36.2+k3s1`, active |
-| cpa node | Ready |
-| Cilium | chart `1.19.3`, DaemonSet과 Operator Ready |
-| Argo CD, optional | chart `9.5.13`, 모든 운영 Pod Running |
-| OpenEBS LVM | `/dev/sda10` → `openebs`, 약 396GiB |
-| Argo CD local URL | `http://localhost:8080/cd` → `/cd/` HTTP 307 |
-| ServiceAccount OIDC | issuer, 공개 discovery document, JWKS 일치 |
-| Agent, optional | 설치하지 않음 |
