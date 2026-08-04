@@ -114,7 +114,7 @@ export INSTALL_K3S_EXEC="\
 --node-name=$CLUSTER \
 --service-cidr $SERVICE_CIDR"
 
-curl -sfL https://get.k3s.io | sh -
+curl -sfL https://get.k3s.io | sudo env INSTALL_K3S_EXEC="$INSTALL_K3S_EXEC" sh -
 sudo systemctl is-active k3s
 sudo k3s --version
 ```
@@ -156,6 +156,9 @@ kubectl get nodes -o wide
 
 ```shell
 # administrator computer
+export AWS_SDK_LOAD_CONFIG=1
+export AWS_PROFILE='ghilbut-tofu-apply-for-workloads-domains'
+
 tofu -chdir=k3s/tofu init
 tofu -chdir=k3s/tofu apply
 

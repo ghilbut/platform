@@ -1,6 +1,6 @@
 provider "aws" {
-  profile = "ghilbut-platform"
-  region  = "us-east-1"
+  allowed_account_ids = ["869061964712"]
+  region              = "us-east-1"
 
   default_tags {
     tags = {
