@@ -221,6 +221,12 @@ module "tofu_apply_for_management" {
         Resource = [for key in local.foundation_state_object_keys : "arn:aws:s3:::${local.foundation_state_bucket}/${key}"]
       },
       {
+        Sid      = "FoundationStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+      },
+      {
         Sid      = "FoundationStateBucket"
         Effect   = "Allow"
         Action   = "s3:ListBucket"

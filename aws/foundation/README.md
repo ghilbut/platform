@@ -11,10 +11,11 @@ AWS Foundation은 AWS 계정 수명 주기, IAM Identity Center 접근 권한, A
 |---|---|---|
 | `accounts/tofu/` | AWS Organizations 계정 수명 주기와 관리 계정 opt-in 리전 | `platform/aws/foundation/accounts.tfstate` |
 | `identity/tofu/` | IAM Identity Center 권한 세트와 계정 할당 | `platform/aws/foundation/identity.tfstate` |
+| `state/tofu/` | 공유 OpenTofu state bucket의 cross-account 접근 정책 | `platform/aws/foundation/state.tfstate` |
 | `organizations/tofu/` | OU, SCP, delegated administrator | `platform/aws/foundation/organizations.tfstate` |
 
-`accounts/tofu/`와 `identity/tofu/`가 현재 존재한다. `organizations/tofu/`는 Foundation
-전환 작업에 따라 추가한다.
+`accounts/tofu/`, `identity/tofu/`, `state/tofu/`가 현재 존재한다. `organizations/tofu/`는
+Foundation 전환 작업에 따라 추가한다.
 
 `accounts/tofu/modules/management/`는 management 계정 자체의 opt-in 리전만 관리한다.
 따라서 Account Management API를 standalone context로 호출하며, AWS Organizations의
@@ -23,6 +24,26 @@ Account Management trusted access를 활성화하지 않는다.
 `identity/tofu/`는 IAM Identity Center permission set, AWS 관리형 정책 연결, 계정 할당,
 Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
 IdP 또는 IAM Identity Center의 소유이며, 이 state에서 생성하거나 삭제하지 않는다.
+
+`state/tofu/`는 Platform 계정이 소유한 `ghilbut-tfstates` bucket policy를 관리한다.
+Management source permission set에는 Foundation accounts·identity state와 lock file에만
+cross-account 접근을 허용한다. state bucket의 lifecycle과 그 밖의 state key는 관리하지
+않는다.
+
+## State bucket policy 실행
+
+`state/tofu/`는 Platform의 `TofuApplyForWorkloads` source profile로 backend에 접근하고,
+Platform `tofu-apply` 역할을 수임해 bucket policy를 관리한다.
+
+```sh
+export AWS_PROFILE=ghilbut-tofu-apply-for-workloads
+export AWS_SDK_LOAD_CONFIG=1
+
+cd aws/foundation/state/tofu
+tofu init -reconfigure
+tofu plan
+tofu apply
+```
 
 ## Accounts state migration
 
