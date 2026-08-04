@@ -16,7 +16,7 @@ locals {
   ghilbut_user_id         = "7488a448-2051-70eb-80b8-106a98d83549"
   domains_account_id      = data.terraform_remote_state.accounts.outputs.domains_account_id
   platform_account_id     = data.terraform_remote_state.accounts.outputs.platform_account_id
-  foundation_state_bucket = "ghilbut-tfstates"
+  migration_state_buckets = ["ghilbut-tfstates", "ghilbut-tfstates-v2"]
   foundation_state_object_keys = [
     "platform/aws/foundation/accounts.tfstate",
     "platform/aws/foundation/accounts.tfstate.tflock",
@@ -26,6 +26,14 @@ locals {
   workload_state_object_keys = [
     "platform/aws/foundation/workload.tfstate",
     "platform/aws/foundation/workload.tfstate.tflock",
+  ]
+  domains_state_object_keys = [
+    "platform/domains.tfstate",
+    "platform/domains.tfstate.tflock",
+  ]
+  ultary_domains_state_object_keys = [
+    "ultary/domains.tfstate",
+    "ultary/domains.tfstate.tflock",
   ]
 
   central_administration_denied_actions = [
@@ -151,22 +159,26 @@ module "tofu_apply_for_management" {
         Resource = "arn:aws:iam::384959722788:role/tofu-apply"
       },
       {
-        Sid      = "FoundationStateObjects"
-        Effect   = "Allow"
-        Action   = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = [for key in local.foundation_state_object_keys : "arn:aws:s3:::${local.foundation_state_bucket}/${key}"]
+        Sid    = "FoundationStateObjects"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.migration_state_buckets : [
+            for key in local.foundation_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
       },
       {
         Sid      = "FoundationStateBucketLocation"
         Effect   = "Allow"
         Action   = "s3:GetBucketLocation"
-        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
       },
       {
         Sid      = "FoundationStateBucket"
         Effect   = "Allow"
         Action   = "s3:ListBucket"
-        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
         Condition = {
           StringLike = {
             "s3:prefix" = local.foundation_state_object_keys
@@ -193,6 +205,38 @@ module "tofu_apply_for_domains" {
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
   ])
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "DomainsStateObjects"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.migration_state_buckets : [
+            for key in local.domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
+      },
+      {
+        Sid      = "DomainsStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
+      },
+      {
+        Sid      = "DomainsStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.domains_state_object_keys
+          }
+        }
+      },
+    ]
+  })
   account_assignments = {
     domains = {
       account_id     = local.domains_account_id
@@ -231,22 +275,26 @@ module "tofu_apply_for_workloads" {
         ]
       },
       {
-        Sid      = "WorkloadStateObjects"
-        Effect   = "Allow"
-        Action   = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = [for key in local.workload_state_object_keys : "arn:aws:s3:::${local.foundation_state_bucket}/${key}"]
+        Sid    = "WorkloadStateObjects"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.migration_state_buckets : [
+            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
       },
       {
         Sid      = "WorkloadStateBucketLocation"
         Effect   = "Allow"
         Action   = "s3:GetBucketLocation"
-        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
       },
       {
         Sid      = "WorkloadStateBucket"
         Effect   = "Allow"
         Action   = "s3:ListBucket"
-        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
         Condition = {
           StringLike = {
             "s3:prefix" = local.workload_state_object_keys
@@ -278,6 +326,38 @@ module "tofu_apply_for_ultary_domains" {
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
   ])
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "UltaryDomainsStateObjects"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.migration_state_buckets : [
+            for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
+      },
+      {
+        Sid      = "UltaryDomainsStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
+      },
+      {
+        Sid      = "UltaryDomainsStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.ultary_domains_state_object_keys
+          }
+        }
+      },
+    ]
+  })
   account_assignments = {
     ultary_domains = {
       account_id     = "971119963968"

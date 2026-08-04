@@ -20,7 +20,9 @@ locals {
     "platform/aws/foundation/identity.tfstate",
     "platform/aws/foundation/identity.tfstate.tflock",
   ]
-  workload_state_object_keys = [
+  platform_state_object_keys = [
+    "platform/aws/foundation/state.tfstate",
+    "platform/aws/foundation/state.tfstate.tflock",
     "platform/aws/foundation/workload.tfstate",
     "platform/aws/foundation/workload.tfstate.tflock",
   ]
@@ -94,7 +96,7 @@ data "aws_iam_policy_document" "foundation_state_access" {
   }
 
   statement {
-    sid    = "AllowPlatformWorkloadStateObjects"
+    sid    = "AllowPlatformFoundationStateObjects"
     effect = "Allow"
 
     principals {
@@ -104,7 +106,7 @@ data "aws_iam_policy_document" "foundation_state_access" {
 
     actions = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
     resources = [
-      for key in local.workload_state_object_keys : "arn:aws:s3:::${local.state_bucket}/${key}"
+      for key in local.platform_state_object_keys : "arn:aws:s3:::${local.state_bucket}/${key}"
     ]
 
     condition {
@@ -115,7 +117,7 @@ data "aws_iam_policy_document" "foundation_state_access" {
   }
 
   statement {
-    sid    = "AllowPlatformWorkloadStateBucketLocation"
+    sid    = "AllowPlatformFoundationStateBucketLocation"
     effect = "Allow"
 
     principals {
@@ -134,7 +136,7 @@ data "aws_iam_policy_document" "foundation_state_access" {
   }
 
   statement {
-    sid    = "AllowPlatformWorkloadStateBucketList"
+    sid    = "AllowPlatformFoundationStateBucketList"
     effect = "Allow"
 
     principals {
@@ -154,7 +156,7 @@ data "aws_iam_policy_document" "foundation_state_access" {
     condition {
       test     = "StringLike"
       variable = "s3:prefix"
-      values   = local.workload_state_object_keys
+      values   = local.platform_state_object_keys
     }
   }
 }
