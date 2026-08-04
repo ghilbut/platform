@@ -42,13 +42,13 @@ Platform 계정의 `ghilbut-tfstates-v2`에는 다음 활성 state object 열 �
 
 | State key | Active root | Resource owner | Disposition |
 |---|---|---|---|
-| `k3s.tfstate` | `k3s/tofu/` | Domains와 Platform | Backend는 v2다. CPA OIDC provider는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 두 account의 책임으로 분리하고 CDN object는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 이전한다. |
+| `k3s.tfstate` | `k3s/tofu/` | Domains | Backend는 v2다. OIDC discovery와 JWKS CDN object는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 이전한다. |
 | `platform/apps.tfstate` | `apps/tofu/` | 없음 | Backend는 v2다. 관리 리소스는 0개다. |
 | `platform/aws/cdn.tfstate` | `aws/cdn/tofu/` | Domains와 Platform | Backend는 v2다. CDN 관련 Route 53 record는 Domains state가 소유한다. `tofu-apply` 역할은 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 정리하고 나머지 CDN 리소스는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
 | `platform/aws/foundation/accounts.tfstate` | `aws/foundation/accounts/tofu/` | Management | Backend는 v2다. |
 | `platform/aws/foundation/identity.tfstate` | `aws/foundation/identity/tofu/` | Management | Backend는 v2다. Account assignment는 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 정리한다. |
 | `platform/aws/foundation/state.tfstate` | `aws/foundation/state/tofu/` | Platform | Platform의 v2 bucket과 bucket policy를 관리한다. |
-| `platform/aws/foundation/workload.tfstate` | `aws/foundation/workload/tofu/` | Platform | Backend는 v2다. Platform 실행 역할을 관리한다. |
+| `platform/aws/foundation/workload.tfstate` | `aws/foundation/workload/tofu/` | Platform | Backend는 v2다. Platform 실행 역할과 CPA IAM OIDC provider를 관리한다. |
 | `platform/domains.tfstate` | `domains/tofu/` | Domains | Backend는 v2다. 도메인과 hosted zone은 Domains에 유지한다. |
 | `platform/github.tfstate` | `github/tofu/` | Platform | Backend는 v2다. GitHub Actions OIDC provider는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
 | `ultary/domains.tfstate` | `ultary/domains/tofu/` | UltaryDomains | Backend는 v2다. |
@@ -63,7 +63,7 @@ Platform 계정의 `ghilbut-tfstates-v2`에는 다음 활성 state object 열 �
 | Route 53 hosted zone | `Z193YX3H31OEZV` (`ghilbut.com`) | Domains | DNS record와 ACM validation record를 유지한다. |
 | Route 53 hosted zone | `Z3951CLN9YN7OQ` (`ghilbut.net`) | Domains | DNS record를 유지한다. |
 | IAM Identity Center role | `AWSReservedSSO_TofuApplyForDomains_*` | Domains | Domains의 source identity다. 전용 `tofu-apply-domains` 실행 역할만 수임한다. |
-| CPA IAM OIDC provider | `oidc.k3s.ghilbut.com/cpa` | Domains | cert-manager와 external-dns의 Route 53 역할이 사용한다. [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Platform에도 별도로 등록한다. |
+| CPA IAM OIDC provider | `oidc.k3s.ghilbut.com/cpa` | Domains | cert-manager와 external-dns의 Route 53 역할이 사용한다. Platform 계정은 별도 provider를 사용한다. |
 | cert-manager IAM role | `domains-cpa-cert-manager` | Domains | Route 53 DNS-01 전용 역할이다. |
 | external-dns IAM role | `domains-cpa-external-dns` | Domains | `id.ghilbut.com` CNAME과 TXT ownership record 전용 역할이다. |
 | Account billing baseline | payment instrument | Domains | AWS account 자체의 결제 수단이다. 다른 account로 이동하지 않는다. |

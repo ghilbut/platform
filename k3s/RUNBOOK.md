@@ -187,7 +187,9 @@ K3s server는 `service-account-issuer`와 `service-account-jwks-uri`로 ServiceA
 
 ### 1. CPA 공개 issuer 동기화
 
-CPA의 `k3s/tofu`는 Kubernetes API에서 discovery document와 JWKS를 읽어 CDN origin object로 동기화하고, `https://oidc.k3s.ghilbut.com/cpa` IAM OIDC provider를 관리한다.
+CPA의 `k3s/tofu`는 Kubernetes API에서 discovery document와 JWKS를 읽어 CDN origin object로
+동기화한다. Domains와 Platform의 OpenTofu root는 각 AWS 계정의
+`https://oidc.k3s.ghilbut.com/cpa` IAM OIDC provider를 관리한다.
 
 ```shell
 export AWS_SDK_LOAD_CONFIG=1
@@ -206,7 +208,8 @@ AWS 계정은 cluster issuer당 IAM OIDC provider를 하나 사용한다. IAM ro
 2. audience `sts.amazonaws.com`
 3. 정확한 `system:serviceaccount:<namespace>:<serviceaccount>` subject
 
-CPA OIDC provider의 TLS intermediate CA SHA-1 thumbprint는 `k3s/tofu`의 `cpa_oidc_thumbprint`로 관리한다.
+CPA OIDC provider의 TLS intermediate CA SHA-1 thumbprint는 `domains/tofu`와
+`aws/foundation/workload/tofu`의 `cpa_oidc_thumbprint`로 관리한다.
 
 ### 3. 확인
 
