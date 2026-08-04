@@ -227,7 +227,7 @@ module "tofu_apply_for_domains" {
         Sid      = "DomainsBillingView"
         Effect   = "Allow"
         Action   = "billing:GetBillingViewData"
-        Resource = "*"
+        Resource = "arn:aws:billing::${local.domains_account_id}:billingview/*"
       },
       {
         Sid    = "DomainsStateObjects"

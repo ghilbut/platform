@@ -38,6 +38,8 @@ Domains의 live IAM Identity Center assignment는 `TofuApplyForDomains`와
 ## 2. Budget 확인 권한과 Apps 경로 적용
 
 이 단계는 Domains의 resource를 삭제하지 않는다.
+적용 전 `platform/aws/foundation/identity.tfstate` version ID는
+`nKeoDcMGA3VAyHZc.YJDpRBsendiU8y4`다.
 
 ```sh
 export AWS_PROFILE=ghilbut-tofu-apply-for-management
@@ -55,7 +57,8 @@ tofu -chdir=apps/tofu plan -out=/tmp/issue-99-apps-platform.tfplan
 tofu -chdir=apps/tofu show /tmp/issue-99-apps-platform.tfplan
 ```
 
-`TofuApplyForDomains`는 account budget의 조회와 notification 변경 권한만 가진다.
+`TofuApplyForDomains`는 account budget의 조회와 수정 권한을 가진다. 수정 권한은 budget
+생성, 변경, 삭제와 notification 변경을 포함한다. 이 Runbook은 budget을 삭제하지 않는다.
 `billing:GetBillingViewData`는 budget 조회에 필요한 billing view 읽기 권한이다.
 
 ## 3. Budget notification 정리
