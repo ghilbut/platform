@@ -216,11 +216,10 @@ resource "aws_route53_record" "google_apps" {
 resource "aws_route53_record" "cdn_certificate_validation" {
   for_each = data.terraform_remote_state.cdn.outputs.certificate_validation_options
 
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
+  name    = each.value.name
+  records = [each.value.record]
+  ttl     = 60
+  type    = each.value.type
   zone_id = aws_route53_zone.this[one([
     for domain in local.domains : domain
     if each.key == domain || endswith(each.key, ".${domain}")

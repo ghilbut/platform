@@ -40,11 +40,13 @@ Bootstrap commit은 다음 변경만 포함한다.
 commit은 `assume_role` block을 복원한다. Backend는 항상 `ghilbut-tofu-apply-for-domains`
 profile을 사용한다.
 
-CDN root의 전체 plan에는 repository Actions variable 읽기 권한이 있는 GitHub token이 필요하다.
-그 권한이 없는 로컬 token을 사용할 때는 AWS 변경 plan에서
-`-exclude=module.github_actions.github_actions_variable.cdn_role_arn`을 지정하고, 같은 variable은
-권한이 있는 CI 또는 [Issue #98](https://github.com/ghilbut/platform/issues/98)의 전환 절차에서
-검증한다.
+CDN root의 전체 refresh plan에는 repository Actions variable 읽기 권한이 있는 GitHub token이
+필요하다. 그 권한이 없는 로컬 token을 사용할 때는 먼저
+`-exclude=module.github_actions.github_actions_variable.cdn_role_arn`으로 AWS resource를
+refresh한다. 이어서 `-refresh=false`로 전체 saved plan을 만들고 두 plan의 AWS action이 같은지
+확인한다. `-refresh=false` saved plan은 `fqdns`를 포함한 root output을 state에 기록한다. GitHub
+variable은 권한이 있는 CI 또는 [Issue #98](https://github.com/ghilbut/platform/issues/98)의 전환
+절차에서 검증한다.
 
 ```sh
 export AWS_SDK_LOAD_CONFIG=1
@@ -68,7 +70,10 @@ AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
   tofu -chdir=aws/cdn/tofu plan \
   -exclude=module.github_actions.github_actions_variable.cdn_role_arn
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
-  tofu -chdir=aws/cdn/tofu apply
+  tofu -chdir=aws/cdn/tofu plan -refresh=false \
+  -out=cdn-bootstrap.tfplan
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=aws/cdn/tofu apply cdn-bootstrap.tfplan
 ```
 
 `aws iam get-role --role-name tofu-apply-domains`가 역할을 반환해야 한다. CDN state output에는
@@ -105,8 +110,9 @@ AWS_PROFILE=ghilbut-tofu-apply-for-domains \
 
 ## 3. State 소유권 이동
 
-CDN plan은 세 Route 53 record를 `destroy = false`로 state에서 제거해야 한다. Domains plan은
-같은 세 record를 import해야 한다. 두 plan 모두 Route 53 create, update, delete를 포함하지
+CDN plan은 세 Route 53 record를 `destroy = false`로 state에서 제거해야 한다. Route 53 create,
+update, delete를 포함하지 않아야 한다. CDN plan을 적용한 뒤 `fqdns` output을 확인하고 Domains
+import plan을 만든다. Domains plan은 같은 세 record를 import하고 remote change를 포함하지
 않아야 한다.
 
 CDN plan을 먼저 적용하고 즉시 Domains import plan을 적용한다.
@@ -114,13 +120,16 @@ CDN plan을 먼저 적용하고 즉시 Domains import plan을 적용한다.
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
   tofu -chdir=aws/cdn/tofu plan \
-  -exclude=module.github_actions.github_actions_variable.cdn_role_arn \
+  -exclude=module.github_actions.github_actions_variable.cdn_role_arn
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=aws/cdn/tofu plan -refresh=false \
   -out=cdn-dns-release.tfplan
-AWS_PROFILE=ghilbut-tofu-apply-for-domains \
-  tofu -chdir=domains/tofu plan -out=domains-dns-import.tfplan
-
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
   tofu -chdir=aws/cdn/tofu apply cdn-dns-release.tfplan
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  tofu -chdir=aws/cdn/tofu output fqdns
+AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+  tofu -chdir=domains/tofu plan -out=domains-dns-import.tfplan
 AWS_PROFILE=ghilbut-tofu-apply-for-domains \
   tofu -chdir=domains/tofu apply domains-dns-import.tfplan
 ```
