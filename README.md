@@ -40,8 +40,9 @@ SSO Start URL: https://ghilbut.awsapps.com/start
 | ID           | Name           | Email                          |
 |--------------|----------------|--------------------------------|
 | 384959722788 | management     | aws@ghilbut.com                |
-| 869061964712 | platform       | aws-domains@ghilbut.com        |
-| 971119963968 | ultary-domains | aws-ultary-domains@ghilbut.com |
+| 869061964712 | domains        | aws-domains@ghilbut.com        |
+| 012646747332 | platform       | aws-platform@ghilbut.com       |
+| 971119963968 | UltaryDomains  | aws-ultary-domains@ghilbut.com |
 
 ## E. Domains
 
