@@ -74,40 +74,6 @@ module "management" {
   }
 }
 
-module "management_tofu_apply" {
-  source = "./modules/permission-set"
-
-  instance_arn = local.instance_arn
-  name         = "ManagementTofuApply"
-  description  = "OpenTofu apply access for Foundation management-account resources."
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
-    "arn:aws:iam::aws:policy/AWSSSOMasterAccountAdministrator",
-    "arn:aws:iam::aws:policy/IAMFullAccess",
-  ])
-  inline_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Sid    = "AccountRegionManagement"
-      Effect = "Allow"
-      Action = [
-        "account:DisableRegion",
-        "account:EnableRegion",
-        "account:GetRegionOptStatus",
-        "account:ListRegions",
-      ]
-      Resource = "*"
-    }]
-  })
-  account_assignments = {
-    management = {
-      account_id     = "384959722788"
-      principal_id   = aws_identitystore_group.devops.group_id
-      principal_type = "GROUP"
-    }
-  }
-}
-
 module "management_tofu_execution_role" {
   source = "../../../modules/tofu-execution-role"
 
@@ -135,52 +101,6 @@ module "management_tofu_execution_role" {
       Resource = "*"
     }]
   })
-}
-
-module "tofu_apply" {
-  source = "./modules/permission-set"
-
-  instance_arn = local.instance_arn
-  name         = "TofuApply"
-  description  = "OpenTofu apply access for Platform workload infrastructure."
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/IAMFullAccess",
-    "arn:aws:iam::aws:policy/PowerUserAccess",
-  ])
-  inline_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Sid      = "DenyCentralAdministration"
-      Effect   = "Deny"
-      Action   = local.central_administration_denied_actions
-      Resource = "*"
-    }]
-  })
-  account_assignments = {
-    platform = {
-      account_id     = "869061964712"
-      principal_id   = aws_identitystore_group.devops.group_id
-      principal_type = "GROUP"
-    }
-  }
-}
-
-module "ultary_domains_tofu_apply" {
-  source = "./modules/permission-set"
-
-  instance_arn = local.instance_arn
-  name         = "UltaryDomainsTofuApply"
-  description  = "OpenTofu apply access for Ultary domain and Route 53 resources."
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
-  ])
-  account_assignments = {
-    ultary_domains = {
-      account_id     = "971119963968"
-      principal_id   = aws_identitystore_group.devops.group_id
-      principal_type = "GROUP"
-    }
-  }
 }
 
 module "tofu_apply_for_management" {
