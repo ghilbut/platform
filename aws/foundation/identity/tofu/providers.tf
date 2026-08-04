@@ -1,6 +1,9 @@
 provider "aws" {
-  profile = "ghilbut"
-  region  = "us-east-1"
+  region = "us-east-1"
+
+  assume_role {
+    role_arn = "arn:aws:iam::384959722788:role/tofu-apply"
+  }
 
   default_tags {
     tags = {
