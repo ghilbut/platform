@@ -44,10 +44,29 @@ AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
 
 ## 2. 새 federation 생성
 
-1. Platform workload state에 CPA IAM OIDC provider를 만든다. 이름 prefix는 `platform`이다.
-2. Domains state에 `domains-cpa-cert-manager`, `domains-cpa-external-dns` 역할을 만든다.
-3. cert-manager와 external-dns manifest를 최종 Domains 역할 ARN으로 바꾼다.
-4. CPA에서 두 workload가 새 역할을 수임하는지 확인한다.
+1. 실행 역할 정책에 변경이 남으면 provider의 `assume_role` block을 임시로 제거한다.
+2. Domains workload profile로 실행 역할 정책만 계획한다.
+
+   ```sh
+   AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+     tofu -chdir=domains/tofu plan \
+       -target='module.tofu_execution_role.aws_iam_role_policy.this[0]' \
+       -out=/tmp/issue-102-domains-policy-narrowing.tfplan
+   ```
+
+3. 계획이 실행 역할 정책의 `0 add, 1 change, 0 destroy`인지 확인하고 적용한다.
+
+   ```sh
+   AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+     tofu -chdir=domains/tofu apply /tmp/issue-102-domains-policy-narrowing.tfplan
+   ```
+
+4. provider의 `assume_role` block을 복원한다.
+5. Platform workload state에 CPA IAM OIDC provider를 만든다.
+6. Domains 계획이 역할 2개와 inline policy 2개의 `4 add, 0 change, 0 destroy`인지 확인한다.
+7. Domains state에 `domains-cpa-cert-manager`, `domains-cpa-external-dns` 역할을 만든다.
+8. cert-manager와 external-dns manifest를 최종 Domains 역할 ARN으로 바꾼다.
+9. CPA에서 두 workload가 새 역할을 수임하는지 확인한다.
 
 ## 3. Vault 삭제
 
