@@ -1,71 +1,49 @@
 ---
-title: Platform workload access runbook
-type: runbook
-area: aws-foundation
-tags:
-  - aws
-  - iam
-  - migration
+title: Platform workload access
 ---
 
-# Platform workload access runbook
+# Platform workload access
 
-이 Runbook은 Domains와 Platform의 workload 접근을 확인하고 AWS Foundation root를
-순서대로 적용한다. 모든 명령은 repository root에서 실행한다.
+`aws/foundation/workload/tofu/`는 Platform account `012646747332`의 `tofu-apply` 역할과
+CPA IAM OIDC provider를 관리한다.
 
-## 1. Workload profile 구성
+## Profile
 
 ```sh
-aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-workloads-domains
-aws configure set sso_account_id 869061964712 --profile ghilbut-tofu-apply-for-workloads-domains
-aws configure set sso_role_name TofuApplyForWorkloads --profile ghilbut-tofu-apply-for-workloads-domains
-aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-workloads-domains
-
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_account_id 012646747332 --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_role_name TofuApplyForWorkloads --profile ghilbut-tofu-apply-for-workloads
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-workloads
 
-aws sso login --profile ghilbut-tofu-apply-for-workloads-domains
-aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads-domains
 aws sso login --profile ghilbut-tofu-apply-for-workloads
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads
 ```
 
-## 2. Foundation root 적용
+Caller account는 `012646747332`다.
 
-`workload/tofu/` provider는 자신이 관리하는 `tofu-apply` 역할을 수임하지 않는다.
-Platform의 `TofuApplyForWorkloads` source profile로 역할을 관리한다.
+## Apply
 
 ```sh
-export AWS_SDK_LOAD_CONFIG=1
-export AWS_PROFILE=ghilbut-tofu-apply-for-management
-
-tofu -chdir=aws/foundation/accounts/tofu init -reconfigure
-tofu -chdir=aws/foundation/accounts/tofu plan
-tofu -chdir=aws/foundation/accounts/tofu apply
-
-export AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains
-
-tofu -chdir=aws/foundation/state/tofu init -reconfigure
-tofu -chdir=aws/foundation/state/tofu plan
-tofu -chdir=aws/foundation/state/tofu apply
-
-export AWS_PROFILE=ghilbut-tofu-apply-for-management
-
-tofu -chdir=aws/foundation/identity/tofu init -reconfigure
-tofu -chdir=aws/foundation/identity/tofu plan
-tofu -chdir=aws/foundation/identity/tofu apply
-
 export AWS_PROFILE=ghilbut-tofu-apply-for-workloads
+export AWS_SDK_LOAD_CONFIG=1
 
 tofu -chdir=aws/foundation/workload/tofu init -reconfigure
 tofu -chdir=aws/foundation/workload/tofu plan
 tofu -chdir=aws/foundation/workload/tofu apply
 ```
 
-## 3. 검증
+이 root는 `tofu-apply` 역할 자체를 관리하므로 provider에서 그 역할을 수임하지 않는다.
 
-accounts, identity, state, workload의 plan은 변경 사항이 없어야 한다. Platform profile의
-`aws iam get-role --role-name tofu-apply`는 `tofu-apply` 역할을 반환해야 한다. Domains
-profile은 `aws/cdn/tofu`의 AWS 리소스를 읽을 수 있어야 한다.
+## Verify
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads aws iam get-role --role-name tofu-apply
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads aws iam get-open-id-connect-provider \
+  --open-id-connect-provider-arn \
+  arn:aws:iam::012646747332:oidc-provider/oidc.k3s.ghilbut.com/cpa
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads tofu -chdir=aws/foundation/workload/tofu plan
+```
+
+마지막 plan은 변경이 없다.

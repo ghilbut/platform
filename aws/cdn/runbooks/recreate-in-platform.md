@@ -120,24 +120,7 @@ CDN state의 module 이름은 `certificate`, `s3`, `edge`, `cloudfront`, `origin
 
 ## 6. Domains CDN 제거 확인
 
-```sh
-workload_credentials=$(aws sts assume-role \
-  --profile ghilbut-tofu-apply-for-workloads-domains \
-  --role-arn arn:aws:iam::869061964712:role/tofu-apply \
-  --role-session-name verify-removed-cdn)
-export AWS_ACCESS_KEY_ID=$(jq -r '.Credentials.AccessKeyId' <<<"$workload_credentials")
-export AWS_SECRET_ACCESS_KEY=$(jq -r '.Credentials.SecretAccessKey' <<<"$workload_credentials")
-export AWS_SESSION_TOKEN=$(jq -r '.Credentials.SessionToken' <<<"$workload_credentials")
-
-aws cloudfront get-distribution --id E1FNHJ17EQ6KS9
-aws s3api head-bucket --bucket ghilbut-platform-cdn
-aws lambda get-function \
-  --region us-east-1 \
-  --function-name platform-cdn-origin-request
-aws iam get-role --role-name platform-cdn-github-actions
-
-unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
-```
-
-각 명령은 대상이 없다는 응답을 반환한다. Domains 계정의 `tofu-apply` 역할은 Issue #99가
-관리한다.
+Domains account에는 기존 distribution `E1FNHJ17EQ6KS9`, bucket
+`ghilbut-platform-cdn`, Lambda `platform-cdn-origin-request`, GitHub Actions role과 regional
+Lambda@Edge log group이 없다. Domains의 `tofu-apply` 역할과 GitHub Actions OIDC provider도
+없다.
