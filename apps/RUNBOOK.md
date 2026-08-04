@@ -240,3 +240,44 @@ kubectl --context cpa -n istio-gateways get deployment,service,gateway
 ### 8. Private Gateway와 Argo CD route
 
 private Gateway를 통해 Argo CD를 `https://argo.ghilbut.com/cd`로 제공한다.
+
+```shell
+argocd app sync istio-gateways \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait istio-gateways \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-gateways wait \
+  --for=condition=Ready certificate/ingress-https \
+  --timeout=10m
+argocd app sync argo \
+  --resource networking.istio.io:VirtualService:argo/argo \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait argo \
+  --sync \
+  --health \
+  --resource networking.istio.io:VirtualService:argo/argo \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-gateways get gateway,certificate,secret
+kubectl --context cpa -n argo get virtualservice argo
+curl --fail --silent --show-error --output /dev/null \
+  --write-out '%{http_code}\n' \
+  https://argo.ghilbut.com/cd
+```
