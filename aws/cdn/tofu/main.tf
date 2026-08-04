@@ -9,6 +9,8 @@ locals {
 
   fqdns = keys(local.fqdn_hosts)
 
+  platform_certificate_fqdns = distinct(concat(local.fqdns, ["*.k3s.ghilbut.com"]))
+
   viewer_request_allowlist = keys(local.fqdn_hosts)
   viewer_request_redirect_map = {
     for fqdn, config in local.fqdn_hosts : fqdn => config.redirect_host
@@ -22,6 +24,8 @@ locals {
 
 module "tofu_execution_role" {
   source = "../../modules/tofu-execution-role"
+
+  providers = { aws = aws.domains }
 
   name                       = "tofu-apply"
   description                = "OpenTofu execution role for Platform workload infrastructure."
@@ -71,6 +75,8 @@ module "tofu_execution_role" {
 module "s3" {
   source = "./modules/s3"
 
+  providers = { aws = aws.domains }
+
   # S3 bucket names share a global namespace, so include the repository owner.
   bucket_name = "${var.github_owner}-${var.name}"
   error_page_files = {
@@ -84,14 +90,29 @@ module "s3" {
 module "certificate" {
   source = "./modules/certificate"
 
+  providers = { aws = aws.domains }
+
   acm_domain_name = var.acm_domain_name
   fqdns           = local.fqdns
   name            = var.name
   repo            = local.repo
 }
 
+module "certificate_platform" {
+  source = "./modules/certificate"
+
+  providers = { aws = aws.platform }
+
+  acm_domain_name = var.acm_domain_name
+  fqdns           = local.platform_certificate_fqdns
+  name            = "cdn-platform"
+  repo            = local.repo
+}
+
 module "edge" {
   source = "./modules/edge"
+
+  providers = { aws = aws.domains }
 
   allowlist          = local.viewer_request_allowlist
   bucket_arn         = module.s3.arn
@@ -106,6 +127,8 @@ module "edge" {
 module "cloudfront" {
   source = "./modules/cloudfront"
 
+  providers = { aws = aws.domains }
+
   bucket_regional_domain_name = module.s3.regional_domain_name
   certificate_arn             = module.certificate.arn
   fqdns                       = local.fqdns
@@ -119,6 +142,8 @@ module "cloudfront" {
 
 module "origin_access" {
   source = "./modules/origin-access"
+
+  providers = { aws = aws.domains }
 
   bucket_arn                  = module.s3.arn
   bucket_name                 = module.s3.name
@@ -138,11 +163,12 @@ removed {
 module "github_actions" {
   source = "./modules/github-actions"
 
+  providers = { aws = aws.domains }
+
   acm_certificate_arn              = module.certificate.arn
   cdn_bucket_arn                   = module.s3.arn
   cloudfront_distribution_arn      = module.cloudfront.arn
   cloudfront_function_arn          = module.edge.viewer_request_function_arn
-  github_repository                = var.github_repository
   github_actions_oidc_provider_arn = data.terraform_remote_state.github.outputs.github_actions_oidc_provider_arn
   lambda_function_arn              = module.edge.lambda_function_base_arn
   lambda_role_arn                  = module.edge.lambda_role_arn
@@ -152,4 +178,12 @@ module "github_actions" {
   repo                             = local.repo
   state_bucket                     = "ghilbut-tfstates-v2"
   state_key                        = "platform/aws/cdn.tfstate"
+}
+
+removed {
+  from = module.github_actions.github_actions_variable.cdn_role_arn
+
+  lifecycle {
+    destroy = false
+  }
 }

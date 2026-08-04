@@ -38,6 +38,16 @@ output "certificate_validation_options" {
   value       = module.certificate.validation_options
 }
 
+output "platform_certificate_arn" {
+  description = "Platform ACM certificate ARN."
+  value       = module.certificate_platform.arn
+}
+
+output "platform_certificate_validation_options" {
+  description = "DNS validation records required by the Platform ACM certificate."
+  value       = module.certificate_platform.validation_options
+}
+
 output "fqdns" {
   description = "CDN host names published through Route 53."
   value       = local.fqdns
