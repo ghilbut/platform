@@ -1,9 +1,16 @@
 data "aws_ssoadmin_instances" "current" {}
 
 locals {
-  instance_arn      = tolist(data.aws_ssoadmin_instances.current.arns)[0]
-  identity_store_id = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
-  ghilbut_user_id   = "7488a448-2051-70eb-80b8-106a98d83549"
+  instance_arn            = tolist(data.aws_ssoadmin_instances.current.arns)[0]
+  identity_store_id       = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
+  ghilbut_user_id         = "7488a448-2051-70eb-80b8-106a98d83549"
+  foundation_state_bucket = "ghilbut-tfstates"
+  foundation_state_object_keys = [
+    "platform/aws/foundation/accounts.tfstate",
+    "platform/aws/foundation/accounts.tfstate.tflock",
+    "platform/aws/foundation/identity.tfstate",
+    "platform/aws/foundation/identity.tfstate.tflock",
+  ]
 
   central_administration_denied_actions = [
     "account:*",
@@ -107,7 +114,7 @@ module "management_tofu_execution_role" {
   name                       = "tofu-apply"
   description                = "OpenTofu execution role for Foundation management-account resources."
   source_account_id          = "384959722788"
-  source_permission_set_name = "ManagementTofuApply"
+  source_permission_set_name = "TofuApplyForManagement"
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
     "arn:aws:iam::aws:policy/AWSSSOMasterAccountAdministrator",
@@ -205,6 +212,23 @@ module "tofu_apply_for_management" {
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
         Resource = "arn:aws:iam::384959722788:role/tofu-apply"
+      },
+      {
+        Sid      = "FoundationStateObjects"
+        Effect   = "Allow"
+        Action   = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = [for key in local.foundation_state_object_keys : "arn:aws:s3:::${local.foundation_state_bucket}/${key}"]
+      },
+      {
+        Sid      = "FoundationStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::${local.foundation_state_bucket}"
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.foundation_state_object_keys
+          }
+        }
       },
     ]
   })
