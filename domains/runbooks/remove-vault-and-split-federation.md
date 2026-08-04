@@ -35,17 +35,17 @@ Bootstrap commit은 Domains provider의 `assume_role` block을 제거하고
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
-  tofu -chdir=domains/tofu plan -out=domains-federation-bootstrap.tfplan
+  tofu -chdir=domains/tofu plan -out=/tmp/issue-102-domains-bootstrap.tfplan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
-  tofu -chdir=domains/tofu apply domains-federation-bootstrap.tfplan
+  tofu -chdir=domains/tofu apply /tmp/issue-102-domains-bootstrap.tfplan
 ```
 
 적용 뒤 provider의 `assume_role` block을 복원한다.
 
 ## 2. 새 federation 생성
 
-1. Platform workload state에 CPA IAM OIDC provider를 만든다.
-2. Domains state에 최종 cert-manager와 external-dns 역할을 만든다.
+1. Platform workload state에 CPA IAM OIDC provider를 만든다. 이름 prefix는 `platform`이다.
+2. Domains state에 `domains-cpa-cert-manager`, `domains-cpa-external-dns` 역할을 만든다.
 3. cert-manager와 external-dns manifest를 최종 Domains 역할 ARN으로 바꾼다.
 4. CPA에서 두 workload가 새 역할을 수임하는지 확인한다.
 
@@ -56,9 +56,12 @@ CPA Kubernetes API가 연결되는 상태에서 다음 순서로 삭제한다.
 1. Vault Argo CD Application과 Helm workload를 삭제한다.
 2. `data-vault-0` PVC와 연결된 PV를 삭제한다.
 3. `vault` namespace가 비어 있는지 확인하고 namespace를 삭제한다.
-4. Apps OpenTofu plan에서 Vault 역할, 역할 정책, KMS alias, KMS key만 삭제하는지 확인한다.
-5. saved plan을 적용한다.
-6. KMS key가 `PendingDeletion`이고 alias와 IAM 역할이 없는지 확인한다.
+4. Apps OpenTofu 구성에서 Vault module 선언과 resource block을 완전히 제거한다.
+5. `tofu destroy -target`은 사용하지 않는다. KMS key의 `prevent_destroy`는 resource block이 남아
+   있으면 삭제 계획을 차단한다.
+6. Apps OpenTofu plan에서 Vault 역할, 역할 정책, KMS alias, KMS key만 삭제하는지 확인한다.
+7. saved plan을 적용한다.
+8. KMS key가 `PendingDeletion`이고 alias와 IAM 역할이 없는지 확인한다.
 
 ## 4. 기존 federation 정리
 

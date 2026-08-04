@@ -97,12 +97,9 @@ module "tofu_execution_role" {
         ]
       },
       {
-        Sid    = "CreateCpaOidcProvider"
-        Effect = "Allow"
-        Action = [
-          "iam:CreateOpenIDConnectProvider",
-          "iam:ListOpenIDConnectProviders",
-        ]
+        Sid      = "CreateCpaOidcProvider"
+        Effect   = "Allow"
+        Action   = ["iam:ListOpenIDConnectProviders"]
         Resource = "*"
       },
       {
@@ -110,6 +107,7 @@ module "tofu_execution_role" {
         Effect = "Allow"
         Action = [
           "iam:AddClientIDToOpenIDConnectProvider",
+          "iam:CreateOpenIDConnectProvider",
           "iam:DeleteOpenIDConnectProvider",
           "iam:GetOpenIDConnectProvider",
           "iam:RemoveClientIDFromOpenIDConnectProvider",
@@ -121,6 +119,30 @@ module "tofu_execution_role" {
       },
     ]
   })
+}
+
+module "cpa_cert_manager" {
+  source = "./modules/cert-manager"
+
+  cluster_name              = "cpa"
+  hosted_zone_names         = local.domains
+  name                      = "domains"
+  oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
+  service_account_name      = "cert-manager"
+  service_account_namespace = "cert-manager"
+}
+
+module "cpa_external_dns" {
+  source = "./modules/external-dns"
+
+  cluster_name              = "cpa"
+  hosted_zone_names         = local.domains
+  name                      = "domains"
+  oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
+  record_names              = ["id.ghilbut.com"]
+  service_account_name      = "public"
+  service_account_namespace = "external-dns"
+  txt_prefix                = "external-dns-"
 }
 
 resource "aws_route53domains_registered_domain" "this" {
