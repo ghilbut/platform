@@ -1,15 +1,7 @@
-data "terraform_remote_state" "accounts" {
-  backend = "s3"
-
-  config = {
-    bucket = "ghilbut-tfstates"
-    key    = "platform/aws/foundation/accounts.tfstate"
-    region = "us-east-1"
-  }
-}
+data "aws_caller_identity" "current" {}
 
 locals {
-  platform_account_id = data.terraform_remote_state.accounts.outputs.platform_account_id
+  platform_account_id = data.aws_caller_identity.current.account_id
   central_administration_denied_actions = [
     "account:*",
     "aws-portal:*",
