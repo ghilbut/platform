@@ -23,7 +23,7 @@ Agent가 다음 순서로 설치를 수행한다.
 
 | 애플리케이션 | 역할 | 사용자 URL |
 | --- | --- | --- |
-| Argo CD | GitOps 관리 | `https://argo.ghilbut.com/cd` |
+| Argo CD | GitOps 관리 | [https://argo.ghilbut.com/cd](https://argo.ghilbut.com/cd) |
 | Istio system | 서비스 메시 control plane | — |
 | Istio gateways | ingress와 egress traffic 처리 | — |
 | OpenEBS LVM | local persistent volume | — |
