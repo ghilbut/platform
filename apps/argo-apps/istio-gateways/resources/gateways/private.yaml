@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: private
   annotations:
-    external-dns.alpha.kubernetes.io/target: 192.168.254.4
+    ghilbut.com/external-dns: private
     external-dns.alpha.kubernetes.io/ttl: "300"
     argocd.argoproj.io/sync-wave: "3"
 spec:
