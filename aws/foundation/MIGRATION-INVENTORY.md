@@ -19,13 +19,12 @@ OpenTofu state, GitHub 설정, 외부 의존성을 분류한다. 검증 기준�
 |---|---:|---|---|
 | Management | `384959722788` | `aws@ghilbut.com` | AWS Organizations, IAM Identity Center, Foundation |
 | Domains | `869061964712` | `aws-domains@ghilbut.com` | `ghilbut.com`, `ghilbut.net` 등록과 Route 53 |
-| Platform | [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 확정 | `aws-platform@ghilbut.com` | state backend, CDN, Vault, workload IAM |
+| Platform | `012646747332` | `aws-platform@ghilbut.com` | state backend, CDN, Vault, workload IAM |
 | UltaryDomains | `971119963968` | `aws-ultary-domains@ghilbut.com` | Ultary 도메인 등록과 Route 53 |
 
-AWS Organizations의 `869061964712` 이름은
-[Issue #96](https://github.com/ghilbut/platform/issues/96)에서 `domains`로 변경한다.
-같은 [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 `971119963968` 이름을
-`UltaryDomains`로 변경하고 `aws/foundation/accounts/tofu/`의 root email을 live 값과 일치시킨다.
+AWS Organizations 이름은 `869061964712`가 `domains`, `012646747332`가 `platform`,
+`971119963968`이 `UltaryDomains`다. `aws/foundation/accounts/tofu/`의 root email은 live 값과
+일치한다.
 
 ## Disposition rules
 

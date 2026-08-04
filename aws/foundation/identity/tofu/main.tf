@@ -49,16 +49,6 @@ locals {
 
 }
 
-moved {
-  from = module.tofu_apply_for_domains.aws_ssoadmin_account_assignment.this["platform"]
-  to   = module.tofu_apply_for_domains.aws_ssoadmin_account_assignment.this["domains"]
-}
-
-moved {
-  from = module.tofu_apply_for_workloads.aws_ssoadmin_account_assignment.this["platform"]
-  to   = module.tofu_apply_for_workloads.aws_ssoadmin_account_assignment.this["domains"]
-}
-
 resource "aws_identitystore_group" "devops" {
   display_name      = "DevOps"
   identity_store_id = local.identity_store_id
@@ -271,7 +261,7 @@ module "tofu_apply_for_workloads" {
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
-    platform_workload = {
+    platform = {
       account_id     = local.platform_account_id
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"

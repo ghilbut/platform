@@ -11,11 +11,6 @@ resource "aws_organizations_account" "management" {
   }
 }
 
-moved {
-  from = aws_organizations_account.platform
-  to   = aws_organizations_account.domains
-}
-
 resource "aws_organizations_account" "domains" {
   name  = "domains"
   email = "aws-domains@ghilbut.com"
@@ -29,7 +24,7 @@ resource "aws_organizations_account" "domains" {
   }
 }
 
-resource "aws_organizations_account" "platform_workload" {
+resource "aws_organizations_account" "platform" {
   name  = "platform"
   email = "aws-platform@ghilbut.com"
 
