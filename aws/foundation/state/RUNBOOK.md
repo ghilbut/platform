@@ -14,6 +14,11 @@ tags:
 `ghilbut-tfstates-v2`로 이전한다. state는 S3 API로 복사하지 않는다. 모든 활성 root에서
 `tofu init -migrate-state`를 실행한다.
 
+섹션 1은 legacy bucket policy와 두 bucket IAM 권한만 포함한 bootstrap commit에서
+실행한다. 섹션 2가 끝난 뒤 state root가 정확한 계정 ID를 사용하고 Platform bucket을
+관리하며 모든 backend block이 v2를 가리키는 migration commit으로 전환한다. PR comment에
+두 commit ID를 기록한다.
+
 ## 대상
 
 | Root | State key | Migration profile |
@@ -54,6 +59,20 @@ export AWS_PROFILE=ghilbut-tofu-apply-for-management
 tofu -chdir=aws/foundation/identity/tofu init -reconfigure
 tofu -chdir=aws/foundation/identity/tofu plan
 tofu -chdir=aws/foundation/identity/tofu apply
+
+aws sso-admin list-permission-set-provisioning-status \
+  --instance-arn arn:aws:sso:::instance/ssoins-7223d00af1910289 \
+  --max-results 20
+
+aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-domains
+aws configure set sso_account_id 869061964712 --profile ghilbut-tofu-apply-for-domains
+aws configure set sso_role_name TofuApplyForDomains --profile ghilbut-tofu-apply-for-domains
+aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-domains
+
+aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-ultary-domains
+aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-apply-for-ultary-domains
+aws configure set sso_role_name TofuApplyForUltaryDomains --profile ghilbut-tofu-apply-for-ultary-domains
+aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domains
 ```
 
 ## 2. 기존 bucket policy state 분리
@@ -64,14 +83,26 @@ tofu -chdir=aws/foundation/identity/tofu apply
 export AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains
 
 tofu -chdir=aws/foundation/state/tofu state pull > /tmp/issue-97-state-before-detach.json
+aws s3api list-object-versions --bucket ghilbut-tfstates \
+  --prefix platform/aws/foundation/state.tfstate
 tofu -chdir=aws/foundation/state/tofu state rm aws_s3_bucket_policy.foundation_state_access
 aws s3api get-bucket-policy --bucket ghilbut-tfstates
 ```
 
+기존 bucket의 versioned `platform/aws/foundation/state.tfstate`가 durable backup이다. migration
+commit으로 전환하기 전에는 다음 명령으로 관리 상태를 복구할 수 있다.
+
+```sh
+tofu -chdir=aws/foundation/state/tofu import \
+  aws_s3_bucket_policy.foundation_state_access ghilbut-tfstates
+```
+
 ## 3. Platform bucket 생성
 
-state root provider는 Platform `tofu-apply` 역할을 사용한다. 새 bucket이 생기기 전에는 backend
-block의 bucket 값만 명령행에서 기존 bucket으로 덮어쓴다.
+Migration commit의 state root는 accounts remote state를 읽지 않고 Management
+`384959722788`, Domains `869061964712`, Platform `012646747332`, UltaryDomains
+`971119963968` ID를 직접 사용한다. provider는 Platform `tofu-apply` 역할을 사용한다. 새
+bucket이 생기기 전에는 backend block의 bucket 값만 명령행에서 기존 bucket으로 덮어쓴다.
 
 ```sh
 export AWS_PROFILE=ghilbut-tofu-apply-for-workloads
@@ -113,6 +144,11 @@ Management, Domains, Platform, UltaryDomains source profile로 각 backend를 �
 삭제한다. 비활성 state의 resource address가 활성 Foundation accounts state에 모두 포함되는지
 확인한다. 기존 bucket의 object version과 delete marker를 모두 삭제한 뒤 bucket을 삭제한다.
 
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+  aws s3api delete-bucket-policy --bucket ghilbut-tfstates
+```
+
 ## 7. 기존 이름 생성 시도
 
 기존 bucket 삭제 후 Platform profile로 다음 명령을 정확히 한 번 실행한다.
@@ -122,6 +158,10 @@ AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
   aws s3api create-bucket --bucket ghilbut-tfstates --region us-east-1
 ```
 
+명령의 성공 또는 모든 오류 응답이 한 번의 시도다. 재시도하지 않는다.
+
 성공하면 새 bucket을 state root에 import하고 모든 backend를 같은 방식으로
-`ghilbut-tfstates-v2`에서 `ghilbut-tfstates`로 이전한다. 모든 root 검증 후 v2를 삭제한다.
-`BucketAlreadyExists`이면 v2를 유지하고 코드와 문서의 bucket 이름을 v2로 확정한다.
+`ghilbut-tfstates-v2`에서 `ghilbut-tfstates`로 이전한다. import 직후 state root를 apply해
+versioning, AES256 encryption, Bucket owner enforced, public access block, bucket policy를 먼저
+적용한다. 모든 root 검증 후 v2를 삭제한다. 오류이면 v2를 유지하고 코드와 문서의 bucket
+이름을 v2로 확정한다.

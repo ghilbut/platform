@@ -23,7 +23,9 @@ locals {
     "platform/aws/foundation/identity.tfstate",
     "platform/aws/foundation/identity.tfstate.tflock",
   ]
-  workload_state_object_keys = [
+  platform_state_object_keys = [
+    "platform/aws/foundation/state.tfstate",
+    "platform/aws/foundation/state.tfstate.tflock",
     "platform/aws/foundation/workload.tfstate",
     "platform/aws/foundation/workload.tfstate.tflock",
   ]
@@ -280,7 +282,7 @@ module "tofu_apply_for_workloads" {
         Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
         Resource = flatten([
           for bucket in local.migration_state_buckets : [
-            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            for key in local.platform_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
           ]
         ])
       },
@@ -297,7 +299,7 @@ module "tofu_apply_for_workloads" {
         Resource = [for bucket in local.migration_state_buckets : "arn:aws:s3:::${bucket}"]
         Condition = {
           StringLike = {
-            "s3:prefix" = local.workload_state_object_keys
+            "s3:prefix" = local.platform_state_object_keys
           }
         }
       },
