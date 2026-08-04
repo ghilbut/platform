@@ -13,8 +13,8 @@ locals {
       cpa = {
         hosted_zone_names         = ["ghilbut.com", "ghilbut.net"]
         oidc_issuer               = var.cpa_oidc_issuer
-        service_account_name      = "cert-manager-dns01"
-        service_account_namespace = "istio-gateways"
+        service_account_name      = "cert-manager"
+        service_account_namespace = "cert-manager"
       }
     },
     var.cert_manager_clusters,

@@ -197,31 +197,27 @@ kubectl --context cpa -n external-dns logs deployment/private --tail=100
 
 ### 6. cert-manager
 
-[cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/)을 참고한다.
-
-#### 설치 값
-
-| 항목 | 값 |
-| --- | --- |
-| Certificate DNS name | `argo.ghilbut.com` |
-| Route 53 hosted zones | `ghilbut.com`, `ghilbut.net` |
-
-cert-manager IAM role과 Route 53 DNS-01 권한을 적용한 뒤 `cert-manager`를 sync한다. `argo.ghilbut.com` Certificate가 Ready인지 확인한다.
+[cert-manager Helm 설치](https://cert-manager.io/docs/installation/helm/)와 [cert-manager Route 53 DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/route53/)을 참고한다. OpenTofu로 Route 53 DNS-01 IAM 역할과 권한을 적용한 뒤 `cert-manager`를 sync하고 controller가 Healthy인지 확인한다.
 
 ```shell
 tofu -chdir=apps/tofu init
 tofu -chdir=apps/tofu plan
 tofu -chdir=apps/tofu apply
-kubectl --context cpa -n argo patch application cert-manager \
-  --type=merge \
-  --patch '{"operation":{"sync":{"prune":true}}}'
-kubectl --context cpa -n argo wait \
-  --for=jsonpath='{.status.operationState.phase}'=Succeeded \
-  application/cert-manager \
-  --timeout=20m
-kubectl --context cpa -n istio-gateways wait \
-  --for=condition=Ready certificate/argo-https \
-  --timeout=20m
+argocd app sync cert-manager \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait cert-manager \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n cert-manager get deployment,pod
 ```
 
 ### 7. Istio Gateways

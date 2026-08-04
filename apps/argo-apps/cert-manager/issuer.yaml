@@ -1,9 +1,8 @@
 ---
 apiVersion: cert-manager.io/v1
-kind: Issuer
+kind: ClusterIssuer
 metadata:
   name: aws-route53
-  namespace: istio-gateways
   annotations:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
     argocd.argoproj.io/sync-wave: "2"
@@ -27,4 +26,4 @@ spec:
                 serviceAccountRef:
                   audiences:
                     - sts.amazonaws.com
-                  name: cert-manager-dns01
+                  name: cert-manager

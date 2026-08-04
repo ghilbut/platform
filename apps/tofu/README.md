@@ -41,7 +41,7 @@ Vault chart의 StatefulSet은 `data-vault-0` PVC를 사용한다. PVC는 chart�
 
 - `modules/cert-manager/`는 `cert_manager_clusters`의 cluster마다 `platform-<cluster>-cert-manager` IAM 역할을 만든다. 현재 root는 CPA에 `ghilbut.com`, `ghilbut.net` Route 53 DNS-01 권한을 부여한다.
 - 각 역할은 해당 cluster의 OIDC issuer와 지정한 ServiceAccount subject, `sts.amazonaws.com` audience를 모두 요구한다.
-- 각 cluster의 `istio-gateways` Issuer는 bound ServiceAccount token으로 STS를 호출한다. 장기 AWS access key Kubernetes Secret과 controller ambient credential을 사용하지 않는다.
+- 각 cluster의 ClusterIssuer는 bound ServiceAccount token으로 STS를 호출한다. 장기 AWS access key Kubernetes Secret과 controller ambient credential을 사용하지 않는다.
 
 ## external-dns 구성
 
