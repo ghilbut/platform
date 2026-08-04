@@ -53,7 +53,7 @@ resource "aws_iam_role_policy" "route53" {
       {
         Sid      = "DiscoverPublicHostedZones"
         Effect   = "Allow"
-        Action   = ["route53:ListHostedZonesByName"]
+        Action   = ["route53:ListHostedZones", "route53:ListHostedZonesByName"]
         Resource = "*"
       },
       {
