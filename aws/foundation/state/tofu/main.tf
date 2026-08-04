@@ -25,6 +25,9 @@ locals {
         "platform/domains.tfstate",
         "platform/domains.tfstate.tflock",
       ]
+      read_only_object_keys = [
+        "platform/aws/cdn.tfstate",
+      ]
     }
     domains_workloads = {
       sid_prefix            = "DomainsWorkloads"
@@ -180,6 +183,34 @@ data "aws_iam_policy_document" "state" {
   }
 
   dynamic "statement" {
+    for_each = {
+      for name, access in local.state_access : name => access
+      if length(try(access.read_only_object_keys, [])) > 0
+    }
+
+    content {
+      sid    = "Allow${statement.value.sid_prefix}RemoteStateObjects"
+      effect = "Allow"
+
+      principals {
+        type        = "AWS"
+        identifiers = ["arn:aws:iam::${statement.value.account_id}:root"]
+      }
+
+      actions = ["s3:GetObject"]
+      resources = [
+        for key in statement.value.read_only_object_keys : "${aws_s3_bucket.state.arn}/${key}"
+      ]
+
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = [statement.value.principal_arn_pattern]
+      }
+    }
+  }
+
+  dynamic "statement" {
     for_each = local.state_access
 
     content {
@@ -226,7 +257,7 @@ data "aws_iam_policy_document" "state" {
       condition {
         test     = "StringLike"
         variable = "s3:prefix"
-        values   = statement.value.object_keys
+        values   = concat(statement.value.object_keys, try(statement.value.read_only_object_keys, []))
       }
     }
   }

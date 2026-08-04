@@ -31,6 +31,39 @@ locals {
   zone_id = aws_route53_zone.this[local.root_domain].zone_id
 }
 
+module "tofu_execution_role" {
+  source = "../../aws/modules/tofu-execution-role"
+
+  name                       = "tofu-apply-domains"
+  description                = "OpenTofu execution role for Domains account Route 53 resources."
+  source_account_id          = "869061964712"
+  source_permission_set_name = "TofuApplyForDomains"
+  sso_region                 = "us-east-1"
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "Route53Management"
+        Effect   = "Allow"
+        Action   = ["route53:*", "route53domains:*"]
+        Resource = "*"
+      },
+      {
+        Sid    = "ReadExecutionRole"
+        Effect = "Allow"
+        Action = [
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:ListRolePolicies",
+        ]
+        Resource = "arn:aws:iam::869061964712:role/tofu-apply-domains"
+      },
+    ]
+  })
+}
+
 resource "aws_route53domains_registered_domain" "this" {
   for_each = local.domains
 
