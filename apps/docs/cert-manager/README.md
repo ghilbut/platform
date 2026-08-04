@@ -6,7 +6,7 @@ application: cert-manager
 
 # cert-manager
 
-CPA cluster에서 `ghilbut.com`, `ghilbut.net` DNS-01 challenge로 Istio gateway의 TLS Secret을 관리한다. `cert-manager/cert-manager` ServiceAccount는 `platform-cpa-cert-manager` IAM 역할만 사용한다. ClusterIssuer `aws-route53`은 `istio-gateways/ingress-https` Certificate의 `id.ghilbut.com`, `argo.ghilbut.com`, `vault.ghilbut.com` TLS Secret을 발급하고 갱신한다.
+CPA cluster에서 `ghilbut.com`, `ghilbut.net` DNS-01 challenge로 Istio 공용 gateway의 TLS Secret을 관리한다. `istio-gateways` namespace의 `cert-manager-dns01` ServiceAccount는 `platform-cpa-cert-manager` IAM 역할만 사용할 수 있다. Issuer와 Certificate는 `istio-gateways`에 한정한다.
 
 ## 연결
 
