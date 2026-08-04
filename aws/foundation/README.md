@@ -9,6 +9,7 @@ AWS Foundation은 AWS 계정 수명 주기, IAM Identity Center 접근 권한, A
 
 Platform account 분리 대상과 처리 순서는
 [[MIGRATION-INVENTORY|AWS account split migration inventory]]에서 관리한다.
+Domains 정리는 [[runbooks/complete-domains-cleanup|Domains cleanup runbook]]을 따른다.
 
 | 경로 | 책임 | Backend key |
 |---|---|---|

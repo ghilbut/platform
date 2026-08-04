@@ -1,7 +1,7 @@
 variable "aws_profile" {
   type        = string
-  description = "AWS CLI profile for the Domains account that owns the Apps state."
-  default     = "ghilbut-tofu-apply-for-workloads-domains"
+  description = "AWS CLI profile for the Platform account that owns the Apps state."
+  default     = "ghilbut-tofu-apply-for-workloads"
 }
 
 variable "aws_region" {

@@ -204,7 +204,7 @@ module "tofu_apply_for_domains" {
 
   instance_arn = local.instance_arn
   name         = "TofuApplyForDomains"
-  description  = "OpenTofu apply access for Domains account Route 53 resources."
+  description  = "OpenTofu apply access for Domains DNS and account budget resources."
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -213,6 +213,21 @@ module "tofu_apply_for_domains" {
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
         Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains"
+      },
+      {
+        Sid    = "DomainsBudget"
+        Effect = "Allow"
+        Action = [
+          "budgets:ModifyBudget",
+          "budgets:ViewBudget",
+        ]
+        Resource = "arn:aws:budgets::${local.domains_account_id}:budget/*"
+      },
+      {
+        Sid      = "DomainsBillingView"
+        Effect   = "Allow"
+        Action   = "billing:GetBillingViewData"
+        Resource = "*"
       },
       {
         Sid    = "DomainsStateObjects"

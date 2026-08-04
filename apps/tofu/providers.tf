@@ -1,5 +1,5 @@
 provider "aws" {
-  allowed_account_ids = ["869061964712"]
+  allowed_account_ids = ["012646747332"]
   profile             = var.aws_profile
   region              = var.aws_region
 
