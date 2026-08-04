@@ -1,5 +1,5 @@
 ---
-status: running
+status: complete
 issue: 99
 ---
 
@@ -66,16 +66,26 @@ account `012646747332`를 사용한다.
 ## Apply
 
 ```sh
-AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=aws/foundation/state/tofu apply \
   /tmp/issue-99-state-final.tfplan
 
-AWS_PROFILE=ghilbut-tofu-apply-for-management \
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=aws/foundation/identity/tofu apply \
   /tmp/issue-99-identity-final.tfplan
 ```
 
 State access를 먼저 제거하고 account assignment를 마지막에 제거한다.
+
+적용 결과는 다음과 같다.
+
+| Root | Add | Change | Destroy |
+|---|---:|---:|---:|
+| `aws/foundation/state/tofu` | 0 | 1 | 0 |
+| `aws/foundation/identity/tofu` | 0 | 3 | 1 |
+
+IAM Identity Center permission set provisioning 요청 3개와 Domains account assignment 삭제 요청
+1개는 모두 `SUCCEEDED`다.
 
 ## Verify
 
@@ -83,13 +93,14 @@ State access를 먼저 제거하고 account assignment를 마지막에 제거한
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-domains
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads
 
-AWS_PROFILE=ghilbut-tofu-apply-for-management \
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=aws/foundation/identity/tofu plan
-AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=aws/foundation/state/tofu plan
-AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=apps/tofu plan
 ```
 
-각 plan은 변경이 없다. IAM Identity Center의 Domains assignment는 `TofuApplyForDomains`
-하나다. Platform assignment는 `TofuApplyForWorkloads` 하나다.
+Identity, state, apps, domains plan은 모두 변경이 없다. IAM Identity Center의 Domains
+assignment는 `TofuApplyForDomains` 하나다. Platform assignment는 `TofuApplyForWorkloads`
+하나다. Domains의 `TofuApplyForWorkloads` assignment 삭제 요청은 `SUCCEEDED`다.
