@@ -38,7 +38,7 @@ tofu -chdir=aws/foundation/accounts/tofu init -reconfigure
 tofu -chdir=aws/foundation/accounts/tofu plan
 tofu -chdir=aws/foundation/accounts/tofu apply
 
-platform_account_id="$(tofu -chdir=aws/foundation/accounts/tofu output -raw platform_account_id)"
+platform_account_id="$(AWS_PROFILE=ghilbut-tofu-apply-for-management tofu -chdir=aws/foundation/accounts/tofu output -raw platform_account_id)"
 aws organizations describe-account --account-id "${platform_account_id}"
 ```
 
@@ -93,5 +93,18 @@ tofu -chdir=aws/foundation/workload/tofu plan
 aws iam get-role --role-name tofu-apply
 ```
 
-마지막 plan은 변경 사항이 없어야 한다. Domains workload 접근은
-`ghilbut-tofu-apply-for-workloads-domains`로 계속 사용할 수 있어야 한다.
+## 7. OpenTofu 주소 정리
+
+첫 적용에 사용한 임시 주소를 최종 `platform` 주소로 옮긴다.
+
+1. accounts와 identity root의 적용된 `platform`에서 `domains`로 가는 `moved` block을
+   제거한다.
+2. `platform_workload` 주소를 `platform`으로 옮기는 `moved` block을 추가하고 resource와
+   assignment key를 `platform`으로 바꾼다.
+3. accounts와 identity plan에서 원격 리소스 변경이 0개이고 주소 이동만 있는지 확인한 뒤
+   apply한다.
+4. 임시 주소를 포함한 `moved` block을 제거하고 accounts와 identity plan을 다시 실행한다.
+
+accounts, identity, state, workload의 마지막 plan은 변경 사항이 없어야 한다. Domains
+workload 접근은 `ghilbut-tofu-apply-for-workloads-domains`로 `aws/cdn/tofu` plan을 실행할
+수 있어야 한다.

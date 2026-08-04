@@ -26,7 +26,7 @@ module "tofu_execution_role" {
   source = "../../../modules/tofu-execution-role"
 
   name                       = "tofu-apply"
-  description                = "OpenTofu execution role for Platform workload infrastructure."
+  description                = "OpenTofu execution role for the Platform account."
   source_account_id          = local.platform_account_id
   source_permission_set_name = "TofuApplyForWorkloads"
   sso_region                 = "us-east-1"

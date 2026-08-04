@@ -59,6 +59,7 @@ aws configure set sso_account_id 869061964712 --profile ghilbut-tofu-apply-for-w
 aws configure set sso_role_name TofuApplyForWorkloads --profile ghilbut-tofu-apply-for-workloads-domains
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-workloads-domains
 
+aws sso login --profile ghilbut-tofu-apply-for-management
 platform_account_id="$(AWS_PROFILE=ghilbut-tofu-apply-for-management tofu -chdir=aws/foundation/accounts/tofu output -raw platform_account_id)"
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_account_id "${platform_account_id}" --profile ghilbut-tofu-apply-for-workloads
@@ -70,7 +71,6 @@ aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-apply-for-u
 aws configure set sso_role_name TofuApplyForUltaryDomains --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domains
 
-aws sso login --profile ghilbut-tofu-apply-for-management
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-management
 aws sso login --profile ghilbut-tofu-apply-for-domains
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-domains

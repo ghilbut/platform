@@ -14,8 +14,8 @@
 - `github/tofu`는 계정 공용 GitHub Actions OIDC provider만 관리한다.
 - 서비스별 GitHub repository variable과 IAM 역할은 그 서비스 root가 관리한다. CDN의
   `AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN`은 `aws/cdn/tofu`의 소유다.
-- 공용 OIDC provider ARN만 `terraform_remote_state` output으로 소비한다. 한 리소스를 두
-  state에서 선언하지 않는다.
+- 공용 OIDC provider ARN과 Foundation account ID처럼 root 사이에 필요한 식별자만
+  `terraform_remote_state` output으로 소비한다. 한 리소스를 두 state에서 선언하지 않는다.
 - backend key를 옮길 때는 `tofu init -migrate-state`로 state만 이전한다. 원격 리소스를
   삭제하거나 import로 다시 만들지 않는다.
 

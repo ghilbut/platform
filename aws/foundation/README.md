@@ -21,9 +21,9 @@ Platform account 분리 대상과 처리 순서는
 `accounts/tofu/`, `identity/tofu/`, `state/tofu/`, `workload/tofu/`가 현재 존재한다.
 `organizations/tofu/`는 Foundation 전환 작업에 따라 추가한다.
 
-`accounts/tofu/modules/management/`는 management 계정 자체의 opt-in 리전만 관리한다.
-따라서 Account Management API를 standalone context로 호출하며, AWS Organizations의
-Account Management trusted access를 활성화하지 않는다.
+`accounts/tofu/modules/management/`는 management 계정 자체의 opt-in 리전만 관리하므로
+Account Management API를 standalone context로 호출한다. AWS Organizations의 Account
+Management trusted access는 member 계정 이름을 관리하기 위해 활성화한다.
 
 `identity/tofu/`는 IAM Identity Center permission set, AWS 관리형 정책 연결, 계정 할당,
 Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
