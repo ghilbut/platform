@@ -65,7 +65,7 @@ tofu -chdir=aws/foundation/identity/tofu apply
 ## 5. Platform workload profile 구성
 
 ```sh
-platform_account_id="$(tofu -chdir=aws/foundation/accounts/tofu output -raw platform_account_id)"
+platform_account_id="$(AWS_PROFILE=ghilbut-tofu-apply-for-management tofu -chdir=aws/foundation/accounts/tofu output -raw platform_account_id)"
 
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_account_id "${platform_account_id}" --profile ghilbut-tofu-apply-for-workloads
