@@ -48,6 +48,31 @@ output "platform_certificate_validation_options" {
   value       = module.certificate_platform.validation_options
 }
 
+output "platform_cloudfront_distribution_id" {
+  description = "Platform CloudFront distribution ID."
+  value       = module.cloudfront_platform.id
+}
+
+output "platform_cloudfront_domain_name" {
+  description = "Platform CloudFront distribution domain name."
+  value       = module.cloudfront_platform.domain_name
+}
+
+output "platform_cloudfront_hosted_zone_id" {
+  description = "Platform CloudFront hosted zone ID."
+  value       = module.cloudfront_platform.hosted_zone_id
+}
+
+output "platform_github_actions_role_arn" {
+  description = "Platform IAM role ARN for CDN GitHub Actions uploads."
+  value       = module.github_actions_platform.role_arn
+}
+
+output "platform_s3_bucket_name" {
+  description = "Platform CDN origin bucket name."
+  value       = module.s3_platform.name
+}
+
 output "fqdns" {
   description = "CDN host names published through Route 53."
   value       = local.fqdns

@@ -92,12 +92,37 @@ AWS_PROFILE=ghilbut-tofu-apply-for-domains \
 4. 새 distribution domain에 `Host: oidc.k3s.ghilbut.com`을 보내 두 document의 내용과 응답
    상태를 확인한다.
 
+저장된 계획은 `16 add, 0 change, 0 destroy`다. 추가 대상은 certificate validation, bucket과
+오류 문서, edge 리소스, distribution과 OAC, bucket policy, GitHub Actions 역할과 정책이다.
+
 ```sh
 AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
   tofu -chdir=aws/cdn/tofu plan \
     -out=/tmp/issue-98-platform-cdn-create.tfplan
 AWS_SDK_LOAD_CONFIG=1 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
   tofu -chdir=aws/cdn/tofu apply /tmp/issue-98-platform-cdn-create.tfplan
+```
+
+```sh
+for key in \
+  'oidc.k3s.ghilbut.com/cpa/.well-known/openid-configuration' \
+  'oidc.k3s.ghilbut.com/cpa/openid/v1/jwks'
+do
+  file="/tmp/issue-98-$(basename "$key").json"
+  AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains \
+    aws s3api get-object --bucket ghilbut-platform-cdn --key "$key" "$file"
+  AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
+    aws s3api put-object --bucket ghilbut-cdn-platform --key "$key" \
+      --body "$file" --content-type application/json
+done
+
+export PLATFORM_CLOUDFRONT_DOMAIN='<PLATFORM_CLOUDFRONT_DOMAIN>'
+curl --fail --silent --show-error \
+  --connect-to "oidc.k3s.ghilbut.com:443:${PLATFORM_CLOUDFRONT_DOMAIN}:443" \
+  'https://oidc.k3s.ghilbut.com/cpa/.well-known/openid-configuration' | jq -e .
+curl --fail --silent --show-error \
+  --connect-to "oidc.k3s.ghilbut.com:443:${PLATFORM_CLOUDFRONT_DOMAIN}:443" \
+  'https://oidc.k3s.ghilbut.com/cpa/openid/v1/jwks' | jq -e '.keys | length > 0'
 ```
 
 ## 4. CloudFront hostname 전환

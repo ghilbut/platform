@@ -10,6 +10,7 @@ locals {
   fqdns = keys(local.fqdn_hosts)
 
   platform_certificate_fqdns = distinct(concat(local.fqdns, ["*.k3s.ghilbut.com"]))
+  platform_migration_aliases = ["*.k3s.ghilbut.com"]
 
   viewer_request_allowlist = keys(local.fqdn_hosts)
   viewer_request_redirect_map = {
@@ -107,6 +108,85 @@ module "certificate_platform" {
   fqdns           = local.platform_certificate_fqdns
   name            = "cdn-platform"
   repo            = local.repo
+}
+
+module "s3_platform" {
+  source = "./modules/s3"
+
+  providers = { aws = aws.platform }
+
+  bucket_name = "ghilbut-cdn-platform"
+  error_page_files = {
+    "404.html" = "${path.root}/../404.html"
+    "503.html" = "${path.root}/../503.html"
+  }
+  name = "cdn-platform"
+  repo = local.repo
+}
+
+module "edge_platform" {
+  source = "./modules/edge"
+
+  providers = { aws = aws.platform }
+
+  allowlist          = local.viewer_request_allowlist
+  bucket_arn         = module.s3_platform.arn
+  bucket_name        = module.s3_platform.name
+  name               = "cdn-platform"
+  redirect_map       = local.viewer_request_redirect_map
+  repo               = local.repo
+  spa_hosts          = local.viewer_request_spa_hosts
+  lambda_source_file = "${path.root}/../lambda/dist/index-platform.mjs"
+
+  lambda_source_contains_bucket_placeholder = true
+}
+
+module "cloudfront_platform" {
+  source = "./modules/cloudfront"
+
+  providers = { aws = aws.platform }
+
+  bucket_regional_domain_name = module.s3_platform.regional_domain_name
+  certificate_arn             = module.certificate_platform.arn
+  fqdns                       = local.platform_migration_aliases
+  lambda_function_arn         = module.edge_platform.lambda_function_arn
+  name                        = "cdn-platform"
+  repo                        = local.repo
+  viewer_request_function_arn = module.edge_platform.viewer_request_function_arn
+
+  depends_on = [module.certificate_platform]
+}
+
+module "origin_access_platform" {
+  source = "./modules/origin-access"
+
+  providers = { aws = aws.platform }
+
+  bucket_arn                  = module.s3_platform.arn
+  bucket_name                 = module.s3_platform.name
+  cloudfront_distribution_arn = module.cloudfront_platform.arn
+
+  depends_on = [module.s3_platform]
+}
+
+module "github_actions_platform" {
+  source = "./modules/github-actions"
+
+  providers = { aws = aws.platform }
+
+  acm_certificate_arn              = module.certificate_platform.arn
+  cdn_bucket_arn                   = module.s3_platform.arn
+  cloudfront_distribution_arn      = module.cloudfront_platform.arn
+  cloudfront_function_arn          = module.edge_platform.viewer_request_function_arn
+  github_actions_oidc_provider_arn = data.terraform_remote_state.github.outputs.platform_github_actions_oidc_provider_arn
+  lambda_function_arn              = module.edge_platform.lambda_function_base_arn
+  lambda_role_arn                  = module.edge_platform.lambda_role_arn
+  name                             = "cdn-platform"
+  origin_access_control_arn        = module.cloudfront_platform.origin_access_control_arn
+  repository_full_name             = "${var.github_owner}/${var.github_repository}"
+  repo                             = local.repo
+  state_bucket                     = "ghilbut-tfstates-v2"
+  state_key                        = "platform/aws/cdn.tfstate"
 }
 
 module "edge" {

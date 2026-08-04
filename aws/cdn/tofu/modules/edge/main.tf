@@ -40,9 +40,11 @@ resource "aws_iam_role_policy" "lambda_s3" {
 }
 
 data "archive_file" "lambda" {
-  type        = "zip"
-  source_file = var.lambda_source_file
-  output_path = "${path.root}/.terraform/${var.name}-lambda.zip"
+  type                    = "zip"
+  source_file             = var.lambda_source_contains_bucket_placeholder ? null : var.lambda_source_file
+  source_content          = var.lambda_source_contains_bucket_placeholder ? replace(file(var.lambda_source_file), "__CDN_BUCKET__", var.bucket_name) : null
+  source_content_filename = var.lambda_source_contains_bucket_placeholder ? "index.mjs" : null
+  output_path             = "${path.root}/.terraform/${var.name}-lambda.zip"
 }
 
 resource "aws_s3_object" "lambda_zip" {
