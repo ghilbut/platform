@@ -204,7 +204,7 @@ module "tofu_apply_for_domains" {
 
   instance_arn = local.instance_arn
   name         = "TofuApplyForDomains"
-  description  = "OpenTofu apply access for Domains account Route 53 resources."
+  description  = "OpenTofu apply access for Domains DNS resources."
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -278,13 +278,10 @@ module "tofu_apply_for_workloads" {
         Resource = "*"
       },
       {
-        Sid    = "AssumeTofuExecutionRole"
-        Effect = "Allow"
-        Action = "sts:AssumeRole"
-        Resource = [
-          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply",
-          "arn:aws:iam::${local.platform_account_id}:role/tofu-apply",
-        ]
+        Sid      = "AssumeTofuExecutionRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::${local.platform_account_id}:role/tofu-apply"
       },
       {
         Sid    = "WorkloadStateObjects"
@@ -314,11 +311,6 @@ module "tofu_apply_for_workloads" {
     ]
   })
   account_assignments = {
-    domains = {
-      account_id     = local.domains_account_id
-      principal_id   = aws_identitystore_group.devops.group_id
-      principal_type = "GROUP"
-    }
     platform = {
       account_id     = local.platform_account_id
       principal_id   = aws_identitystore_group.devops.group_id

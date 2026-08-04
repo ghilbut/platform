@@ -29,19 +29,6 @@ locals {
         "platform/aws/cdn.tfstate",
       ]
     }
-    domains_workloads = {
-      sid_prefix            = "DomainsWorkloads"
-      account_id            = local.domains_account_id
-      principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
-      object_keys = [
-        "platform/apps.tfstate",
-        "platform/apps.tfstate.tflock",
-        "platform/domains.tfstate",
-        "platform/domains.tfstate.tflock",
-        "ultary/domains.tfstate",
-        "ultary/domains.tfstate.tflock",
-      ]
-    }
     platform = {
       sid_prefix            = "Platform"
       account_id            = local.platform_account_id
