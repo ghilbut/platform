@@ -26,7 +26,7 @@ module "tofu_execution_role" {
   name                       = "tofu-apply"
   description                = "OpenTofu execution role for Platform workload infrastructure."
   source_account_id          = "869061964712"
-  source_permission_set_name = "TofuApply"
+  source_permission_set_name = "TofuApplyForWorkloads"
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/IAMFullAccess",
     "arn:aws:iam::aws:policy/PowerUserAccess",
