@@ -20,7 +20,7 @@ spec:
             - name: AWS_REGION
               value: us-east-1
             - name: AWS_ROLE_ARN
-              value: arn:aws:iam::869061964712:role/platform-cpa-external-dns
+              value: arn:aws:iam::869061964712:role/domains-cpa-external-dns
             - name: AWS_WEB_IDENTITY_TOKEN_FILE
               value: /var/run/secrets/aws-iam-token/token
           extraVolumeMounts:

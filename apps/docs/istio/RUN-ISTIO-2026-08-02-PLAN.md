@@ -113,7 +113,7 @@ PR이 `main`에 병합된 뒤 실행한다. 관련 경로는 [Istio README](READ
    kubectl --context cpa -n istio-gateways get secret public-https-tls --ignore-not-found
    ```
 
-   cert-manager, external-dns, Keycloak, Vault 공개 route 작업을 완료한 뒤에 `id.ghilbut.com`과 `vault.ghilbut.com`을 검증한다.
+   cert-manager, external-dns, Keycloak 공개 route 작업을 완료한 뒤에 `id.ghilbut.com`을 검증한다.
 
 ## 결과
 

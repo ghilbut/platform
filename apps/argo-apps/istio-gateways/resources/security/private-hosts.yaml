@@ -21,5 +21,3 @@ spec:
               - id.ghilbut.com:*
               - argo.ghilbut.com
               - argo.ghilbut.com:*
-              - vault.ghilbut.com
-              - vault.ghilbut.com:*

@@ -1,6 +1,6 @@
 variable "cluster_name" {
   type        = string
-  description = "Cluster identifier included in external-dns IAM resource names."
+  description = "Cluster identifier included in IAM resource names."
 
   validation {
     condition     = can(regex("^[a-z0-9][a-z0-9-]*$", var.cluster_name))
@@ -10,17 +10,17 @@ variable "cluster_name" {
 
 variable "hosted_zone_names" {
   type        = set(string)
-  description = "Public Route 53 hosted zones external-dns may read."
+  description = "Public Route 53 hosted zones available to external-dns."
 }
 
 variable "name" {
   type        = string
-  description = "Platform name prefix for external-dns IAM resources."
+  description = "Resource name prefix."
 }
 
 variable "oidc_issuer" {
   type        = string
-  description = "Public Kubernetes ServiceAccount OIDC issuer URL for this cluster."
+  description = "Kubernetes ServiceAccount OIDC issuer URL."
 }
 
 variable "record_names" {
@@ -30,12 +30,12 @@ variable "record_names" {
 
 variable "service_account_name" {
   type        = string
-  description = "Name of the external-dns ServiceAccount allowed to assume the role."
+  description = "external-dns ServiceAccount allowed to assume the role."
 }
 
 variable "service_account_namespace" {
   type        = string
-  description = "Namespace of the external-dns ServiceAccount allowed to assume the role."
+  description = "Namespace of the external-dns ServiceAccount."
 }
 
 variable "txt_prefix" {

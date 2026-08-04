@@ -16,30 +16,28 @@ locals {
   )
 }
 
-resource "aws_iam_role" "external_dns" {
+resource "aws_iam_role" "this" {
   name = "${var.name}-${var.cluster_name}-external-dns"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect    = "Allow"
-        Action    = "sts:AssumeRoleWithWebIdentity"
-        Principal = { Federated = data.aws_iam_openid_connect_provider.this.arn }
-        Condition = {
-          StringEquals = {
-            "${local.oidc_condition_prefix}:aud" = "sts.amazonaws.com"
-            "${local.oidc_condition_prefix}:sub" = "system:serviceaccount:${var.service_account_namespace}:${var.service_account_name}"
-          }
+    Statement = [{
+      Effect    = "Allow"
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Principal = { Federated = data.aws_iam_openid_connect_provider.this.arn }
+      Condition = {
+        StringEquals = {
+          "${local.oidc_condition_prefix}:aud" = "sts.amazonaws.com"
+          "${local.oidc_condition_prefix}:sub" = "system:serviceaccount:${var.service_account_namespace}:${var.service_account_name}"
         }
-      },
-    ]
+      }
+    }]
   })
 }
 
 resource "aws_iam_role_policy" "route53" {
   name = "${var.name}-${var.cluster_name}-external-dns-route53"
-  role = aws_iam_role.external_dns.name
+  role = aws_iam_role.this.name
 
   policy = jsonencode({
     Version = "2012-10-17"

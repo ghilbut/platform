@@ -72,8 +72,94 @@ module "tofu_execution_role" {
         ]
         Resource = "arn:aws:iam::869061964712:role/tofu-apply-domains"
       },
+      {
+        Sid    = "ManageDnsFederationRoles"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:DeleteRolePolicy",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:ListRolePolicies",
+          "iam:PutRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+        ]
+        Resource = [
+          "arn:aws:iam::869061964712:role/domains-cpa-cert-manager",
+          "arn:aws:iam::869061964712:role/domains-cpa-external-dns",
+        ]
+      },
+      {
+        Sid      = "CreateCpaOidcProvider"
+        Effect   = "Allow"
+        Action   = ["iam:ListOpenIDConnectProviders"]
+        Resource = "*"
+      },
+      {
+        Sid    = "ManageCpaOidcProvider"
+        Effect = "Allow"
+        Action = [
+          "iam:AddClientIDToOpenIDConnectProvider",
+          "iam:CreateOpenIDConnectProvider",
+          "iam:DeleteOpenIDConnectProvider",
+          "iam:GetOpenIDConnectProvider",
+          "iam:RemoveClientIDFromOpenIDConnectProvider",
+          "iam:TagOpenIDConnectProvider",
+          "iam:UntagOpenIDConnectProvider",
+          "iam:UpdateOpenIDConnectProviderThumbprint",
+        ]
+        Resource = "arn:aws:iam::869061964712:oidc-provider/oidc.k3s.ghilbut.com/cpa"
+      },
     ]
   })
+}
+
+resource "aws_iam_openid_connect_provider" "cpa" {
+  url             = "https://oidc.k3s.ghilbut.com/cpa"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [var.cpa_oidc_thumbprint]
+
+  tags = {
+    component       = "oidc"
+    service         = "k3s"
+    "opentofu/path" = "k3s/tofu/"
+  }
+}
+
+import {
+  to = aws_iam_openid_connect_provider.cpa
+  id = "arn:aws:iam::869061964712:oidc-provider/oidc.k3s.ghilbut.com/cpa"
+}
+
+module "cpa_cert_manager" {
+  source = "./modules/cert-manager"
+
+  cluster_name              = "cpa"
+  hosted_zone_names         = local.domains
+  name                      = "domains"
+  oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
+  service_account_name      = "cert-manager"
+  service_account_namespace = "cert-manager"
+}
+
+module "cpa_external_dns" {
+  source = "./modules/external-dns"
+
+  cluster_name              = "cpa"
+  hosted_zone_names         = local.domains
+  name                      = "domains"
+  oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
+  record_names              = ["id.ghilbut.com"]
+  service_account_name      = "public"
+  service_account_namespace = "external-dns"
+  txt_prefix                = "external-dns-"
 }
 
 resource "aws_route53domains_registered_domain" "this" {
