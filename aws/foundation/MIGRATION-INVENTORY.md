@@ -43,10 +43,16 @@ title: AWS account split inventory
 | CPA IAM OIDC provider | `oidc.k3s.ghilbut.com/cpa` | DNS workload federation |
 | cert-manager role | `domains-cpa-cert-manager` | Route 53 DNS-01 TXT record |
 | external-dns role | `domains-cpa-external-dns` | `id.ghilbut.com` CNAME과 TXT record |
-| Customer-managed KMS key | `6ebc75ad-c084-4c1a-842e-b45482e5e668` | `PendingDeletion`, deletion date `2026-09-04T01:16:50.578000+09:00` |
 
 Domains account의 live budget 수는 0이다. Customer-managed S3 bucket, Cognito pool과 local IAM
 policy는 없다.
+
+## Scheduled KMS key deletion
+
+Customer-managed KMS key `6ebc75ad-c084-4c1a-842e-b45482e5e668`은 Domains 유지
+resource가 아니다. AWS KMS가 반환한 상태는 `PendingDeletion`이고 예약 삭제 시각은
+`2026-09-04T01:16:50.578+09:00`이다. 실제 삭제 시각은 예약 삭제 시각보다 최대 24시간
+늦을 수 있다. AWS KMS가 삭제를 완료하므로 추가 삭제 작업은 없다.
 
 ## Absent user-managed resources
 

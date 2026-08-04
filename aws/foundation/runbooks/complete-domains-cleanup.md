@@ -12,10 +12,16 @@ Domains account `869061964712`은 다음 resource만 유지한다.
 - `ghilbut.com`, `ghilbut.net` domain registration과 hosted zone
 - `TofuApplyForDomains`, `tofu-apply-domains`
 - CPA IAM OIDC provider와 DNS 전용 role 2개
-- `PendingDeletion` KMS key `6ebc75ad-c084-4c1a-842e-b45482e5e668`
 - AWS-managed account baseline
 
 Live budget 수는 0이다.
+
+## Scheduled KMS key deletion
+
+Customer-managed KMS key `6ebc75ad-c084-4c1a-842e-b45482e5e668`은 Domains 유지
+resource가 아니다. AWS KMS가 반환한 상태는 `PendingDeletion`이고 예약 삭제 시각은
+`2026-09-04T01:16:50.578+09:00`이다. 실제 삭제 시각은 예약 삭제 시각보다 최대 24시간
+늦을 수 있다. AWS KMS가 삭제를 완료하므로 추가 삭제 작업은 없다.
 
 ## Live cleanup result
 
