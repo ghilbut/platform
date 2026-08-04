@@ -29,19 +29,17 @@ Management trusted access는 member 계정 이름을 관리하기 위해 활성�
 Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
 IdP 또는 IAM Identity Center의 소유이며, 이 state에서 생성하거나 삭제하지 않는다.
 
-`state/tofu/`는 Domains 계정이 소유한 `ghilbut-tfstates` bucket policy를 관리한다.
-Management source permission set에는 Foundation accounts·identity state와 lock file에만
-cross-account 접근을 허용한다. Platform workload source permission set에는 workload
-bootstrap state와 lock file만 허용한다. state bucket의 lifecycle과 그 밖의 state key는
-관리하지 않는다.
+`state/tofu/`는 Platform 계정이 소유한 `ghilbut-tfstates-v2` bucket과 접근 정책을 관리한다.
+각 source permission set에는 담당 OpenTofu state와 lock file만 허용한다. bucket은 versioning,
+AES256 암호화, public access 차단, bucket owner enforced object ownership을 적용한다.
 
 새 Platform 계정과 workload 실행 역할은
 [[workload/RUNBOOK|Platform workload access runbook]] 순서로 생성한다.
 
 ## OpenTofu 실행
 
-`state/tofu/`는 Domains의 임시 `TofuApplyForWorkloads` source profile로 backend에 접근하고,
-Domains `tofu-apply` 역할을 수임해 bucket policy를 관리한다.
+`state/tofu/`는 Platform의 `TofuApplyForWorkloads` source profile로 backend에 접근하고,
+Platform `tofu-apply` 역할을 수임해 bucket을 관리한다.
 
 `workload/tofu/`는 새 Platform의 `TofuApplyForWorkloads` source profile로 backend와
 provider를 직접 사용한다. 이 root가 Platform `tofu-apply` 역할 자체를 관리한다.
@@ -59,7 +57,7 @@ tofu init -reconfigure
 tofu plan
 tofu apply
 
-export AWS_PROFILE=ghilbut-tofu-apply-for-workloads-domains
+export AWS_PROFILE=ghilbut-tofu-apply-for-workloads
 
 cd ../../state/tofu
 tofu init -reconfigure

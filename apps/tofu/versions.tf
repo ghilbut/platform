@@ -2,9 +2,9 @@ terraform {
   required_version = ">= 1.12"
 
   backend "s3" {
-    bucket       = "ghilbut-tfstates"
+    bucket       = "ghilbut-tfstates-v2"
     key          = "platform/apps.tfstate"
-    profile      = "ghilbut-platform"
+    profile      = "ghilbut-tofu-apply-for-workloads-domains"
     region       = "us-east-1"
     encrypt      = true
     use_lockfile = true

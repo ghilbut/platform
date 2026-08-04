@@ -38,21 +38,20 @@ AWS Organizations 이름은 `869061964712`가 `domains`, `012646747332`가 `plat
 
 ## OpenTofu state inventory
 
-`ghilbut-tfstates`에는 다음 state object가 있다. 모든 활성 backend는
-[Issue #97](https://github.com/ghilbut/platform/issues/97)에서 새 Platform account로 이전한다.
+Platform 계정의 `ghilbut-tfstates-v2`에는 다음 활성 state object 열 개가 있다.
 
 | State key | Active root | Resource owner | Disposition |
 |---|---|---|---|
-| `k3s.tfstate` | `k3s/tofu/` | Domains와 Platform | Backend는 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. CPA OIDC provider는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 두 account의 책임으로 분리하고 CDN object는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 이전한다. |
-| `platform/apps.tfstate` | `apps/tofu/` | Domains와 Platform | Backend는 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. Route 53 역할은 Domains에 유지하고 Vault 리소스는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Platform에 재생성한다. |
-| `platform/aws/accounts.tfstate` | 없음 | Management | 비활성 state다. `platform/aws/foundation/accounts.tfstate`와 resource address를 대조한 뒤 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 삭제한다. |
-| `platform/aws/cdn.tfstate` | `aws/cdn/tofu/` | Domains와 Platform | Backend는 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. Route 53 record 소유권은 [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains state로 옮긴다. `tofu-apply` 역할은 [Issue #96](https://github.com/ghilbut/platform/issues/96)과 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 분리하고 나머지 CDN 리소스는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
-| `platform/aws/foundation/accounts.tfstate` | `aws/foundation/accounts/tofu/` | Management | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. |
-| `platform/aws/foundation/identity.tfstate` | `aws/foundation/identity/tofu/` | Management | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. Account assignment는 [Issue #96](https://github.com/ghilbut/platform/issues/96)과 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 변경한다. |
-| `platform/aws/foundation/state.tfstate` | `aws/foundation/state/tofu/` | Platform | [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 새 bucket policy state로 교체한다. |
-| `platform/domains.tfstate` | `domains/tofu/` | Domains | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. 도메인과 hosted zone은 Domains에 유지한다. |
-| `platform/github.tfstate` | `github/tofu/` | Platform | Backend는 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전하고 GitHub Actions OIDC provider는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
-| `ultary/domains.tfstate` | `ultary/domains/tofu/` | UltaryDomains | Backend만 [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 이전한다. |
+| `k3s.tfstate` | `k3s/tofu/` | Domains와 Platform | Backend는 v2다. CPA OIDC provider는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 두 account의 책임으로 분리하고 CDN object는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 이전한다. |
+| `platform/apps.tfstate` | `apps/tofu/` | Domains와 Platform | Backend는 v2다. Route 53 역할은 Domains에 유지하고 Vault 리소스는 [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Platform에 재생성한다. |
+| `platform/aws/cdn.tfstate` | `aws/cdn/tofu/` | Domains와 Platform | Backend는 v2다. Route 53 record 소유권은 [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains state로 옮긴다. `tofu-apply` 역할은 [Issue #96](https://github.com/ghilbut/platform/issues/96)과 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 분리하고 나머지 CDN 리소스는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
+| `platform/aws/foundation/accounts.tfstate` | `aws/foundation/accounts/tofu/` | Management | Backend는 v2다. |
+| `platform/aws/foundation/identity.tfstate` | `aws/foundation/identity/tofu/` | Management | Backend는 v2다. Account assignment는 [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 정리한다. |
+| `platform/aws/foundation/state.tfstate` | `aws/foundation/state/tofu/` | Platform | Platform의 v2 bucket과 bucket policy를 관리한다. |
+| `platform/aws/foundation/workload.tfstate` | `aws/foundation/workload/tofu/` | Platform | Backend는 v2다. Platform 실행 역할을 관리한다. |
+| `platform/domains.tfstate` | `domains/tofu/` | Domains | Backend는 v2다. 도메인과 hosted zone은 Domains에 유지한다. |
+| `platform/github.tfstate` | `github/tofu/` | Platform | Backend는 v2다. GitHub Actions OIDC provider는 [Issue #98](https://github.com/ghilbut/platform/issues/98)에서 Platform에 재생성한다. |
+| `ultary/domains.tfstate` | `ultary/domains/tofu/` | UltaryDomains | Backend는 v2다. |
 
 ## AWS resource inventory
 
@@ -73,7 +72,7 @@ AWS Organizations 이름은 `869061964712`가 `domains`, `012646747332`가 `plat
 
 | Resource group | Current identifiers | Follow-up |
 |---|---|---|
-| OpenTofu backend | S3 `ghilbut-tfstates`, bucket policy, 10 state objects | [Issue #97](https://github.com/ghilbut/platform/issues/97)은 `ghilbut-tfstates-v2`를 만들고 모든 활성 backend, state bucket IAM policy ARN, CDN CI policy, CDN remote-state 참조를 이전한다. |
+| OpenTofu backend | Platform S3 `ghilbut-tfstates-v2`, bucket policy, 10 state objects | 모든 활성 backend, state bucket IAM policy ARN, CDN CI policy, CDN remote-state 참조가 v2를 사용한다. |
 | Workload execution | IAM `tofu-apply`, `TofuApplyForWorkloads` assignment | 현재 역할은 CDN state가 소유한다. [Issue #96](https://github.com/ghilbut/platform/issues/96)은 별도 bootstrap 구성으로 새 Platform 역할과 임시 이중 assignment를 만들고 [Issue #99](https://github.com/ghilbut/platform/issues/99)는 Domains의 기존 역할과 assignment를 삭제한다. |
 | Vault seal | KMS alias `alias/platform-vault`, customer key `6ebc75ad-c084-4c1a-842e-b45482e5e668`, IAM `platform-vault` | [Issue #102](https://github.com/ghilbut/platform/issues/102)는 새 key와 역할을 만든 뒤 Vault seal migration을 실행한다. KMS key와 ciphertext는 account 사이에서 이동하지 않는다. |
 | Shared GitHub federation | IAM OIDC provider `token.actions.githubusercontent.com` | [Issue #98](https://github.com/ghilbut/platform/issues/98)은 새 Platform account에서 재생성한다. |
@@ -123,8 +122,9 @@ Tagging API가 반환한 종료된 SSM session은 활성 리소스가 아니다.
 |---|---|---|
 | `ghilbut-platform` | Account `869061964712`의 삭제된 `TofuApply` permission set을 가리킨다. 새 role credential을 발급할 수 없다. | 모든 provider와 backend에서 제거한다. |
 | `ghilbut-tofu-apply-for-workloads` | Account `869061964712`의 `TofuApplyForWorkloads`를 사용한다. | [Issue #96](https://github.com/ghilbut/platform/issues/96)에서 기존 설정은 임시 `ghilbut-tofu-apply-for-workloads-domains`로 이름을 바꾸고 원래 profile 이름은 새 Platform account에 연결한다. [Issue #99](https://github.com/ghilbut/platform/issues/99)에서 임시 profile과 Domains 할당을 제거한다. |
-| `ghilbut-tofu-apply-for-domains` | Repository 문서에 구성 절차가 있지만 local AWS config에는 없다. | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 구성하고 Domains `tofu-apply` 역할을 수임한다. |
-| `TofuApplyForDomains` | Domains account에 할당되어 있고 `AmazonRoute53FullAccess`가 연결되어 있다. | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 source identity로만 사용하고 실행 역할 수임 권한과 state 접근만 추가한다. |
+| `ghilbut-tofu-apply-for-domains` | Domains의 `TofuApplyForDomains`를 사용하고 Domains state backend에 접근한다. | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains `tofu-apply` 역할 수임 경로를 추가한다. |
+| `ghilbut-tofu-apply-for-ultary-domains` | UltaryDomains의 `TofuApplyForUltaryDomains`를 사용하고 UltaryDomains state backend에 접근한다. | UltaryDomains의 도메인 인프라 실행 경로로 유지한다. |
+| `TofuApplyForDomains` | Domains account에 할당되어 있고 `AmazonRoute53FullAccess`와 state 접근 정책이 연결되어 있다. | [Issue #103](https://github.com/ghilbut/platform/issues/103)에서 Domains 실행 역할 수임 권한을 추가한다. |
 
 ## GitHub inventory
 
@@ -141,7 +141,7 @@ GitHub token에는 Actions secret metadata 읽기 권한이 없다. 저장소 �
 
 | Consumer | Dependency | Required change |
 |---|---|---|
-| OpenTofu state consumers | `aws/foundation/identity/tofu/main.tf`의 policy ARN, `aws/cdn/tofu/main.tf`의 CI policy, `aws/cdn/tofu/github.tf`의 remote state | [Issue #97](https://github.com/ghilbut/platform/issues/97)에서 backend와 함께 `ghilbut-tfstates-v2`로 변경한다. |
+| OpenTofu state consumers | `aws/foundation/identity/tofu/main.tf`의 policy ARN, `aws/cdn/tofu/main.tf`의 CI policy, `aws/cdn/tofu/github.tf`의 remote state | 모든 참조가 `ghilbut-tfstates-v2`를 사용한다. |
 | Vault on CPA | `platform-vault` role과 KMS seal key | [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 recovery-key holder가 seal migration을 실행하고 새 ARN을 `apps/argo-apps/vault.yaml`에 반영한다. |
 | cert-manager on CPA | `platform-cpa-cert-manager` role | [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Domains의 최종 role ARN을 `apps/argo-apps/cert-manager/issuer.yaml`에 반영한다. |
 | external-dns on CPA | `platform-cpa-external-dns` role | [Issue #102](https://github.com/ghilbut/platform/issues/102)에서 Domains의 최종 role ARN을 `apps/argo-apps/external-dns.yaml`에 반영한다. |
