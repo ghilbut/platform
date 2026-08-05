@@ -11,12 +11,13 @@ data "terraform_remote_state" "accounts" {
 }
 
 locals {
-  instance_arn               = tolist(data.aws_ssoadmin_instances.current.arns)[0]
-  identity_store_id          = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
-  ghilbut_user_id            = "7488a448-2051-70eb-80b8-106a98d83549"
-  domains_account_id         = data.terraform_remote_state.accounts.outputs.domains_account_id
-  shared_services_account_id = data.terraform_remote_state.accounts.outputs.shared_services_account_id
-  state_buckets              = ["ghilbut-tfstates"]
+  instance_arn                = tolist(data.aws_ssoadmin_instances.current.arns)[0]
+  identity_store_id           = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
+  ghilbut_user_id             = "7488a448-2051-70eb-80b8-106a98d83549"
+  domains_account_id          = data.terraform_remote_state.accounts.outputs.domains_account_id
+  security_tooling_account_id = data.terraform_remote_state.accounts.outputs.security_tooling_account_id
+  shared_services_account_id  = data.terraform_remote_state.accounts.outputs.shared_services_account_id
+  state_buckets               = ["ghilbut-tfstates"]
   foundation_state_object_keys = [
     "platform/aws/foundation/accounts.tfstate",
     "platform/aws/foundation/accounts.tfstate.tflock",
@@ -26,6 +27,15 @@ locals {
     "platform/aws/foundation/organizations.tfstate.tflock",
   ]
   workload_accounts = {
+    security_tooling = {
+      account_id          = local.security_tooling_account_id
+      tofu_apply_role_arn = "arn:aws:iam::${local.security_tooling_account_id}:role/tofu-apply"
+      tofu_plan_role_arn  = "arn:aws:iam::${local.security_tooling_account_id}:role/tofu-plan"
+      state_object_keys = [
+        "platform/aws/security-tooling.tfstate",
+        "platform/aws/security-tooling.tfstate.tflock",
+      ]
+    }
     shared_services = {
       account_id          = local.shared_services_account_id
       tofu_apply_role_arn = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-apply"
@@ -47,6 +57,9 @@ locals {
   workload_state_object_keys = sort(distinct(flatten([
     for account in values(local.workload_accounts) : account.state_object_keys
   ])))
+  workload_remote_state_object_keys = [
+    "platform/aws/foundation/accounts.tfstate",
+  ]
   domains_state_object_keys = [
     "platform/domains.tfstate",
     "platform/domains.tfstate.tflock",
@@ -323,6 +336,16 @@ module "tofu_apply_for_workloads" {
         ])
       },
       {
+        Sid    = "WorkloadRemoteStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.workload_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
+      },
+      {
         Sid      = "WorkloadStateBucketLocation"
         Effect   = "Allow"
         Action   = "s3:GetBucketLocation"
@@ -335,7 +358,7 @@ module "tofu_apply_for_workloads" {
         Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
         Condition = {
           StringLike = {
-            "s3:prefix" = local.workload_state_object_keys
+            "s3:prefix" = concat(local.workload_state_object_keys, local.workload_remote_state_object_keys)
           }
         }
       },
@@ -567,6 +590,16 @@ module "tofu_plan_for_workloads" {
         ])
       },
       {
+        Sid    = "WorkloadRemoteStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.workload_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
+      },
+      {
         Sid    = "WorkloadStateLocks"
         Effect = "Allow"
         Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
@@ -590,7 +623,7 @@ module "tofu_plan_for_workloads" {
         Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
         Condition = {
           StringLike = {
-            "s3:prefix" = local.workload_state_object_keys
+            "s3:prefix" = concat(local.workload_state_object_keys, local.workload_remote_state_object_keys)
           }
         }
       },
