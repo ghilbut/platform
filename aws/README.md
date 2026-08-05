@@ -90,6 +90,10 @@ Management console 책임과 Billing 책임은 서로 다른 permission set으�
 | `FoundationManagement` | Management `384959722788` | `ghilbut-foundation-management` | 없음 | AWS Organizations, account와 IAM Identity Center 관리 |
 | `Billing` | Management `384959722788` | `ghilbut-billing` | `arn:aws:iam::384959722788:role/billing` | Billing과 비용 관리 |
 
+Management root user는 Billing account 설정에서 `Activate IAM access`를 한 번 활성화한다. 이
+account 설정과 `Billing` permission set이 모두 적용되어야 IAM Identity Center 사용자가 Billing
+Console을 열 수 있다.
+
 ## OpenTofu access
 
 `TofuApplyFor*`는 IAM Identity Center source identity다. `tofu-apply`는 각 계정 안에서
