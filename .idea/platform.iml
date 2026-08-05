@@ -4,14 +4,19 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/accounts/tofu/.terraform" />
-      <excludeFolder url="file://$MODULE_DIR$/domains/tofu/.terraform" />
-      <excludeFolder url="file://$MODULE_DIR$/ultary/domains/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/apps/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/aws/accounts/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/aws/cdn/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/foundation/accounts/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/foundation/identity/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/foundation/organizations/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/foundation/state/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/aws/identity/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/security-tooling/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/domains/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/github/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/k3s/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/ultary/domains/tofu/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
