@@ -344,6 +344,20 @@ AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
     --target-id ou-k1tk-nmjtvc69 --filter SERVICE_CONTROL_POLICY \
     --query 'Policies[].Name' --output json
 
+security_ou_id="$(
+  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+    aws organizations list-organizational-units-for-parent \
+      --parent-id r-k1tk \
+      --query 'OrganizationalUnits[?Name==`Security`].Id | [0]' \
+      --output text
+)"
+test "$security_ou_id" != "None"
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-policies-for-target \
+    --target-id "$security_ou_id" --filter SERVICE_CONTROL_POLICY \
+    --query 'Policies[].Name' --output json
+
 AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   aws organizations list-accounts-for-parent \
     --parent-id r-k1tk --query 'Accounts[].Name' --output json
@@ -351,6 +365,10 @@ AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
 AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   aws organizations list-accounts-for-parent \
     --parent-id ou-k1tk-nmjtvc69 --query 'Accounts[].Name' --output json
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-accounts-for-parent \
+    --parent-id "$security_ou_id" --query 'Accounts[].Name' --output json
 
 for account_id in 384959722788 012646747332 869061964712 971119963968; do
   AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
@@ -365,9 +383,11 @@ done
 - Root policy type: `SERVICE_CONTROL_POLICY`, `ENABLED`
 - Root SCP: `FullAWSAccess`, `ProtectMemberAccounts`
 - Infrastructure OU SCP: `FullAWSAccess`
+- Security OU SCP: `FullAWSAccess`
 - 각 account의 직접 연결 SCP: `FullAWSAccess`
 - Root account: Management, UltaryDomains
 - Infrastructure OU account: Domains, SharedServices
+- Security OU account: 없음
 
 ## IAM Identity Center verification
 
