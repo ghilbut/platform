@@ -137,10 +137,6 @@ session은 최대 1시간이다.
 `aws_execution_role_arn`을 수임한다. UltaryDomains만 `AWS_PROFILE` source identity를 provider에서
 직접 사용한다.
 
-Domains `tofu-plan`을 처음 만들 때 `TofuApplyForDomains`에 Domains `tofu-apply` inline policy
-변경 권한을 일시적으로 추가한다. `tofu-apply`가 `tofu-plan` 관리 권한을 갖는 즉시 임시 권한을
-제거한다. 임시 권한은 permission set의 최종 정책과 OpenTofu configuration에 남기지 않는다.
-
 ## CDN
 
 `aws/cdn/tofu/`는 `ghilbut-cdn-platform` bucket과
