@@ -81,6 +81,15 @@ Organization, Infrastructure OU, SCP와 trusted access를 관리한다.
 | `domains/tofu/` | `platform/domains.tfstate` | Domains | `ghilbut-tofu-apply-for-domains` |
 | `ultary/domains/tofu/` | `ultary/domains.tfstate` | UltaryDomains | `ghilbut-tofu-apply-for-ultary-domains` |
 
+## Management access
+
+Management console 책임과 Billing 책임은 서로 다른 permission set으로 관리한다.
+
+| Permission set | Assignment | Source profile | Account-local role | 책임 |
+|---|---|---|---|---|
+| `FoundationManagement` | Management `384959722788` | `ghilbut-foundation-management` | 없음 | AWS Organizations, account와 IAM Identity Center 관리 |
+| `Billing` | Management `384959722788` | `ghilbut-billing` | `arn:aws:iam::384959722788:role/billing` | Billing과 비용 관리 |
+
 ## OpenTofu access
 
 `TofuApplyFor*`는 IAM Identity Center source identity다. `tofu-apply`는 각 계정 안에서
@@ -95,8 +104,7 @@ OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접�
 
 `TofuApplyForWorkloads`는 workload 운영 계정이 공유한다. 현재 assignment는 SharedServices
 `012646747332` 하나다. `TofuApplyForDomains`는 Domains account에만 할당한다.
-`FoundationManagement`는 Management console 관리용 permission set이며 OpenTofu source
-profile로 사용하지 않는다.
+`FoundationManagement`와 `Billing`은 OpenTofu source profile로 사용하지 않는다.
 
 `aws/shared-services/tofu/`는 SharedServices `tofu-apply` role과 CPA OIDC provider를 source
 profile로 직접 관리한다. 같은 root의 S3 resource는 `aws.shared_services` provider alias로

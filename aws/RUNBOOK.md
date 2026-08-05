@@ -22,9 +22,14 @@ aws configure sso-session
 | SSO region | `us-east-1` |
 | SSO registration scopes | `sso:account:access` |
 
-네 source profile을 같은 session에 연결한다.
+다섯 source profile을 같은 session에 연결한다.
 
 ```sh
+aws configure set sso_session ghilbut --profile ghilbut-billing
+aws configure set sso_account_id 384959722788 --profile ghilbut-billing
+aws configure set sso_role_name Billing --profile ghilbut-billing
+aws configure set region us-east-1 --profile ghilbut-billing
+
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-management
 aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-apply-for-management
 aws configure set sso_role_name TofuApplyForManagement --profile ghilbut-tofu-apply-for-management
@@ -44,6 +49,12 @@ aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-ultary-do
 aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set sso_role_name TofuApplyForUltaryDomains --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domains
+
+aws configure set source_profile ghilbut-billing --profile ghilbut-billing-role
+aws configure set role_arn arn:aws:iam::384959722788:role/billing \
+  --profile ghilbut-billing-role
+aws configure set role_session_name ghilbut-billing --profile ghilbut-billing-role
+aws configure set region us-east-1 --profile ghilbut-billing-role
 ```
 
 로그인하고 계정 ID를 확인한다.
@@ -51,11 +62,14 @@ aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domai
 ```sh
 export AWS_SDK_LOAD_CONFIG=1
 
+aws sso login --profile ghilbut-billing
 aws sso login --profile ghilbut-tofu-apply-for-management
 aws sso login --profile ghilbut-tofu-apply-for-workloads
 aws sso login --profile ghilbut-tofu-apply-for-domains
 aws sso login --profile ghilbut-tofu-apply-for-ultary-domains
 
+aws sts get-caller-identity --profile ghilbut-billing \
+  --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-management \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads \
@@ -66,7 +80,8 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
   --query Account --output text
 ```
 
-결과 순서는 `384959722788`, `012646747332`, `869061964712`, `971119963968`이다.
+Billing과 Management 결과는 `384959722788`이다. 나머지 결과는 순서대로 `012646747332`,
+`869061964712`, `971119963968`이다.
 
 ## Execution order
 
@@ -237,6 +252,12 @@ Identity apply가 생성한 모든 request의 `Status`는 `SUCCEEDED`여야 한�
 
 ```sh
 aws sts assume-role \
+  --profile ghilbut-billing \
+  --role-arn arn:aws:iam::384959722788:role/billing \
+  --role-session-name verify-management-billing \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
   --profile ghilbut-tofu-apply-for-management \
   --role-arn arn:aws:iam::384959722788:role/tofu-apply \
   --role-session-name verify-management-tofu-apply \
@@ -254,6 +275,30 @@ aws sts assume-role \
   --role-session-name verify-domains-tofu-apply \
   --query 'AssumedRoleUser.Arn' --output text
 ```
+
+## Billing verification
+
+Billing permission set과 `billing` role에서 Cost Explorer 조회를 확인한다.
+
+```sh
+aws ce get-cost-and-usage \
+  --profile ghilbut-billing \
+  --region us-east-1 \
+  --time-period Start=2026-08-01,End=2026-09-01 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost \
+  --query 'length(ResultsByTime)' --output text
+
+aws ce get-cost-and-usage \
+  --profile ghilbut-billing-role \
+  --region us-east-1 \
+  --time-period Start=2026-08-01,End=2026-09-01 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost \
+  --query 'length(ResultsByTime)' --output text
+```
+
+두 결과는 모두 `1`이다.
 
 ## State verification
 

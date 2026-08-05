@@ -95,11 +95,10 @@ module "management" {
 
   instance_arn = local.instance_arn
   name         = "FoundationManagement"
-  description  = "AWS Organizations, account, billing, and IAM Identity Center administration."
+  description  = "AWS Organizations, account, and IAM Identity Center administration."
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/AWSOrganizationsFullAccess",
     "arn:aws:iam::aws:policy/AWSSSOMasterAccountAdministrator",
-    "arn:aws:iam::aws:policy/job-function/Billing",
     "arn:aws:iam::aws:policy/IAMFullAccess",
   ])
   inline_policy = jsonencode({
@@ -109,6 +108,33 @@ module "management" {
       Effect   = "Allow"
       Action   = "account:*"
       Resource = "*"
+    }]
+  })
+  account_assignments = {
+    management = {
+      account_id     = "384959722788"
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "billing" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "Billing"
+  description  = "Billing and cost management access for the Management account."
+  managed_policy_arns = toset([
+    "arn:aws:iam::aws:policy/job-function/Billing",
+  ])
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "AssumeBillingRole"
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = "arn:aws:iam::384959722788:role/billing"
     }]
   })
   account_assignments = {
