@@ -22,7 +22,7 @@ aws configure sso-session
 | SSO region | `us-east-1` |
 | SSO registration scopes | `sso:account:access` |
 
-열 개 source profile을 같은 session에 연결한다.
+열두 개 source profile을 같은 session에 연결한다.
 
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-foundation-management
@@ -54,6 +54,16 @@ aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_account_id 012646747332 --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_role_name TofuApplyForWorkloads --profile ghilbut-tofu-apply-for-workloads
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-workloads
+
+aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-security-tooling
+aws configure set sso_account_id 954066442429 --profile ghilbut-tofu-plan-for-security-tooling
+aws configure set sso_role_name TofuPlanForWorkloads --profile ghilbut-tofu-plan-for-security-tooling
+aws configure set region us-east-1 --profile ghilbut-tofu-plan-for-security-tooling
+
+aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-security-tooling
+aws configure set sso_account_id 954066442429 --profile ghilbut-tofu-apply-for-security-tooling
+aws configure set sso_role_name TofuApplyForWorkloads --profile ghilbut-tofu-apply-for-security-tooling
+aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-security-tooling
 
 aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-domains
 aws configure set sso_account_id 869061964712 --profile ghilbut-tofu-plan-for-domains
@@ -93,6 +103,8 @@ aws sso login --profile ghilbut-tofu-plan-for-management
 aws sso login --profile ghilbut-tofu-apply-for-management
 aws sso login --profile ghilbut-tofu-plan-for-workloads
 aws sso login --profile ghilbut-tofu-apply-for-workloads
+aws sso login --profile ghilbut-tofu-plan-for-security-tooling
+aws sso login --profile ghilbut-tofu-apply-for-security-tooling
 aws sso login --profile ghilbut-tofu-plan-for-domains
 aws sso login --profile ghilbut-tofu-apply-for-domains
 aws sso login --profile ghilbut-tofu-plan-for-ultary-domains
@@ -110,6 +122,10 @@ aws sts get-caller-identity --profile ghilbut-tofu-plan-for-workloads \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads \
   --query Account --output text
+aws sts get-caller-identity --profile ghilbut-tofu-plan-for-security-tooling \
+  --query Account --output text
+aws sts get-caller-identity --profile ghilbut-tofu-apply-for-security-tooling \
+  --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-plan-for-domains \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-domains \
@@ -122,7 +138,7 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 
 FoundationManagement, Billing, Management Plan과 Management Apply 결과는 `384959722788`이다.
 Workloads Plan과 Apply는 `012646747332`, Domains Plan과 Apply는 `869061964712`, UltaryDomains
-Plan과 Apply는 `971119963968`이다.
+Plan과 Apply는 `971119963968`이다. SecurityTooling Plan과 Apply는 `954066442429`이다.
 
 ## Execution order
 

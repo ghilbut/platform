@@ -108,14 +108,18 @@ profile로 접근한다. Provider는 account-local `tofu-plan` 또는 `tofu-appl
 | `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
 | `TofuPlanForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `arn:aws:iam::012646747332:role/tofu-plan` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
 | `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
+| `TofuPlanForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-plan-for-security-tooling` | 없음 | 없음 | SecurityTooling bootstrap |
+| `TofuApplyForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-apply-for-security-tooling` | 없음 | 없음 | SecurityTooling bootstrap |
 | `TofuPlanForDomains` | Domains `869061964712` | `ghilbut-tofu-plan-for-domains` | `arn:aws:iam::869061964712:role/tofu-plan` | `domains/tofu/` | Domains |
 | `TofuApplyForDomains` | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `arn:aws:iam::869061964712:role/tofu-apply` | `domains/tofu/` | Domains |
 | `TofuPlanForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-plan-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 | `TofuApplyForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 
 `TofuPlanForWorkloads`와 `TofuApplyForWorkloads`는 workload 운영 계정이 공유한다. 현재
-assignment는 SharedServices `012646747332` 하나다. Domains permission set은 Domains account에만
-할당한다. `FoundationManagement`와 `Billing`은 OpenTofu source profile로 사용하지 않는다.
+assignment는 SharedServices `012646747332`와 SecurityTooling `954066442429`이다. SecurityTooling은
+execution role을 처음 생성할 때 source identity를 provider에서 직접 사용한다. Domains permission
+set은 Domains account에만 할당한다. `FoundationManagement`와 `Billing`은 OpenTofu source
+profile로 사용하지 않는다.
 
 Plan source identity는 `.tfstate`를 읽고 해당 `.tflock`을 읽고 쓰고 삭제한다. Apply source
 identity는 해당 `.tfstate`와 `.tflock`을 읽고 쓰고 삭제한다. `tofu-plan` role은 managed
