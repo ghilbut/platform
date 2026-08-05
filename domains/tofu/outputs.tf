@@ -1,6 +1,6 @@
 output "tofu_execution_role_arn" {
   description = "Domains OpenTofu execution role ARN."
-  value       = module.tofu_execution_role.arn
+  value       = aws_iam_role.tofu_apply.arn
 }
 
 output "cpa_cert_manager_role_arn" {
