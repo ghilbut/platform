@@ -13,11 +13,7 @@
 | 경로                                        | 책임                                                                                |
 |---------------------------------------------|-------------------------------------------------------------------------------------|
 | `apps/`                                     | 인프라와 플랫폼을 관리하는 어플리케이션들                                           |
-| `aws/`                                      | AWS 관리 그룹 디렉토리                                                              |
-| `aws/cdn`                                   | CloudFront와 S3 조합의 CDN                                                          |
-| [aws/foundation/](aws/foundation/README.md) | AWS 계정, IAM Identity Center와 AWS Organizations 관리                               |
-| `aws/platform/`                             | Platform 계정 공용 AWS 리소스                                                        |
-| `aws/cdn/`                                  | AWS CloudFront 기반의 CDN 인프라와 어플리케이션                                     |
+| [aws/](aws/README.md)                       | AWS 계정, 접근 권한과 Platform 서비스                                                |
 | `docs/`                                     | 참고 문서                                                                           |
 | `domains/`                                  | 도메인과 DNS 서버 관리                                                              |
 | `github/`                                   | Github 계정 관리                                                                    |
@@ -30,34 +26,3 @@
 ### OpenTofu
 
 OpenTofu 작성·상태·배포 지침은 [docs/TOFU.md](docs/TOFU.md)를 따른다.
-
-## D. Accounts
-
-### AWS
-
-SSO Start URL: https://ghilbut.awsapps.com/start
-
-| ID           | Name           | Email                          |
-|--------------|----------------|--------------------------------|
-| 384959722788 | management     | aws@ghilbut.com                |
-| 869061964712 | domains        | aws-domains@ghilbut.com        |
-| 012646747332 | platform       | aws-platform@ghilbut.com       |
-| 971119963968 | UltaryDomains  | aws-ultary-domains@ghilbut.com |
-
-## E. Domains
-
-### Ghilbut
-
-* ghilbut.com
-* ghilbut.net
-
-### Ultary, Inc.
-
-* dokevy.com
-* dokevy.io
-* dokevy.net
-* polykube.com
-* polykube.io
-* polykube.net
-* ultary.co
-* ultary.io
