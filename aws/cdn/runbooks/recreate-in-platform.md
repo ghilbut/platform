@@ -110,7 +110,7 @@ AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
   tofu -chdir=github/tofu plan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
-  tofu -chdir=aws/foundation/state/tofu plan
+  tofu -chdir=aws/platform/tofu plan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads \
   tofu -chdir=k3s/tofu state list
 ```

@@ -73,7 +73,7 @@ account `012646747332`를 사용한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=aws/foundation/state/tofu apply \
+  tofu -chdir=aws/platform/tofu apply \
   /tmp/issue-99-state-final.tfplan
 
 AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
@@ -87,7 +87,7 @@ State access를 먼저 제거하고 account assignment를 마지막에 제거한
 
 | Root | Add | Change | Destroy |
 |---|---:|---:|---:|
-| `aws/foundation/state/tofu` | 0 | 1 | 0 |
+| `aws/platform/tofu` | 0 | 1 | 0 |
 | `aws/foundation/identity/tofu` | 0 | 3 | 1 |
 
 IAM Identity Center permission set provisioning 요청 3개와 Domains account assignment 삭제 요청
@@ -102,7 +102,7 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads
 AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=aws/foundation/identity/tofu plan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=aws/foundation/state/tofu plan
+  tofu -chdir=aws/platform/tofu plan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=apps/tofu plan
 ```

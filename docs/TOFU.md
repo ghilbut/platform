@@ -16,8 +16,9 @@
   실행 Runbook에서 `gh variable set`으로 관리한다.
 - 공용 OIDC provider ARN과 Foundation account ID처럼 root 사이에 필요한 식별자만
   `terraform_remote_state` output으로 소비한다. 한 리소스를 두 state에서 선언하지 않는다.
-- backend key를 옮길 때는 `tofu init -migrate-state`로 state만 이전한다. 원격 리소스를
-  삭제하거나 import로 다시 만들지 않는다.
+- 하나의 backend key를 옮길 때는 `tofu init -migrate-state`로 state만 이전한다.
+- 여러 state를 하나로 합칠 때는 선언형 import로 새 state를 완성하고 원격 식별자를 비교한
+  다음 기존 state 주소를 제거한다. 원격 리소스는 다시 만들지 않는다.
 
 ## AWS CDN 태그와 이름
 

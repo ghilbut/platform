@@ -12,3 +12,13 @@ output "cpa_oidc_provider_arn" {
   description = "Platform IAM OIDC provider ARN for CPA workloads."
   value       = aws_iam_openid_connect_provider.cpa.arn
 }
+
+output "state_bucket_arn" {
+  description = "OpenTofu state bucket ARN."
+  value       = aws_s3_bucket.state["primary"].arn
+}
+
+output "state_bucket_name" {
+  description = "OpenTofu state bucket name."
+  value       = aws_s3_bucket.state["primary"].id
+}

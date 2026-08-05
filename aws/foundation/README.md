@@ -15,12 +15,10 @@ Domains 정리는 [[runbooks/complete-domains-cleanup|Domains cleanup runbook]]�
 |---|---|---|
 | `accounts/tofu/` | AWS Organizations 계정 수명 주기와 관리 계정 opt-in 리전 | `platform/aws/foundation/accounts.tfstate` |
 | `identity/tofu/` | IAM Identity Center 권한 세트와 계정 할당 | `platform/aws/foundation/identity.tfstate` |
-| `state/tofu/` | 공유 OpenTofu state bucket의 cross-account 접근 정책 | `platform/aws/foundation/state.tfstate` |
-| `workload/tofu/` | 새 Platform 계정의 workload 실행 역할 | `platform/aws/foundation/workload.tfstate` |
 | `organizations/tofu/` | OU, SCP, delegated administrator | `platform/aws/foundation/organizations.tfstate` |
 
-`accounts/tofu/`, `identity/tofu/`, `state/tofu/`, `workload/tofu/`가 현재 존재한다.
-`organizations/tofu/`는 Foundation 전환 작업에 따라 추가한다.
+`accounts/tofu/`와 `identity/tofu/`가 현재 존재한다. `organizations/tofu/`는 Foundation
+구성에 따라 추가한다.
 
 `accounts/tofu/modules/management/`는 management 계정 자체의 opt-in 리전만 관리하므로
 Account Management API를 standalone context로 호출한다. AWS Organizations의 Account
@@ -30,20 +28,7 @@ Management trusted access는 member 계정 이름을 관리하기 위해 활성�
 Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
 IdP 또는 IAM Identity Center의 소유이며, 이 state에서 생성하거나 삭제하지 않는다.
 
-`state/tofu/`는 Platform 계정이 소유한 `ghilbut-tfstates` bucket과 접근 정책을 관리한다.
-각 source permission set에는 담당 OpenTofu state와 lock file만 허용한다. bucket은 versioning,
-AES256 암호화, public access 차단, bucket owner enforced object ownership을 적용한다.
-
-새 Platform 계정과 workload 실행 역할은
-[[workload/RUNBOOK|Platform workload access runbook]] 순서로 생성한다.
-
 ## OpenTofu 실행
-
-`state/tofu/`는 Platform의 `TofuApplyForWorkloads` source profile로 backend에 접근하고,
-Platform `tofu-apply` 역할을 수임해 bucket을 관리한다.
-
-`workload/tofu/`는 새 Platform의 `TofuApplyForWorkloads` source profile로 backend와
-provider를 직접 사용한다. 이 root가 Platform `tofu-apply` 역할 자체를 관리한다.
 
 Foundation accounts·identity state의 backend는 `TofuApplyForManagement` source profile로
 state에 접근하고, AWS provider는 이어서 Management 계정의 `tofu-apply` 역할을 수임한다.
@@ -57,15 +42,6 @@ cd aws/foundation/accounts/tofu
 tofu init -reconfigure
 tofu plan
 tofu apply
-
-export AWS_PROFILE=ghilbut-tofu-apply-for-workloads
-
-cd ../../state/tofu
-tofu init -reconfigure
-tofu plan
-tofu apply
-
-export AWS_PROFILE=ghilbut-tofu-apply-for-management
 
 cd ../../identity/tofu
 tofu init -reconfigure
