@@ -46,6 +46,8 @@ locals {
         "platform/aws/foundation/state.tfstate.tflock",
         "platform/aws/foundation/workload.tfstate",
         "platform/aws/foundation/workload.tfstate.tflock",
+        "platform/aws/platform.tfstate",
+        "platform/aws/platform.tfstate.tflock",
         "platform/github.tfstate",
         "platform/github.tfstate.tflock",
       ]

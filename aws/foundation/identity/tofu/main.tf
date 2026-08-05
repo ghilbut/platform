@@ -28,6 +28,8 @@ locals {
     "platform/aws/foundation/state.tfstate.tflock",
     "platform/aws/foundation/workload.tfstate",
     "platform/aws/foundation/workload.tfstate.tflock",
+    "platform/aws/platform.tfstate",
+    "platform/aws/platform.tfstate.tflock",
   ]
   domains_state_object_keys = [
     "platform/domains.tfstate",
