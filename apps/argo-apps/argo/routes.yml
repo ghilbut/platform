@@ -10,24 +10,9 @@ spec:
   http:
     - match:
         - uri:
-            exact: /
-      redirect:
-        uri: /cd/
-    - match:
-        - uri:
             exact: /cd
         - uri:
             prefix: /cd/
-      route:
-        - destination:
-            host: cd-server.argo.svc.cluster.local
-            port:
-              number: 80
-    - match:
-        - uri:
-            prefix: /
-      rewrite:
-        uri: /cd/
       route:
         - destination:
             host: cd-server.argo.svc.cluster.local
