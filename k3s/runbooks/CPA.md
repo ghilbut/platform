@@ -154,12 +154,15 @@ kubectl get nodes -o wide
 > [!info] 공통 절차
 > ![[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation]]
 
+`k3s/tofu/tofu-apply.auto.tfvars`가 `tofu-apply` role ARN을 지정한 Apply 전용 로컬 작업
+공간에서 실행한다.
+
 ```shell
 # administrator computer
 export AWS_SDK_LOAD_CONFIG=1
 export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
 
-tofu -chdir=k3s/tofu init
+tofu -chdir=k3s/tofu init -reconfigure
 tofu -chdir=k3s/tofu apply
 
 kubectl --context cpa get --raw '/.well-known/openid-configuration' \

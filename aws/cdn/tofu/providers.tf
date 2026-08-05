@@ -9,7 +9,7 @@ provider "aws" {
   region              = "us-east-1"
 
   dynamic "assume_role" {
-    for_each = var.aws_execution_role_arn == "" ? [] : [var.aws_execution_role_arn]
+    for_each = var.aws_execution_role_arn == null ? [] : [var.aws_execution_role_arn]
 
     content {
       role_arn = assume_role.value

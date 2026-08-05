@@ -1,5 +1,13 @@
 # Ultary, Inc.의 Domain 정책
 
+## OpenTofu access
+
+`ultary/domains/tofu/`는 account-local execution role을 사용하지 않는다. Backend와 AWS provider는
+`AWS_PROFILE`의 source identity를 직접 사용한다. Plan은
+`ghilbut-tofu-plan-for-ultary-domains`, Apply는 `ghilbut-tofu-apply-for-ultary-domains`를 지정하고
+각 profile 전환 뒤 `tofu init -reconfigure`를 실행한다. 이 root에는
+`tofu-apply.auto.tfvars`를 만들지 않는다.
+
 ## ultary
 
 ### ultary.co
@@ -44,4 +52,3 @@
 ### polykube.io
 
 * 아직 용도를 정하지 않았다.
-

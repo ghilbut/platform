@@ -1,8 +1,12 @@
 provider "aws" {
   region = "us-east-1"
 
-  assume_role {
-    role_arn = "arn:aws:iam::384959722788:role/tofu-apply"
+  dynamic "assume_role" {
+    for_each = var.aws_execution_role_arn == null ? [] : [var.aws_execution_role_arn]
+
+    content {
+      role_arn = assume_role.value
+    }
   }
 
   default_tags {

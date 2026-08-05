@@ -191,11 +191,17 @@ CPA의 `k3s/tofu`는 Kubernetes API에서 discovery document와 JWKS를 읽어 C
 동기화한다. Domains와 SharedServices의 OpenTofu root는 각 AWS 계정의
 `https://oidc.k3s.ghilbut.com/cpa` IAM OIDC provider를 관리한다.
 
+Apply 전용 로컬 작업 공간의 `k3s/tofu/tofu-apply.auto.tfvars`는 다음 값을 포함한다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
+```
+
 ```shell
 export AWS_SDK_LOAD_CONFIG=1
 export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
 
-tofu -chdir=k3s/tofu init
+tofu -chdir=k3s/tofu init -reconfigure
 tofu -chdir=k3s/tofu plan
 tofu -chdir=k3s/tofu apply
 ```

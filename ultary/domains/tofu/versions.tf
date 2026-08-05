@@ -6,7 +6,6 @@ terraform {
     bucket       = "ghilbut-tfstates"
     encrypt      = true
     key          = "ultary/domains.tfstate"
-    profile      = "ghilbut-tofu-apply-for-ultary-domains"
     region       = "us-east-1"
     use_lockfile = true
   }

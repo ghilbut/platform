@@ -1,3 +1,18 @@
+variable "aws_execution_role_arn" {
+  type        = string
+  description = "Account-local OpenTofu execution role assumed by the AWS provider. Set null only while bootstrapping the execution roles."
+  default     = "arn:aws:iam::869061964712:role/tofu-plan"
+  nullable    = true
+
+  validation {
+    condition = var.aws_execution_role_arn == null || contains([
+      "arn:aws:iam::869061964712:role/tofu-plan",
+      "arn:aws:iam::869061964712:role/tofu-apply",
+    ], var.aws_execution_role_arn)
+    error_message = "aws_execution_role_arn must be null or the Domains account tofu-plan or tofu-apply role ARN."
+  }
+}
+
 variable "ghilbut_txt_records_for_google" {
   type    = map(string)
   default = {}
