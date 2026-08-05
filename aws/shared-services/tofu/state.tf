@@ -189,6 +189,140 @@ data "aws_iam_policy_document" "state" {
       }
     }
   }
+
+  dynamic "statement" {
+    for_each = local.plan_state_access
+
+    content {
+      sid    = "AllowPlan${statement.value.sid_prefix}StateObjects"
+      effect = "Allow"
+
+      principals {
+        type        = "AWS"
+        identifiers = ["arn:aws:iam::${statement.value.account_id}:root"]
+      }
+
+      actions = ["s3:GetObject"]
+      resources = [
+        for key in statement.value.state_object_keys : "arn:aws:s3:::${each.value}/${key}"
+      ]
+
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = [statement.value.principal_arn_pattern]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.plan_state_access
+
+    content {
+      sid    = "AllowPlan${statement.value.sid_prefix}LockObjects"
+      effect = "Allow"
+
+      principals {
+        type        = "AWS"
+        identifiers = ["arn:aws:iam::${statement.value.account_id}:root"]
+      }
+
+      actions = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+      resources = [
+        for key in statement.value.lock_object_keys : "arn:aws:s3:::${each.value}/${key}"
+      ]
+
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = [statement.value.principal_arn_pattern]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = {
+      for name, access in local.plan_state_access : name => access
+      if length(try(access.read_only_object_keys, [])) > 0
+    }
+
+    content {
+      sid    = "AllowPlan${statement.value.sid_prefix}RemoteStateObjects"
+      effect = "Allow"
+
+      principals {
+        type        = "AWS"
+        identifiers = ["arn:aws:iam::${statement.value.account_id}:root"]
+      }
+
+      actions = ["s3:GetObject"]
+      resources = [
+        for key in statement.value.read_only_object_keys : "arn:aws:s3:::${each.value}/${key}"
+      ]
+
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = [statement.value.principal_arn_pattern]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.plan_state_access
+
+    content {
+      sid    = "AllowPlan${statement.value.sid_prefix}StateBucketLocation"
+      effect = "Allow"
+
+      principals {
+        type        = "AWS"
+        identifiers = ["arn:aws:iam::${statement.value.account_id}:root"]
+      }
+
+      actions   = ["s3:GetBucketLocation"]
+      resources = ["arn:aws:s3:::${each.value}"]
+
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = [statement.value.principal_arn_pattern]
+      }
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.plan_state_access
+
+    content {
+      sid    = "AllowPlan${statement.value.sid_prefix}StateBucketList"
+      effect = "Allow"
+
+      principals {
+        type        = "AWS"
+        identifiers = ["arn:aws:iam::${statement.value.account_id}:root"]
+      }
+
+      actions   = ["s3:ListBucket"]
+      resources = ["arn:aws:s3:::${each.value}"]
+
+      condition {
+        test     = "ArnLike"
+        variable = "aws:PrincipalArn"
+        values   = [statement.value.principal_arn_pattern]
+      }
+
+      condition {
+        test     = "StringLike"
+        variable = "s3:prefix"
+        values = concat(
+          statement.value.state_object_keys,
+          statement.value.lock_object_keys,
+          try(statement.value.read_only_object_keys, []),
+        )
+      }
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "state" {

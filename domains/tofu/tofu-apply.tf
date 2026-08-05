@@ -74,6 +74,27 @@ resource "aws_iam_role_policy" "tofu_apply" {
         ]
       },
       {
+        Sid    = "ManagePlanExecutionRole"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:DeleteRolePolicy",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:ListRolePolicies",
+          "iam:PutRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+        ]
+        Resource = "arn:aws:iam::869061964712:role/tofu-plan"
+      },
+      {
         Sid      = "CreateCpaOidcProvider"
         Effect   = "Allow"
         Action   = ["iam:ListOpenIDConnectProviders"]

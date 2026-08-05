@@ -63,6 +63,68 @@ locals {
     }
   }
 
+  plan_state_access = {
+    management = {
+      sid_prefix            = "Management"
+      account_id            = local.management_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.management_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForManagement_*"
+      state_object_keys = [
+        "platform/aws/foundation/accounts.tfstate",
+        "platform/aws/foundation/identity.tfstate",
+        "platform/aws/foundation/organizations.tfstate",
+      ]
+      lock_object_keys = [
+        "platform/aws/foundation/accounts.tfstate.tflock",
+        "platform/aws/foundation/identity.tfstate.tflock",
+        "platform/aws/foundation/organizations.tfstate.tflock",
+      ]
+    }
+    domains = {
+      sid_prefix            = "Domains"
+      account_id            = local.domains_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.domains_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForDomains_*"
+      state_object_keys = [
+        "platform/domains.tfstate",
+      ]
+      lock_object_keys = [
+        "platform/domains.tfstate.tflock",
+      ]
+      read_only_object_keys = [
+        "platform/aws/cdn.tfstate",
+      ]
+    }
+    shared_services = {
+      sid_prefix            = "SharedServices"
+      account_id            = local.shared_services_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.shared_services_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForWorkloads_*"
+      state_object_keys = [
+        "k3s.tfstate",
+        "platform/apps.tfstate",
+        "platform/aws/cdn.tfstate",
+        "platform/aws/shared-services.tfstate",
+        "platform/github.tfstate",
+      ]
+      lock_object_keys = [
+        "k3s.tfstate.tflock",
+        "platform/apps.tfstate.tflock",
+        "platform/aws/cdn.tfstate.tflock",
+        "platform/aws/shared-services.tfstate.tflock",
+        "platform/github.tfstate.tflock",
+      ]
+    }
+    ultary_domains = {
+      sid_prefix            = "UltaryDomains"
+      account_id            = local.ultary_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.ultary_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForUltaryDomains_*"
+      state_object_keys = [
+        "ultary/domains.tfstate",
+      ]
+      lock_object_keys = [
+        "ultary/domains.tfstate.tflock",
+      ]
+    }
+  }
+
   central_administration_denied_actions = [
     "account:*",
     "aws-portal:*",
