@@ -104,6 +104,7 @@ argocd app sync istio-system \
   --timeout 1200
 argocd app wait istio-system \
   --sync \
+  --health \
   --kube-context cpa \
   --port-forward \
   --port-forward-namespace argo \
@@ -112,7 +113,12 @@ argocd app wait istio-system \
 kubectl --context cpa -n istio-system wait \
   --for=condition=Available deployment/istiod \
   --timeout=10m
+argo_pods="$(kubectl --context cpa -n argo get pod -o name)"
 kubectl --context cpa -n argo rollout restart deployment,statefulset
+printf '%s\n' "$argo_pods" \
+  | xargs -r -n 1 kubectl --context cpa -n argo wait \
+    --for=delete \
+    --timeout=10m
 kubectl --context cpa -n argo wait \
   --for=condition=Ready pod \
   --all \
