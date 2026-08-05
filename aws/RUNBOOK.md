@@ -148,12 +148,13 @@ Plan과 Apply는 `971119963968`이다. SecurityTooling Plan과 Apply는 `9540664
 | 2 | `aws/foundation/accounts/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | organizations state |
 | 3 | `aws/foundation/identity/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | accounts state |
 | 4 | `aws/shared-services/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 5 | `github/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices role |
-| 6 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
-| 7 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
-| 8 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
-| 9 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 10 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
+| 5 | `aws/security-tooling/tofu/` | `ghilbut-tofu-apply-for-security-tooling` | SecurityTooling `tofu-apply` | SecurityTooling의 Workloads assignment와 중앙 state role |
+| 6 | `github/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices role |
+| 7 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
+| 8 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
+| 9 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
+| 10 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 Workloads assignment |
+| 11 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
 
 ## Plan and apply
 
@@ -163,12 +164,13 @@ Override가 없는 checkout은 Plan mode다. `AWS_PROFILE`에 대응하는 `Tofu
 지정하면 backend는 SharedServices `tofu-state-readonly`를 수임하고 provider는 기본 `tofu-plan`
 role을 수임한다. UltaryDomains provider는 source identity를 직접 사용한다.
 
-Apply 전용 로컬 작업 공간은 다음 아홉 root에 `tofu-apply.auto.tfvars`를 둔다.
+Apply 전용 로컬 작업 공간은 다음 열 root에 `tofu-apply.auto.tfvars`를 둔다.
 
 - `aws/foundation/organizations/tofu/`
 - `aws/foundation/accounts/tofu/`
 - `aws/foundation/identity/tofu/`
 - `aws/shared-services/tofu/`
+- `aws/security-tooling/tofu/`
 - `github/tofu/`
 - `aws/cdn/tofu/`
 - `k3s/tofu/`
@@ -193,7 +195,13 @@ Domains root의 파일은 다음 값을 사용한다.
 aws_execution_role_arn = "arn:aws:iam::869061964712:role/tofu-apply"
 ```
 
-모든 열 root의 Apply backend는 git에서 제외한 `tofu-state-apply.tfbackend`를 둔다.
+SecurityTooling root의 파일은 다음 값을 사용한다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::954066442429:role/tofu-apply"
+```
+
+모든 열한 root의 Apply backend는 git에서 제외한 `tofu-state-apply.tfbackend`를 둔다.
 
 ```hcl
 assume_role = {
@@ -298,6 +306,7 @@ plan_root ghilbut-tofu-plan-for-management aws/foundation/organizations/tofu
 plan_root ghilbut-tofu-plan-for-management aws/foundation/accounts/tofu
 plan_root ghilbut-tofu-plan-for-management aws/foundation/identity/tofu
 plan_root ghilbut-tofu-plan-for-workloads aws/shared-services/tofu
+plan_root ghilbut-tofu-plan-for-security-tooling aws/security-tooling/tofu
 plan_root ghilbut-tofu-plan-for-workloads github/tofu
 plan_root ghilbut-tofu-plan-for-workloads aws/cdn/tofu
 plan_root ghilbut-tofu-plan-for-workloads k3s/tofu
@@ -339,6 +348,8 @@ apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/identity/tofu /tmp/aws-foundation-identity.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
   aws/shared-services/tofu /tmp/aws-shared-services.tfplan
+apply_root ghilbut-tofu-apply-for-security-tooling \
+  aws/security-tooling/tofu /tmp/aws-security-tooling.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
   github/tofu /tmp/github.tfplan
 ```
@@ -525,6 +536,18 @@ aws sts assume-role \
   --query 'AssumedRoleUser.Arn' --output text
 
 aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-security-tooling \
+  --role-arn arn:aws:iam::954066442429:role/tofu-plan \
+  --role-session-name verify-security-tooling-tofu-plan \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
+  --profile ghilbut-tofu-apply-for-security-tooling \
+  --role-arn arn:aws:iam::954066442429:role/tofu-apply \
+  --role-session-name verify-security-tooling-tofu-apply \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
   --profile ghilbut-tofu-plan-for-domains \
   --role-arn arn:aws:iam::869061964712:role/tofu-plan \
   --role-session-name verify-domains-tofu-plan \
@@ -560,9 +583,37 @@ if aws sts assume-role \
   --role-session-name reject-domains-tofu-apply; then
   exit 1
 fi
+
+if aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-security-tooling \
+  --role-arn arn:aws:iam::954066442429:role/tofu-apply \
+  --role-session-name reject-security-tooling-tofu-apply; then
+  exit 1
+fi
+
+if aws sts assume-role \
+  --profile ghilbut-tofu-apply-for-security-tooling \
+  --role-arn arn:aws:iam::954066442429:role/tofu-plan \
+  --role-session-name reject-security-tooling-tofu-plan; then
+  exit 1
+fi
+
+if aws sts assume-role \
+  --profile ghilbut-tofu-apply-for-workloads \
+  --role-arn arn:aws:iam::954066442429:role/tofu-apply \
+  --role-session-name reject-shared-services-to-security-tooling; then
+  exit 1
+fi
+
+if aws sts assume-role \
+  --profile ghilbut-tofu-apply-for-security-tooling \
+  --role-arn arn:aws:iam::012646747332:role/tofu-apply \
+  --role-session-name reject-security-tooling-to-shared-services; then
+  exit 1
+fi
 ```
 
-세 명령은 `AccessDenied`를 반환해야 한다. Plan permission set session duration과 `tofu-plan`
+일곱 명령은 `AccessDenied`를 반환해야 한다. Plan permission set session duration과 `tofu-plan`
 role의 configured maximum session duration은 4시간이다. IAM role chaining을 사용하는
 `tofu-plan` session은 최대 1시간이다.
 
@@ -676,7 +727,7 @@ simulate_state_role tofu-state-apply
 backend로 OpenTofu plan을 실행하여 확인한다.
 
 다음 명령은 `tofu-state-readonly`가 읽는 active state object만 출력한다. 결과는
-[[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
+[[aws/README#State ownership|State ownership]] 표의 열한 개 key와 일치해야 한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
@@ -707,6 +758,7 @@ verify_root ghilbut-tofu-apply-for-management aws/foundation/organizations/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/accounts/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/identity/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
+verify_root ghilbut-tofu-apply-for-security-tooling aws/security-tooling/tofu
 verify_root ghilbut-tofu-apply-for-workloads github/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/cdn/tofu
 verify_root ghilbut-tofu-apply-for-workloads k3s/tofu
