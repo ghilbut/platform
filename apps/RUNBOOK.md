@@ -328,6 +328,7 @@ argocd app wait argo \
 kubectl --context cpa -n istio-gateways get gateway,certificate,secret
 kubectl --context cpa -n argo get virtualservice argo
 curl --fail --silent --show-error --output /dev/null \
+  --location \
   --write-out '%{http_code}\n' \
   https://argo.ghilbut.com/cd
 ```
