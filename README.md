@@ -26,34 +26,3 @@
 ### OpenTofu
 
 OpenTofu 작성·상태·배포 지침은 [docs/TOFU.md](docs/TOFU.md)를 따른다.
-
-## D. Accounts
-
-### AWS
-
-SSO Start URL: https://ghilbut.awsapps.com/start
-
-| ID           | Name           | Email                          |
-|--------------|----------------|--------------------------------|
-| 384959722788 | management     | aws@ghilbut.com                |
-| 869061964712 | domains        | aws-domains@ghilbut.com        |
-| 012646747332 | platform       | aws-platform@ghilbut.com       |
-| 971119963968 | UltaryDomains  | aws-ultary-domains@ghilbut.com |
-
-## E. Domains
-
-### Ghilbut
-
-* ghilbut.com
-* ghilbut.net
-
-### Ultary, Inc.
-
-* dokevy.com
-* dokevy.io
-* dokevy.net
-* polykube.com
-* polykube.io
-* polykube.net
-* ultary.co
-* ultary.io

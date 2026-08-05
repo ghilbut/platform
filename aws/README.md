@@ -7,14 +7,23 @@ title: AWS architecture
 AWS 계정, OpenTofu root, 상태 소유권과 접근 경계를 정의한다. 실행 절차는
 [AWS 운영 Runbook](RUNBOOK.md)을 따른다.
 
+IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
+
 ## Accounts
 
-| Account | ID | 책임 |
-|---|---|---|
-| Management | `384959722788` | AWS Organizations, 계정 수명 주기와 IAM Identity Center |
-| Platform | `012646747332` | workload, 공용 state, CDN과 CI federation |
-| Domains | `869061964712` | `ghilbut.com`, `ghilbut.net` 등록과 Route 53 |
-| UltaryDomains | `971119963968` | Ultary 도메인 등록과 Route 53 |
+| Account | ID | Email | 책임 |
+|---|---|---|---|
+| Management | `384959722788` | `aws@ghilbut.com` | AWS Organizations, 계정 수명 주기와 IAM Identity Center |
+| Platform | `012646747332` | `aws-platform@ghilbut.com` | workload, 공용 state, CDN과 CI federation |
+| Domains | `869061964712` | `aws-domains@ghilbut.com` | Ghilbut 도메인 등록, Route 53와 DNS federation |
+| UltaryDomains | `971119963968` | `aws-ultary-domains@ghilbut.com` | Ultary 도메인 등록과 Route 53 |
+
+## Registered domains
+
+- Domains: `ghilbut.com`, `ghilbut.net`
+- UltaryDomains: `dokevy.com`, `dokevy.in`, `dokevy.io`, `dokevy.net`, `polykube.com`,
+  `polykube.guide`, `polykube.in`, `polykube.io`, `polykube.net`, `ultary.co`,
+  `ultary.guide`, `ultary.in`, `ultary.io`
 
 ## Directory responsibilities
 

@@ -9,6 +9,21 @@ root에서 실행한다.
 
 ## Source profiles
 
+먼저 이름이 `ghilbut`인 IAM Identity Center session을 만든다.
+
+```sh
+aws configure sso-session
+```
+
+| Prompt | Value |
+|---|---|
+| SSO session name | `ghilbut` |
+| SSO start URL | `https://ghilbut.awsapps.com/start` |
+| SSO region | `us-east-1` |
+| SSO registration scopes | `sso:account:access` |
+
+네 source profile을 같은 session에 연결한다.
+
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-management
 aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-apply-for-management
@@ -34,6 +49,8 @@ aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domai
 로그인하고 계정 ID를 확인한다.
 
 ```sh
+export AWS_SDK_LOAD_CONFIG=1
+
 aws sso login --profile ghilbut-tofu-apply-for-management
 aws sso login --profile ghilbut-tofu-apply-for-workloads
 aws sso login --profile ghilbut-tofu-apply-for-domains
@@ -57,17 +74,48 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 |---:|---|---|---|---|
 | 1 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | 없음 |
 | 2 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
-| 3 | `aws/platform/tofu/` | Workloads | direct source와 Platform `tofu-apply` | Workloads assignment |
+| 3 | `aws/platform/tofu/` | Workloads | direct source와 Platform `tofu-apply` | Platform의 `TofuApplyForWorkloads` assignment |
 | 4 | `github/tofu/` | Workloads | Platform `tofu-apply` | Platform role |
 | 5 | `aws/cdn/tofu/` | Workloads | Platform `tofu-apply` | GitHub OIDC provider |
 | 6 | `k3s/tofu/` | Workloads | direct source | CDN origin bucket와 `cpa` Kubernetes API |
 | 7 | `domains/tofu/` | Domains | Domains `tofu-apply` | CDN state |
-| 8 | `apps/tofu/` | Workloads | direct source | Platform assignment |
+| 8 | `apps/tofu/` | Workloads | direct source | Platform의 `TofuApplyForWorkloads` assignment |
 | 9 | `ultary/domains/tofu/` | UltaryDomains | direct source | UltaryDomains assignment |
 
 ## Plan and apply
 
-각 root는 saved plan을 한 번만 적용한다.
+### Required variables
+
+Domains DKIM 값은 기존 state에서 읽고 shell output으로 출력하지 않는다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+  tofu -chdir=domains/tofu init -reconfigure
+
+export TF_VAR_ghilbut_dkim_for_root_domain="$(
+  AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+    tofu -chdir=domains/tofu state pull \
+    | jq -r '
+        .resources[]
+        | select(.type == "aws_route53_record" and .name == "google_dkim")
+        | .instances[0].attributes.records[0]
+      '
+)"
+```
+
+UltaryDomains는 다음 필수 variable을 승인된 로컬 환경 변수나 git에서 제외한 variable file로
+제공한다. Map variable의 환경 변수 값은 JSON object다.
+
+- `ultary_co_dkim_for_root_domain`
+- `ultary_co_txt_for_sub_domains`
+- `ultary_co_cname_for_sub_domains`
+- `ultary_co_dkim_for_sub_domains`
+
+### Apply current infrastructure
+
+현재 리소스가 존재하는 운영 환경에서는 각 root의 saved plan을 순서대로 한 번 적용한다.
+CDN certificate를 새로 만드는 복구 작업은 certificate 요청, Domains validation record,
+certificate validation과 CDN 순서로 나누어 실행한다.
 
 ```sh
 apply_root() {
@@ -98,6 +146,7 @@ apply_root ghilbut-tofu-apply-for-workloads \
 CDN apply 전에 Lambda bundle을 만든다.
 
 ```sh
+pnpm install --frozen-lockfile
 pnpm --filter @ghilbut/cdn-lambda build
 
 apply_root ghilbut-tofu-apply-for-workloads \
@@ -121,9 +170,6 @@ apply_root ghilbut-tofu-apply-for-ultary-domains \
   ultary/domains/tofu /tmp/ultary-domains.tfplan
 unset TF_VAR_aws_profile
 ```
-
-`domains/tofu/`와 `ultary/domains/tofu/`의 sensitive variable은 승인된 로컬 환경 변수나
-git에서 제외한 variable file로 제공한다.
 
 ## IAM Identity Center verification
 
@@ -163,8 +209,8 @@ aws sts assume-role \
 
 ## State verification
 
-다음 명령은 active state object만 출력한다. 결과는 [State ownership](README.md#state-ownership)
-표의 아홉 key와 일치해야 한다.
+다음 명령은 active state object만 출력한다. 결과는
+[[README#State ownership|State ownership]] 표의 아홉 key와 일치해야 한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
@@ -197,6 +243,7 @@ verify_root ghilbut-tofu-apply-for-workloads apps/tofu
 export TF_VAR_aws_profile=ghilbut-tofu-apply-for-ultary-domains
 verify_root ghilbut-tofu-apply-for-ultary-domains ultary/domains/tofu
 unset TF_VAR_aws_profile
+unset TF_VAR_ghilbut_dkim_for_root_domain
 ```
 
 `tofu plan -detailed-exitcode`의 성공 결과는 exit code `0`이다. K3s plan에는 `cpa`
