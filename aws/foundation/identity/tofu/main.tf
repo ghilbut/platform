@@ -36,6 +36,8 @@ locals {
         "platform/aws/cdn.tfstate.tflock",
         "platform/aws/platform.tfstate",
         "platform/aws/platform.tfstate.tflock",
+        "platform/aws/shared-services.tfstate",
+        "platform/aws/shared-services.tfstate.tflock",
         "platform/github.tfstate",
         "platform/github.tfstate.tflock",
       ]
