@@ -29,3 +29,17 @@ resource "aws_iam_role_policy_attachment" "billing" {
   role       = aws_iam_role.billing.name
   policy_arn = "arn:aws:iam::aws:policy/job-function/Billing"
 }
+
+resource "aws_iam_role_policy" "billing_cost_explorer_reports" {
+  name = "cost-explorer-reports-read"
+  role = aws_iam_role.billing.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "ViewCostExplorerReports"
+      Effect   = "Allow"
+      Action   = "ce:DescribeReport"
+      Resource = "*"
+    }]
+  })
+}
