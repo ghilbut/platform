@@ -20,6 +20,9 @@ spec:
         releaseName: istiod
         values: |
           autoscaleEnabled: false
+          pilot:
+            cni:
+              enabled: true
           replicaCount: 1
           seccompProfile:
             type: RuntimeDefault
