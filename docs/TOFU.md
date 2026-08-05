@@ -11,8 +11,11 @@
 
 ## AWS credential 선택
 
-- S3 backend와 `terraform_remote_state`는 고정 `profile`을 선언하지 않는다. `AWS_PROFILE`이
-  IAM Identity Center source identity를 선택한다.
+- S3 backend는 SharedServices의 `tofu-state-readonly` role을 기본으로 수임한다. Apply는 git에서
+  제외한 `tofu-state-apply.tfbackend`로 `tofu-state-apply` role을 수임한다.
+- `terraform_remote_state`는 SharedServices의 `tofu-state-readonly` role을 수임한다.
+- Backend와 `terraform_remote_state`는 고정 `profile`을 선언하지 않는다. `AWS_PROFILE`이 IAM
+  Identity Center source identity를 선택한다.
 - Account-local execution role이 있는 root는 `aws_execution_role_arn` 변수를 사용한다. 기본값은
   해당 account의 `tofu-plan` role ARN이다.
 - Apply 전용 로컬 작업 공간은 git에서 제외한 `tofu-apply.auto.tfvars`에서 같은 변수에
@@ -21,13 +24,15 @@
   source identity를 provider에 직접 사용한다. 기존 account에서는 `null`을 사용하지 않는다.
 - Source identity와 execution role의 작업 종류를 일치시킨다. Plan source는 `tofu-plan`, Apply
   source는 `tofu-apply`를 사용한다.
-- Source profile을 바꾸거나 backend의 고정 profile을 제거한 뒤에는 `tofu init -reconfigure`를
-  실행한다.
-- UltaryDomains는 account-local execution role 없이 `AWS_PROFILE`의 source identity를
-  provider에 직접 사용한다.
+- Source profile이나 backend role을 바꾼 뒤에는 `tofu init -reconfigure`를 실행한다. Apply
+  backend는 `-backend-config=tofu-state-apply.tfbackend`를 함께 지정한다.
+- UltaryDomains provider는 account-local execution role 없이 `AWS_PROFILE`의 source identity를
+  직접 사용한다. Backend는 다른 root와 같은 중앙 state role을 사용한다.
 
 ## 상태 소유권
 
+- 중앙 state role과 state bucket은 SharedServices 계정에 함께 둔다. State bucket을 다른 계정으로
+  옮기면 중앙 state role도 함께 옮기거나 새 bucket policy에 중앙 state role을 허용한다.
 - `github/tofu`는 계정 공용 GitHub Actions OIDC provider만 관리한다.
 - 서비스별 GitHub Actions IAM 역할은 그 서비스 root가 관리한다. GitHub repository variable은
   실행 Runbook에서 `gh variable set`으로 관리한다.

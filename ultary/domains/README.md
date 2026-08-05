@@ -2,10 +2,12 @@
 
 ## OpenTofu access
 
-`ultary/domains/tofu/`는 account-local execution role을 사용하지 않는다. Backend와 AWS provider는
-`AWS_PROFILE`의 source identity를 직접 사용한다. Plan은
-`ghilbut-tofu-plan-for-ultary-domains`, Apply는 `ghilbut-tofu-apply-for-ultary-domains`를 지정하고
-각 profile 전환 뒤 `tofu init -reconfigure`를 실행한다. 이 root에는
+`ultary/domains/tofu/`는 account-local execution role을 사용하지 않는다. AWS provider는
+`AWS_PROFILE`의 source identity를 직접 사용한다. Backend는 Plan에서 SharedServices
+`tofu-state-readonly`, Apply에서 SharedServices `tofu-state-apply`를 수임한다. Plan은
+`ghilbut-tofu-plan-for-ultary-domains`, Apply는 `ghilbut-tofu-apply-for-ultary-domains`를 지정한다.
+Profile이나 backend role을 전환할 때 `tofu init -reconfigure`를 실행한다. Apply는
+`-backend-config=tofu-state-apply.tfbackend`를 함께 지정한다. 이 root에는
 `tofu-apply.auto.tfvars`를 만들지 않는다.
 
 ## ultary

@@ -7,6 +7,9 @@ terraform {
     region       = "us-east-1"
     encrypt      = true
     use_lockfile = true
+    assume_role = {
+      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
+    }
   }
 
   required_providers {

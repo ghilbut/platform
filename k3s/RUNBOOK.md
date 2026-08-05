@@ -201,7 +201,8 @@ aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
 export AWS_SDK_LOAD_CONFIG=1
 export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
 
-tofu -chdir=k3s/tofu init -reconfigure
+tofu -chdir=k3s/tofu init -reconfigure \
+  -backend-config=tofu-state-apply.tfbackend
 tofu -chdir=k3s/tofu plan
 tofu -chdir=k3s/tofu apply
 ```

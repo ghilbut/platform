@@ -7,6 +7,9 @@ terraform {
     key          = "platform/github.tfstate"
     region       = "us-east-1"
     use_lockfile = true
+    assume_role = {
+      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
+    }
   }
 
   required_providers {

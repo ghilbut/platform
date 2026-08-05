@@ -71,6 +71,7 @@ crash.*.log
 *.tfvars
 *.tfvars.json
 tofu-apply.auto.tfvars
+tofu-state-apply.tfbackend
 
 # Ignore override files as they are usually used to override resources locally and so
 # are not checked in

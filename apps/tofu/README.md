@@ -10,8 +10,9 @@ area: apps
 
 Apps state의 관리 리소스는 0개다.
 
-Backend는 `AWS_PROFILE`의 Workloads source identity를 사용한다. Provider의 기본 execution
-role은 SharedServices `tofu-plan`이다. Apply 전용 로컬 작업 공간은
+Backend는 Plan에서 SharedServices `tofu-state-readonly`, Apply에서 SharedServices
+`tofu-state-apply`를 수임한다. Provider의 기본 execution role은 SharedServices `tofu-plan`이다.
+Backend와 provider는 같은 Workloads source profile을 사용한다. Apply 전용 로컬 작업 공간은
 `apps/tofu/tofu-apply.auto.tfvars`에 다음 값을 지정한다.
 
 ```hcl

@@ -60,7 +60,7 @@ Management account에 적용되지 않는다.
 | `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management execution role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
-| `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices execution role과 CPA IAM OIDC provider |
+| `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, SharedServices execution role과 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
 Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한다.
@@ -69,6 +69,11 @@ Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한
 
 모든 active state는 SharedServices 계정의 versioned S3 bucket `ghilbut-tfstates`에 저장하고 같은
 이름의 `.tflock` object를 사용한다. 하나의 resource는 하나의 state만 관리한다.
+
+모든 backend의 기본 역할은 SharedServices `tofu-state-readonly`다. 이 역할은 active `.tfstate`를
+읽고 대응하는 `.tflock`을 읽고 쓰고 삭제한다. Apply backend는 로컬 `.tfbackend` 설정으로
+SharedServices `tofu-state-apply`를 수임한다. 이 역할은 active `.tfstate`와 `.tflock`을 읽고 쓰고
+삭제한다. 두 역할은 recovery state와 `ghilbut-tfstates-v2`에 접근하지 않는다.
 
 | Root | State key | Account | Plan source profile | Apply source profile |
 |---|---|---|---|---|
@@ -98,9 +103,9 @@ Console을 열 수 있다.
 
 ## OpenTofu access
 
-`TofuPlanFor*`와 `TofuApplyFor*`는 IAM Identity Center source identity다. Backend는 source
-profile로 접근한다. Provider는 account-local `tofu-plan` 또는 `tofu-apply` execution role을
-수임한다.
+`TofuPlanFor*`와 `TofuApplyFor*`는 IAM Identity Center source identity다. 하나의 source
+profile을 backend와 provider가 함께 사용한다. Backend는 SharedServices의 중앙 state role을
+수임하고 provider는 대상 account의 `tofu-plan` 또는 `tofu-apply` execution role을 수임한다.
 
 | Permission set | Assignment | Source profile | Account-local role | Role owner | 사용하는 root |
 |---|---|---|---|---|---|
@@ -121,15 +126,22 @@ execution role을 처음 생성할 때 source identity를 provider에서 직접 
 set은 Domains account에만 할당한다. `FoundationManagement`와 `Billing`은 OpenTofu source
 profile로 사용하지 않는다.
 
-Plan source identity는 `.tfstate`를 읽고 해당 `.tflock`을 읽고 쓰고 삭제한다. Apply source
-identity는 해당 `.tfstate`와 `.tflock`을 읽고 쓰고 삭제한다. `tofu-plan` role은 managed
-resource를 읽으며 `tofu-apply` role은 managed resource를 변경한다. UltaryDomains는 account-local
-execution role 없이 source identity를 provider에서 직접 사용한다.
+Plan source identity는 `tofu-state-readonly`와 matching `tofu-plan`만 수임한다. Apply source
+identity는 `tofu-state-apply`, remote state 읽기용 `tofu-state-readonly`와 matching `tofu-apply`를
+수임한다. 모든 source identity는 `ghilbut-tfstates` 직접 접근이 거부된다. `tofu-plan` role은
+managed resource를 읽으며 `tofu-apply` role은 managed resource를 변경한다. UltaryDomains는
+account-local execution role 없이 source identity를 provider에서 직접 사용한다.
 
 Role-backed root의 `aws_execution_role_arn` 기본값은 account-local `tofu-plan` role이다. Apply
 전용 로컬 작업 공간은 git에서 제외한 `tofu-apply.auto.tfvars`로 account-local `tofu-apply` role을
-지정한다. Backend와 remote state는 `AWS_PROFILE`의 source identity를 사용한다. Plan source
-profile과 `tofu-plan`, Apply source profile과 `tofu-apply`를 각각 함께 사용한다.
+지정한다. Backend의 기본 `assume_role`은 `tofu-state-readonly`다. Apply 전용 로컬 작업 공간은
+git에서 제외한 `tofu-state-apply.tfbackend`로 `tofu-state-apply`를 지정한다. Remote state는 항상
+`tofu-state-readonly`를 수임한다. Plan과 Apply는 각각 대응하는 source profile 하나만 사용한다.
+
+두 state role의 trust는 Organization `o-ncl6mypc8p` 소속이고 이름이 matching `TofuPlanFor*` 또는
+`TofuApplyFor*`인 IAM Identity Center role만 허용한다. Account wildcard는 앞으로 추가할 workload
+account의 같은 permission set을 포함한다. 사용자 role과 다른 Organization의 role은 수임할 수
+없다.
 
 `aws_execution_role_arn = null`은 execution role이 아직 없는 새 account bootstrap에서만 source
 identity를 provider에 직접 연결한다. 기존 Management, SharedServices와 Domains account에서는

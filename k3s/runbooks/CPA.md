@@ -162,7 +162,8 @@ kubectl get nodes -o wide
 export AWS_SDK_LOAD_CONFIG=1
 export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
 
-tofu -chdir=k3s/tofu init -reconfigure
+tofu -chdir=k3s/tofu init -reconfigure \
+  -backend-config=tofu-state-apply.tfbackend
 tofu -chdir=k3s/tofu apply
 
 kubectl --context cpa get --raw '/.well-known/openid-configuration' \
