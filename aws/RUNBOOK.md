@@ -210,7 +210,7 @@ aws sts assume-role \
 ## State verification
 
 다음 명령은 active state object만 출력한다. 결과는
-[[README#State ownership|State ownership]] 표의 아홉 key와 일치해야 한다.
+[[aws/README#State ownership|State ownership]] 표의 아홉 key와 일치해야 한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
