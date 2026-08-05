@@ -23,6 +23,7 @@ provider "aws" {
 provider "aws" {
   alias               = "bootstrap"
   allowed_account_ids = ["869061964712"]
+  profile             = "ghilbut-tofu-apply-for-domains"
   region              = "us-east-1"
 
   default_tags {

@@ -209,7 +209,10 @@ module "tofu_apply_for_domains" {
           "iam:UpdateRole",
           "iam:UpdateRoleDescription",
         ]
-        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply"
+        Resource = [
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply",
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains",
+        ]
       },
       {
         Sid    = "DomainsStateObjects"

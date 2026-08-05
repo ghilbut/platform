@@ -1,4 +1,6 @@
 resource "aws_iam_role" "tofu_apply" {
+  provider = aws.bootstrap
+
   name                 = "tofu-apply-domains"
   description          = "OpenTofu execution role for Domains account Route 53 resources."
   max_session_duration = 14400
@@ -26,6 +28,8 @@ resource "aws_iam_role" "tofu_apply" {
 }
 
 resource "aws_iam_role_policy" "tofu_apply" {
+  provider = aws.bootstrap
+
   name = "tofu-apply-domains-inline"
   role = aws_iam_role.tofu_apply.name
   policy = jsonencode({
