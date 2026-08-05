@@ -11,12 +11,26 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 
 ## Accounts
 
-| Account | ID | Email | 책임 |
-|---|---|---|---|
-| Management | `384959722788` | `aws@ghilbut.com` | AWS Organizations, 계정 수명 주기와 IAM Identity Center |
-| SharedServices | `012646747332` | `aws-platform@ghilbut.com` | workload, 공용 state, CDN과 CI federation |
-| Domains | `869061964712` | `aws-domains@ghilbut.com` | Ghilbut 도메인 등록, Route 53와 DNS federation |
-| UltaryDomains | `971119963968` | `aws-ultary-domains@ghilbut.com` | Ultary 도메인 등록과 Route 53 |
+| Account | ID | Email | Organization 위치 | 책임 |
+|---|---|---|---|---|
+| Management | `384959722788` | `aws@ghilbut.com` | Root | AWS Organizations, 계정 수명 주기와 IAM Identity Center |
+| SharedServices | `012646747332` | `aws-platform@ghilbut.com` | Infrastructure OU | workload, 공용 state, CDN과 CI federation |
+| Domains | `869061964712` | `aws-domains@ghilbut.com` | Infrastructure OU | Ghilbut 도메인 등록, Route 53와 DNS federation |
+| UltaryDomains | `971119963968` | `aws-ultary-domains@ghilbut.com` | Root | Ultary 도메인 등록과 Route 53 |
+
+## AWS Organizations
+
+Organization `o-ncl6mypc8p`의 Root는 `r-k1tk`다. Root에는 Infrastructure OU와 모든
+member account를 보호하는 `ProtectMemberAccounts` SCP가 있다. 이 SCP는
+`account:CloseAccount`와 `organizations:LeaveOrganization`을 거부한다. SCP는 Management
+account에 적용되지 않는다.
+
+| 위치 | 직접 포함하는 account | 연결 및 상속 |
+|---|---|---|
+| Root `r-k1tk` | Management, UltaryDomains | `FullAWSAccess`, `ProtectMemberAccounts` |
+| Infrastructure `ou-k1tk-nmjtvc69` | Domains, SharedServices | `FullAWSAccess`, `ProtectMemberAccounts` 상속 |
+
+`FullAWSAccess`는 AWS 관리형 SCP다. AWS가 Root, OU와 account에 연결한 상태를 유지한다.
 
 ## Registered domains
 
@@ -47,7 +61,7 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 | `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices `tofu-apply` role과 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
-Organization과 trusted access를 관리한다.
+Organization, Infrastructure OU, SCP와 trusted access를 관리한다.
 
 ## State ownership
 
@@ -110,6 +124,7 @@ AWS가 생성하고 관리하는 KMS alias, service-linked role과 default resou
 OpenTofu state에 import하거나 삭제하지 않는다. 대상에는 다음 resource가 포함된다.
 
 - `alias/aws/acm`, `alias/aws/lambda`
+- Organizations `FullAWSAccess` SCP
 - Organizations, IAM Identity Center, Support, Trusted Advisor와 Service Quotas service-linked role
 - Lambda replicator와 CloudFront logger service-linked role
 - Athena primary workgroup과 catalog

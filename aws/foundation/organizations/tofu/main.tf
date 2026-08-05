@@ -48,4 +48,8 @@ resource "aws_organizations_policy" "member_account_protection" {
 resource "aws_organizations_policy_attachment" "member_account_protection" {
   policy_id = aws_organizations_policy.member_account_protection.id
   target_id = one(aws_organizations_organization.this.roots).id
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
