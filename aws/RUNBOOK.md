@@ -364,6 +364,51 @@ fi
 role의 configured maximum session duration은 4시간이다. IAM role chaining을 사용하는
 `tofu-plan` session은 최대 1시간이다.
 
+### Domains execution role bootstrap
+
+Domains `tofu-apply`가 `tofu-plan` 관리 권한을 갖지 않은 상태에서 두 resource를 함께 추가하면
+apply가 실패한다. Management `tofu-apply`에서 Domains `OrganizationAccountAccessRole`을 수임하여
+계획한 `tofu-apply` inline policy를 먼저 적용한다.
+
+```sh
+aws configure set source_profile ghilbut-tofu-apply-for-management \
+  --profile ghilbut-management-bootstrap
+aws configure set role_arn arn:aws:iam::384959722788:role/tofu-apply \
+  --profile ghilbut-management-bootstrap
+aws configure set role_session_name ghilbut-management-bootstrap \
+  --profile ghilbut-management-bootstrap
+aws configure set region us-east-1 --profile ghilbut-management-bootstrap
+
+aws configure set source_profile ghilbut-management-bootstrap \
+  --profile ghilbut-domains-bootstrap
+aws configure set role_arn \
+  arn:aws:iam::869061964712:role/OrganizationAccountAccessRole \
+  --profile ghilbut-domains-bootstrap
+aws configure set role_session_name ghilbut-domains-bootstrap \
+  --profile ghilbut-domains-bootstrap
+aws configure set region us-east-1 --profile ghilbut-domains-bootstrap
+
+domains_apply_policy="$(
+  tofu -chdir=domains/tofu show -json /tmp/issue-139-domains.tfplan \
+    | jq -c -r '
+        .resource_changes[]
+        | select(.address == "aws_iam_role_policy.tofu_apply")
+        | .change.after.policy
+      '
+)"
+
+AWS_PROFILE=ghilbut-domains-bootstrap AWS_SDK_LOAD_CONFIG=1 \
+  aws iam put-role-policy \
+    --role-name tofu-apply \
+    --policy-name tofu-apply-inline \
+    --policy-document "$domains_apply_policy"
+
+unset domains_apply_policy
+```
+
+bootstrap 후 Domains saved plan을 다시 만든다. 새 plan에서 `aws_iam_role_policy.tofu_apply`는
+변경이 없어야 하며 `tofu-plan` role과 inline policy만 생성해야 한다.
+
 ## Billing activation and verification
 
 Management root user가 account별 Billing Console 접근 설정을 한 번 활성화한다.

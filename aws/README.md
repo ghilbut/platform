@@ -130,6 +130,10 @@ execution role을 관리한다. `aws.shared_services` provider alias는 SharedSe
 사용한다. Plan source profile을 전체 root plan에 사용하는 시점은 provider가 `tofu-plan`을
 선택하고 backend의 고정 profile이 제거된 뒤다.
 
+Management `tofu-apply`는 Domains `OrganizationAccountAccessRole`을 수임하여 Domains execution
+role policy를 bootstrap한다. 이 권한은 Domains account `869061964712`의 해당 role ARN에만
+적용된다.
+
 ## CDN
 
 `aws/cdn/tofu/`는 `ghilbut-cdn-platform` bucket과
