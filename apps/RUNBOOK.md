@@ -317,8 +317,7 @@ argocd app sync argo \
   --plaintext \
   --timeout 1200
 argocd app wait argo \
-  --sync \
-  --health \
+  --operation \
   --resource networking.istio.io:VirtualService:argo/argo \
   --kube-context cpa \
   --port-forward \
