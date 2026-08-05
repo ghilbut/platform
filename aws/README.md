@@ -14,7 +14,7 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 | Account | ID | Email | 책임 |
 |---|---|---|---|
 | Management | `384959722788` | `aws@ghilbut.com` | AWS Organizations, 계정 수명 주기와 IAM Identity Center |
-| SharedServices | `012646747332` | `aws-platform@ghilbut.com` | workload 공용 state, CDN과 CI federation |
+| SharedServices | `012646747332` | `aws-platform@ghilbut.com` | workload, 공용 state, CDN과 CI federation |
 | Domains | `869061964712` | `aws-domains@ghilbut.com` | Ghilbut 도메인 등록, Route 53와 DNS federation |
 | UltaryDomains | `971119963968` | `aws-ultary-domains@ghilbut.com` | Ultary 도메인 등록과 Route 53 |
 
@@ -77,9 +77,10 @@ OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접�
 | `TofuApplyForDomains` | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `arn:aws:iam::869061964712:role/tofu-apply` | `domains/tofu/` | Domains |
 | `TofuApplyForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 
-`TofuApplyForWorkloads`는 SharedServices와 앞으로 추가하는 workload 운영 계정이 공유한다.
-`TofuApplyForDomains`는 Domains account에만 할당한다. `FoundationManagement`는 Management console 관리용 permission set이며
-OpenTofu source profile로 사용하지 않는다.
+`TofuApplyForWorkloads`는 workload 운영 계정이 공유한다. 현재 assignment는 SharedServices
+`012646747332` 하나다. `TofuApplyForDomains`는 Domains account에만 할당한다.
+`FoundationManagement`는 Management console 관리용 permission set이며 OpenTofu source
+profile로 사용하지 않는다.
 
 `aws/platform/tofu/`는 SharedServices `tofu-apply` role과 CPA OIDC provider를 source profile로
 직접 관리한다. 같은 root의 S3 resource는 `aws.platform` provider alias로 SharedServices
