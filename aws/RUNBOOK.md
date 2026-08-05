@@ -74,12 +74,12 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 |---:|---|---|---|---|
 | 1 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | 없음 |
 | 2 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
-| 3 | `aws/platform/tofu/` | Workloads | direct source와 Platform `tofu-apply` | Platform의 `TofuApplyForWorkloads` assignment |
-| 4 | `github/tofu/` | Workloads | Platform `tofu-apply` | Platform role |
-| 5 | `aws/cdn/tofu/` | Workloads | Platform `tofu-apply` | GitHub OIDC provider |
+| 3 | `aws/platform/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
+| 4 | `github/tofu/` | Workloads | SharedServices `tofu-apply` | SharedServices role |
+| 5 | `aws/cdn/tofu/` | Workloads | SharedServices `tofu-apply` | GitHub OIDC provider |
 | 6 | `k3s/tofu/` | Workloads | direct source | CDN origin bucket와 `cpa` Kubernetes API |
 | 7 | `domains/tofu/` | Domains | Domains `tofu-apply` | CDN state |
-| 8 | `apps/tofu/` | Workloads | direct source | Platform의 `TofuApplyForWorkloads` assignment |
+| 8 | `apps/tofu/` | Workloads | direct source | SharedServices의 `TofuApplyForWorkloads` assignment |
 | 9 | `ultary/domains/tofu/` | UltaryDomains | direct source | UltaryDomains assignment |
 
 ## Plan and apply
@@ -197,7 +197,7 @@ aws sts assume-role \
 aws sts assume-role \
   --profile ghilbut-tofu-apply-for-workloads \
   --role-arn arn:aws:iam::012646747332:role/tofu-apply \
-  --role-session-name verify-platform-tofu-apply \
+  --role-session-name verify-shared-services-tofu-apply \
   --query 'AssumedRoleUser.Arn' --output text
 
 aws sts assume-role \
