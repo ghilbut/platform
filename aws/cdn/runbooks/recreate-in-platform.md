@@ -67,7 +67,7 @@ curl --fail --silent --show-error \
 ```sh
 domains_credentials=$(aws sts assume-role \
   --profile ghilbut-tofu-apply-for-domains \
-  --role-arn arn:aws:iam::869061964712:role/tofu-apply-domains \
+  --role-arn arn:aws:iam::869061964712:role/tofu-apply \
   --role-session-name verify-platform-cdn)
 export AWS_ACCESS_KEY_ID=$(jq -r '.Credentials.AccessKeyId' <<<"$domains_credentials")
 export AWS_SECRET_ACCESS_KEY=$(jq -r '.Credentials.SecretAccessKey' <<<"$domains_credentials")

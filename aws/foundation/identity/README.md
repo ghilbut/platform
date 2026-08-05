@@ -9,7 +9,7 @@
 |---|---|---|
 | `FoundationManagement` | Management | AWS access portal의 Management console access |
 | `TofuApplyForManagement` | Management | Foundation account와 identity OpenTofu |
-| `TofuApplyForDomains` | Domains | Domains state와 `tofu-apply-domains` |
+| `TofuApplyForDomains` | Domains | Domains state와 `tofu-apply` |
 | `TofuApplyForWorkloads` | Platform | Platform workload state와 `tofu-apply` |
 | `TofuApplyForUltaryDomains` | UltaryDomains | UltaryDomains state와 Route 53 |
 

@@ -10,7 +10,7 @@ issue: 99
 Domains account `869061964712`은 다음 resource만 유지한다.
 
 - `ghilbut.com`, `ghilbut.net` domain registration과 hosted zone
-- `TofuApplyForDomains`, `tofu-apply-domains`
+- `TofuApplyForDomains`, `tofu-apply`
 - CPA IAM OIDC provider와 DNS 전용 role 2개
 - AWS-managed account baseline
 

@@ -1,6 +1,7 @@
 ---
-status: running
+status: complete
 issue: 119
+completed_at: 2026-08-05T10:56:54+09:00
 ---
 
 # Rename the Domains OpenTofu execution role
@@ -51,5 +52,22 @@ Domains account `869061964712`는 `tofu-apply` 역할을 사용한다.
 2. IAM Identity Center provisioning이 `SUCCEEDED`인지 확인한다.
 3. Identity와 Domains plan이 모두 `No changes`인지 확인한다.
 4. Domains state address 수와 DNS resource address 집합이 변경되지 않았는지 확인한다.
-5. `tofu-apply-domains` 역할이 없는지 확인한다.
+5. 기존 Domains 실행 역할이 없는지 확인한다.
 6. 모든 문서와 exact ARN 참조를 `tofu-apply`로 변경한다.
+
+## Verification
+
+- Bootstrap Identity apply는 `0 add, 1 change, 0 destroy`다.
+- Bootstrap provisioning request `1ef4e7c4-bc0e-4653-b340-1b49e9ddbac4`는
+  `2026-08-05T10:45:39.856000+09:00`에 `SUCCEEDED`다.
+- Replacement apply는 `2 add, 0 change, 0 destroy`다.
+- 기존 역할 삭제 apply는 `0 add, 0 change, 2 destroy`다.
+- Final Identity apply는 `0 add, 1 change, 0 destroy`다.
+- Final provisioning request `84d24333-2534-41ac-80c6-d69dde1b26da`는
+  `2026-08-05T10:56:37.963000+09:00`에 `SUCCEEDED`다.
+- Domains state address는 28개다.
+- DNS address와 remote ID의 SHA-256은
+  `8dc6688aecddf38a1402081931753e130c542dfd008e41d5dd24b64dbe0ac827`다.
+- 새 역할의 caller account는 `869061964712`다.
+- 기존 Domains 실행 역할 조회 결과는 `NoSuchEntity`다.
+- Identity와 Domains plan은 `No changes`다.
