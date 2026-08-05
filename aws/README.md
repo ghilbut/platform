@@ -16,6 +16,7 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 | Management | `384959722788` | `aws@ghilbut.com` | Root | AWS Organizations, 계정 수명 주기와 IAM Identity Center |
 | SharedServices | `012646747332` | `aws-platform@ghilbut.com` | Infrastructure OU | workload, 공용 state, CDN과 CI federation |
 | Domains | `869061964712` | `aws-domains@ghilbut.com` | Infrastructure OU | Ghilbut 도메인 등록, Route 53와 DNS federation |
+| SecurityTooling | `954066442429` | `aws-security-tooling@ghilbut.com` | Security OU | 보안 도구와 보안 운영 workload |
 | UltaryDomains | `971119963968` | `aws-ultary-domains@ghilbut.com` | Root | Ultary 도메인 등록과 Route 53 |
 
 ## AWS Organizations
@@ -29,7 +30,7 @@ Management account에 적용되지 않는다.
 |---|---|---|
 | Root `r-k1tk` | Management, UltaryDomains | `FullAWSAccess`, `ProtectMemberAccounts` |
 | Infrastructure `ou-k1tk-nmjtvc69` | Domains, SharedServices | `FullAWSAccess` 연결, `ProtectMemberAccounts` 상속 |
-| Security `ou-k1tk-rx2wvnws` | 없음 | `FullAWSAccess` 연결, `ProtectMemberAccounts` 상속 |
+| Security `ou-k1tk-rx2wvnws` | SecurityTooling | `FullAWSAccess` 연결, `ProtectMemberAccounts` 상속 |
 
 `FullAWSAccess`는 AWS 관리형 SCP다. AWS가 Root, OU와 account에 연결한 상태를 유지한다.
 
@@ -54,8 +55,8 @@ Management account에 적용되지 않는다.
 | `cdn/tofu/modules/origin-access/` | CloudFront OAC |
 | `cdn/tofu/modules/s3/` | 비공개 CDN origin bucket과 object |
 | `foundation/` | accounts, identity와 organizations 책임 경계 |
-| `foundation/accounts/tofu/` | AWS Organizations account와 Management account opt-in region |
-| `foundation/accounts/tofu/modules/management/` | Management account의 Account Management API 호출 |
+| `foundation/accounts/tofu/` | AWS Organizations account와 account별 opt-in region |
+| `foundation/accounts/tofu/modules/account-regions/` | account별 Account Management Region API 호출 |
 | `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management execution role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
