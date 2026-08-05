@@ -16,7 +16,7 @@ locals {
   ghilbut_user_id     = "7488a448-2051-70eb-80b8-106a98d83549"
   domains_account_id  = data.terraform_remote_state.accounts.outputs.domains_account_id
   platform_account_id = data.terraform_remote_state.accounts.outputs.platform_account_id
-  state_buckets       = ["ghilbut-tfstates-v2", "ghilbut-tfstates"]
+  state_buckets       = ["ghilbut-tfstates"]
   foundation_state_object_keys = [
     "platform/aws/foundation/accounts.tfstate",
     "platform/aws/foundation/accounts.tfstate.tflock",

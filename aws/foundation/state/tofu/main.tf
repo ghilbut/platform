@@ -1,6 +1,5 @@
 locals {
   state_buckets = {
-    legacy  = "ghilbut-tfstates-v2"
     primary = "ghilbut-tfstates"
   }
   management_account_id = "384959722788"
