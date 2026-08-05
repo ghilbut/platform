@@ -4,7 +4,7 @@ data "terraform_remote_state" "accounts" {
   backend = "s3"
 
   config = {
-    bucket = "ghilbut-tfstates-v2"
+    bucket = "ghilbut-tfstates"
     key    = "platform/aws/foundation/accounts.tfstate"
     region = "us-east-1"
   }

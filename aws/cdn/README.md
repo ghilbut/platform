@@ -5,7 +5,7 @@
 ## 구성
 
 - S3 버킷: `ghilbut-cdn-platform` (`us-east-1`)
-- 상태 파일: `s3://ghilbut-tfstates-v2/platform/aws/cdn.tfstate`
+- 상태 파일: `s3://ghilbut-tfstates/platform/aws/cdn.tfstate`
 - ACM 인증서: `ghilbut.com` 및 CDN 호스트의 SAN
 - CloudFront: OAC를 통한 비공개 S3 원본
 

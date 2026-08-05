@@ -30,7 +30,7 @@ title: AWS account split inventory
 | `k3s.tfstate` | `k3s/tofu/` | Platform |
 | `ultary/domains.tfstate` | `ultary/domains/tofu/` | UltaryDomains |
 
-모든 active state는 Platform의 `ghilbut-tfstates-v2` bucket에 있다.
+모든 active state는 Platform의 `ghilbut-tfstates` bucket에 있다.
 
 ## Domains user-managed resources
 

@@ -3,7 +3,7 @@ terraform {
 
   ## https://www.terraform.io/docs/language/settings/backends/s3.html
   backend "s3" {
-    bucket       = "ghilbut-tfstates-v2"
+    bucket       = "ghilbut-tfstates"
     encrypt      = true
     key          = "ultary/domains.tfstate"
     profile      = "ghilbut-tofu-apply-for-ultary-domains"

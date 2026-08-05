@@ -35,7 +35,7 @@ data "terraform_remote_state" "cdn" {
   backend = "s3"
 
   config = {
-    bucket  = "ghilbut-tfstates-v2"
+    bucket  = "ghilbut-tfstates"
     encrypt = true
     key     = "platform/aws/cdn.tfstate"
     profile = "ghilbut-tofu-apply-for-domains"

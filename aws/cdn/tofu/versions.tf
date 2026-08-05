@@ -3,7 +3,7 @@ terraform {
 
   ## https://www.terraform.io/docs/language/settings/backends/s3.html
   backend "s3" {
-    bucket       = "ghilbut-tfstates-v2"
+    bucket       = "ghilbut-tfstates"
     encrypt      = true
     key          = "platform/aws/cdn.tfstate"
     region       = "us-east-1"

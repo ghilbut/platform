@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 1.12"
 
   backend "s3" {
-    bucket       = "ghilbut-tfstates-v2"
+    bucket       = "ghilbut-tfstates"
     key          = "platform/apps.tfstate"
     profile      = "ghilbut-tofu-apply-for-workloads"
     region       = "us-east-1"
