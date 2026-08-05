@@ -21,6 +21,15 @@ resource "aws_organizations_organizational_unit" "infrastructure" {
   }
 }
 
+resource "aws_organizations_organizational_unit" "security" {
+  name      = "Security"
+  parent_id = one(aws_organizations_organization.this.roots).id
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "aws_organizations_policy" "member_account_protection" {
   name        = "ProtectMemberAccounts"
   description = "Prevents member accounts from leaving the organization or closing their AWS account."
