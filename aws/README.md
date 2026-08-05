@@ -20,15 +20,15 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 
 ## AWS Organizations
 
-Organization `o-ncl6mypc8p`의 Root는 `r-k1tk`다. Root에는 Infrastructure OU와 모든
-member account를 보호하는 `ProtectMemberAccounts` SCP가 있다. 이 SCP는
+Organization `o-ncl6mypc8p`의 Root는 `r-k1tk`다. Root는 Infrastructure OU를 직접 포함한다.
+Root에 연결한 `ProtectMemberAccounts` SCP는 모든 member account에 적용된다. 이 SCP는
 `account:CloseAccount`와 `organizations:LeaveOrganization`을 거부한다. SCP는 Management
 account에 적용되지 않는다.
 
 | 위치 | 직접 포함하는 account | 연결 및 상속 |
 |---|---|---|
 | Root `r-k1tk` | Management, UltaryDomains | `FullAWSAccess`, `ProtectMemberAccounts` |
-| Infrastructure `ou-k1tk-nmjtvc69` | Domains, SharedServices | `FullAWSAccess`, `ProtectMemberAccounts` 상속 |
+| Infrastructure `ou-k1tk-nmjtvc69` | Domains, SharedServices | `FullAWSAccess` 연결, `ProtectMemberAccounts` 상속 |
 
 `FullAWSAccess`는 AWS 관리형 SCP다. AWS가 Root, OU와 account에 연결한 상태를 유지한다.
 

@@ -72,7 +72,7 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 
 | 순서 | Root | Profile | Provider access | 선행 조건 |
 |---:|---|---|---|---|
-| 1 | `aws/foundation/organizations/tofu/` | Management | Management `tofu-apply` | Management `tofu-apply` role |
+| 1 | `aws/foundation/organizations/tofu/` | Management | Management `tofu-apply` | 없음 |
 | 2 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | organizations state |
 | 3 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
 | 4 | `aws/shared-services/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
@@ -176,8 +176,8 @@ unset TF_VAR_aws_profile
 
 ## AWS Organizations verification
 
-`SERVICE_CONTROL_POLICY`를 비활성화하지 않는다. 비활성화하면 Root의 모든 SCP 연결이
-삭제된다.
+`SERVICE_CONTROL_POLICY`를 비활성화하지 않는다. 비활성화하면 Root, OU와 account의 모든
+SCP 연결이 삭제되고 자동으로 복구되지 않는다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
@@ -201,6 +201,13 @@ AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
 AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   aws organizations list-accounts-for-parent \
     --parent-id ou-k1tk-nmjtvc69 --query 'Accounts[].Name' --output json
+
+for account_id in 384959722788 012646747332 869061964712 971119963968; do
+  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+    aws organizations list-policies-for-target \
+      --target-id "$account_id" --filter SERVICE_CONTROL_POLICY \
+      --query 'Policies[].Name' --output json
+done
 ```
 
 결과는 다음 상태와 일치해야 한다.
@@ -208,6 +215,7 @@ AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
 - Root policy type: `SERVICE_CONTROL_POLICY`, `ENABLED`
 - Root SCP: `FullAWSAccess`, `ProtectMemberAccounts`
 - Infrastructure OU SCP: `FullAWSAccess`
+- 각 account의 직접 연결 SCP: `FullAWSAccess`
 - Root account: Management, UltaryDomains
 - Infrastructure OU account: Domains, SharedServices
 
