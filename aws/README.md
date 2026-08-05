@@ -60,6 +60,7 @@ Management account에 적용되지 않는다.
 | `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management execution role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
+| `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu Plan과 Apply execution role |
 | `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, SharedServices execution role과 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
@@ -81,6 +82,7 @@ SharedServices `tofu-state-apply`를 수임한다. 이 역할은 active `.tfstat
 | `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
 | `aws/foundation/organizations/tofu/` | `platform/aws/foundation/organizations.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
 | `aws/shared-services/tofu/` | `platform/aws/shared-services.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `aws/security-tooling/tofu/` | `platform/aws/security-tooling.tfstate` | SecurityTooling | `ghilbut-tofu-plan-for-security-tooling` | `ghilbut-tofu-apply-for-security-tooling` |
 | `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `github/tofu/` | `platform/github.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
@@ -113,18 +115,17 @@ profile을 backend와 provider가 함께 사용한다. Backend는 SharedServices
 | `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
 | `TofuPlanForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `arn:aws:iam::012646747332:role/tofu-plan` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
 | `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
-| `TofuPlanForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-plan-for-security-tooling` | 없음 | 없음 | SecurityTooling bootstrap |
-| `TofuApplyForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-apply-for-security-tooling` | 없음 | 없음 | SecurityTooling bootstrap |
+| `TofuPlanForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-plan-for-security-tooling` | `arn:aws:iam::954066442429:role/tofu-plan` | `aws/security-tooling/tofu/` | SecurityTooling |
+| `TofuApplyForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-apply-for-security-tooling` | `arn:aws:iam::954066442429:role/tofu-apply` | `aws/security-tooling/tofu/` | SecurityTooling |
 | `TofuPlanForDomains` | Domains `869061964712` | `ghilbut-tofu-plan-for-domains` | `arn:aws:iam::869061964712:role/tofu-plan` | `domains/tofu/` | Domains |
 | `TofuApplyForDomains` | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `arn:aws:iam::869061964712:role/tofu-apply` | `domains/tofu/` | Domains |
 | `TofuPlanForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-plan-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 | `TofuApplyForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 
 `TofuPlanForWorkloads`와 `TofuApplyForWorkloads`는 workload 운영 계정이 공유한다. 현재
-assignment는 SharedServices `012646747332`와 SecurityTooling `954066442429`이다. SecurityTooling은
-execution role을 처음 생성할 때 source identity를 provider에서 직접 사용한다. Domains permission
-set은 Domains account에만 할당한다. `FoundationManagement`와 `Billing`은 OpenTofu source
-profile로 사용하지 않는다.
+assignment는 SharedServices `012646747332`와 SecurityTooling `954066442429`이다. Domains
+permission set은 Domains account에만 할당한다. `FoundationManagement`와 `Billing`은 OpenTofu
+source profile로 사용하지 않는다.
 
 Plan source identity는 `tofu-state-readonly`와 matching `tofu-plan`만 수임한다. Apply source
 identity는 `tofu-state-apply`, remote state 읽기용 `tofu-state-readonly`와 matching `tofu-apply`를
@@ -144,8 +145,11 @@ account의 같은 permission set을 포함한다. 사용자 role과 다른 Organ
 없다.
 
 `aws_execution_role_arn = null`은 execution role이 아직 없는 새 account bootstrap에서만 source
-identity를 provider에 직접 연결한다. 기존 Management, SharedServices와 Domains account에서는
-`null`을 사용하지 않는다.
+identity를 provider에 직접 연결한다. Management, SharedServices, SecurityTooling과 Domains
+account의 일반 실행에서는 `null`을 사용하지 않는다.
+
+SecurityTooling `tofu-apply`는 SecurityTooling의 `tofu-apply`와 `tofu-plan` role만 관리한다.
+SecurityTooling `tofu-plan`은 두 role과 STS caller identity만 읽는다.
 
 Permission set session duration과 account-local role의 configured maximum session duration은
 4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
