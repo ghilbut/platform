@@ -19,6 +19,8 @@ locals {
         "platform/aws/foundation/accounts.tfstate.tflock",
         "platform/aws/foundation/identity.tfstate",
         "platform/aws/foundation/identity.tfstate.tflock",
+        "platform/aws/foundation/organizations.tfstate",
+        "platform/aws/foundation/organizations.tfstate.tflock",
       ]
     }
     domains = {
