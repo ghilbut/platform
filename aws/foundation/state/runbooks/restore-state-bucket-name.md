@@ -1,6 +1,7 @@
 ---
-status: cleanup-pending
+status: complete
 issue: 117
+completed_at: 2026-08-05T09:51:12+09:00
 ---
 
 # Restore the OpenTofu state bucket name
@@ -9,6 +10,8 @@ issue: 117
 
 Platform account `012646747332`은 `ghilbut-tfstates` bucket을 소유한다. 모든 active
 OpenTofu backend는 이 bucket을 사용한다.
+
+`ghilbut-tfstates-v2` bucket은 존재하지 않는다.
 
 ## Safety rules
 
@@ -21,7 +24,7 @@ OpenTofu backend는 이 bucket을 사용한다.
 - State bucket version ID를 각 변경 전에 기록한다.
 - State 값은 출력하지 않는다.
 
-## Source recovery versions
+## Source version evidence
 
 | State key | Source version ID |
 |---|---|
@@ -169,12 +172,27 @@ Identity plan은 `No changes`다. `*.tf` 파일의 `ghilbut-tfstates-v2` 참조�
 9. Source의 `platform/aws/foundation/state.tfstate` current version ID가
    `3tg_MR3UUiURoarImAD1aCipwY3iBWsL`인지 확인한다. Target의 current version ID
    `.N4pcdqvrKn1GzcSlvqsJCOx.UjcTWaC`와 달라야 한다.
-10. `list-object-versions`의 `IsTruncated`가 `false`가 될 때까지 source를 조회한다.
+10. `list-object-versions --max-keys 1000 --no-paginate`로 source를 조회한다.
+    `IsTruncated`가 `false`가 아니거나 version 223개와 delete marker 167개가 아니면
+    중단한다.
 11. 조회한 모든 version과 delete marker를 `Key`와 `VersionId`로 삭제한다. 한
     `delete-objects` 요청은 최대 1,000개를 포함한다. 223개 version과 167개 delete marker는
     삭제 전 참고 수치다.
 12. Source의 version, delete marker, current object가 모두 0개인지 확인한다.
-13. 빈 `ghilbut-tfstates-v2` bucket을 삭제한다.
+13. 빈 `ghilbut-tfstates-v2` bucket을 삭제하고 `HeadBucket` 404를 확인한다.
 14. Target의 active state object 10개, K3s recovery object 1개, current lock object 0개를
     확인한다.
 15. `*.tf` 파일에서 `ghilbut-tfstates-v2` 참조가 0개인지 확인한다.
+
+## Cleanup result
+
+`2026-08-05T09:51:12+09:00`의 확인 결과다.
+
+- Source version 223개와 delete marker 167개를 삭제했다.
+- `delete-objects` 응답은 deleted 390개와 error 0개다.
+- Source bucket 삭제 후 `HeadBucket` 응답은 404다.
+- Target에는 active state object 10개, K3s recovery object 1개, current lock object 0개가
+  있다.
+- State address는 7개다.
+- State와 Identity plan은 `No changes`다.
+- `*.tf` 파일의 `ghilbut-tfstates-v2` 참조는 0개다.
