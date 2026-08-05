@@ -294,8 +294,9 @@ Management root user가 account별 Billing Console 접근 설정을 한 번 활�
 4. `Activate IAM access`를 선택한다.
 5. `Update`를 선택한다.
 
-이 설정은 IAM Identity Center permission set이나 IAM policy로 변경할 수 없다. Cost Explorer
-API는 이 설정의 적용 대상이 아니므로 다음 조회는 IAM policy와 API 접근만 검증한다.
+이 설정은 OpenTofu로 관리하지 않는다. AWS는 root user가 Billing Console에서 변경하는 절차를
+안내한다. Cost Explorer API는 이 설정의 적용 대상이 아니므로 다음 조회는 IAM policy와 API
+접근만 검증한다.
 
 ```sh
 aws ce get-cost-and-usage \
