@@ -367,26 +367,12 @@ role의 configured maximum session duration은 4시간이다. IAM role chaining�
 ### Domains execution role bootstrap
 
 Domains `tofu-apply`가 `tofu-plan` 관리 권한을 갖지 않은 상태에서 두 resource를 함께 추가하면
-apply가 실패한다. Management `tofu-apply`에서 Domains `OrganizationAccountAccessRole`을 수임하여
-계획한 `tofu-apply` inline policy를 먼저 적용한다.
+apply가 실패한다. `TofuApplyForDomains`에 Domains `tofu-apply` inline policy 변경 권한을
+일시적으로 추가하고 계획한 policy를 적용한 뒤 permission set을 원래 policy로 복원한다.
 
 ```sh
-aws configure set source_profile ghilbut-tofu-apply-for-management \
-  --profile ghilbut-management-bootstrap
-aws configure set role_arn arn:aws:iam::384959722788:role/tofu-apply \
-  --profile ghilbut-management-bootstrap
-aws configure set role_session_name ghilbut-management-bootstrap \
-  --profile ghilbut-management-bootstrap
-aws configure set region us-east-1 --profile ghilbut-management-bootstrap
-
-aws configure set source_profile ghilbut-management-bootstrap \
-  --profile ghilbut-domains-bootstrap
-aws configure set role_arn \
-  arn:aws:iam::869061964712:role/OrganizationAccountAccessRole \
-  --profile ghilbut-domains-bootstrap
-aws configure set role_session_name ghilbut-domains-bootstrap \
-  --profile ghilbut-domains-bootstrap
-aws configure set region us-east-1 --profile ghilbut-domains-bootstrap
+bootstrap_domains_execution_role() (
+  set -eu
 
 export TF_VAR_ghilbut_dkim_for_root_domain="$(
   AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
@@ -411,21 +397,116 @@ domains_apply_policy="$(
       '
 )"
 
-AWS_PROFILE=ghilbut-domains-bootstrap AWS_SDK_LOAD_CONFIG=1 \
+instance_arn=arn:aws:sso:::instance/ssoins-7223d00af1910289
+domains_account_id=869061964712
+
+domains_permission_set_arn="$(
+  for candidate_arn in $(
+    AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+      aws sso-admin list-permission-sets \
+        --instance-arn "$instance_arn" \
+        --query 'PermissionSets[]' --output text
+  ); do
+    permission_set_name="$(
+      AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+        aws sso-admin describe-permission-set \
+          --instance-arn "$instance_arn" \
+          --permission-set-arn "$candidate_arn" \
+          --query 'PermissionSet.Name' --output text
+    )"
+    if [ "$permission_set_name" = TofuApplyForDomains ]; then
+      echo "$candidate_arn"
+      break
+    fi
+  done
+)"
+test -n "$domains_permission_set_arn"
+
+original_domains_policy="$(
+  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+    aws sso-admin get-inline-policy-for-permission-set \
+      --instance-arn "$instance_arn" \
+      --permission-set-arn "$domains_permission_set_arn" \
+      --query InlinePolicy --output text
+)"
+test -n "$original_domains_policy"
+
+bootstrap_domains_policy="$(
+  jq -c '
+    .Statement += [{
+      Sid: "BootstrapDomainsExecutionRolePolicy",
+      Effect: "Allow",
+      Action: "iam:PutRolePolicy",
+      Resource: "arn:aws:iam::869061964712:role/tofu-apply"
+    }]
+  ' <<<"$original_domains_policy"
+)"
+
+provision_domains_permission_set() {
+  request_id="$(
+    AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+      aws sso-admin provision-permission-set \
+        --instance-arn "$instance_arn" \
+        --permission-set-arn "$domains_permission_set_arn" \
+        --target-type AWS_ACCOUNT \
+        --target-id "$domains_account_id" \
+        --query 'PermissionSetProvisioningStatus.RequestId' --output text
+  )"
+
+  while true; do
+    request_status="$(
+      AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+        aws sso-admin describe-permission-set-provisioning-status \
+          --instance-arn "$instance_arn" \
+          --provision-permission-set-request-id "$request_id" \
+          --query 'PermissionSetProvisioningStatus.Status' --output text
+    )"
+    case "$request_status" in
+      SUCCEEDED) break ;;
+      FAILED) return 1 ;;
+      *) sleep 2 ;;
+    esac
+  done
+}
+
+restore_domains_source_policy() {
+  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+    aws sso-admin put-inline-policy-to-permission-set \
+      --instance-arn "$instance_arn" \
+      --permission-set-arn "$domains_permission_set_arn" \
+      --inline-policy "$original_domains_policy"
+  provision_domains_permission_set
+}
+
+trap restore_domains_source_policy EXIT INT TERM
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws sso-admin put-inline-policy-to-permission-set \
+    --instance-arn "$instance_arn" \
+    --permission-set-arn "$domains_permission_set_arn" \
+    --inline-policy "$bootstrap_domains_policy"
+provision_domains_permission_set
+
+AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
   aws iam put-role-policy \
     --role-name tofu-apply \
     --policy-name tofu-apply-inline \
     --policy-document "$domains_apply_policy"
 
-unset domains_apply_policy
-unset TF_VAR_ghilbut_dkim_for_root_domain
+restore_domains_source_policy
+trap - EXIT INT TERM
+
+AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=domains/tofu plan -out=/tmp/aws-domains.tfplan
+
+)
+
+bootstrap_domains_execution_role
 ```
 
-bootstrap 후 Domains saved plan을 다시 만든다. 새 plan에서 `aws_iam_role_policy.tofu_apply`는
-변경이 없어야 하며 `tofu-plan` role과 inline policy만 생성해야 한다.
-`OrganizationAccountAccessRole`은 Domains account 전체 관리자 권한을 갖는다. 이 절차의
-SSO → Management `tofu-apply` → Domains `OrganizationAccountAccessRole` chaining session은 최대
-1시간이며 `--duration-seconds`에 3600보다 큰 값을 지정하지 않는다.
+`/tmp/aws-domains.tfplan`에서 `aws_iam_role_policy.tofu_apply`는 변경이 없어야 하며 `tofu-plan`
+role과 inline policy만 생성해야 한다. `TofuApplyForDomains`의 최종 inline policy에는
+`BootstrapDomainsExecutionRolePolicy`가 없어야 한다.
 
 ## Billing activation and verification
 
