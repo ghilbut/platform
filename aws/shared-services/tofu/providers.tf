@@ -8,16 +8,16 @@ provider "aws" {
       managed_by      = "opentofu"
       org             = "ghilbut"
       project         = "platform"
-      service         = "platform"
+      service         = "shared-services"
       component       = "workload-access"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/platform/tofu/"
+      "opentofu/path" = "aws/shared-services/tofu/"
     }
   }
 }
 
 provider "aws" {
-  alias               = "platform"
+  alias               = "shared_services"
   allowed_account_ids = ["012646747332"]
   region              = "us-east-1"
 
@@ -31,10 +31,10 @@ provider "aws" {
       managed_by      = "opentofu"
       org             = "ghilbut"
       project         = "platform"
-      service         = "platform"
+      service         = "shared-services"
       component       = "state"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/platform/tofu/"
+      "opentofu/path" = "aws/shared-services/tofu/"
     }
   }
 }

@@ -74,7 +74,7 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 |---:|---|---|---|---|
 | 1 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | 없음 |
 | 2 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
-| 3 | `aws/platform/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
+| 3 | `aws/shared-services/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
 | 4 | `github/tofu/` | Workloads | SharedServices `tofu-apply` | SharedServices role |
 | 5 | `aws/cdn/tofu/` | Workloads | SharedServices `tofu-apply` | GitHub OIDC provider |
 | 6 | `k3s/tofu/` | Workloads | direct source | CDN origin bucket와 `cpa` Kubernetes API |
@@ -138,7 +138,7 @@ apply_root ghilbut-tofu-apply-for-management \
 apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/identity/tofu /tmp/aws-foundation-identity.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
-  aws/platform/tofu /tmp/aws-platform.tfplan
+  aws/shared-services/tofu /tmp/aws-shared-services.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
   github/tofu /tmp/github.tfplan
 ```
@@ -233,7 +233,7 @@ verify_root() {
 
 verify_root ghilbut-tofu-apply-for-management aws/foundation/accounts/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/identity/tofu
-verify_root ghilbut-tofu-apply-for-workloads aws/platform/tofu
+verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
 verify_root ghilbut-tofu-apply-for-workloads github/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/cdn/tofu
 verify_root ghilbut-tofu-apply-for-workloads k3s/tofu

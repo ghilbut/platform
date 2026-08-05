@@ -1,6 +1,6 @@
 resource "aws_iam_role" "tofu_apply" {
   name                 = "tofu-apply"
-  description          = "OpenTofu execution role for the Platform account."
+  description          = "OpenTofu execution role for the SharedServices account."
   max_session_duration = 14400
 
   lifecycle {
@@ -13,12 +13,12 @@ resource "aws_iam_role" "tofu_apply" {
       Sid    = "AllowIdentityCenterPermissionSet"
       Effect = "Allow"
       Principal = {
-        AWS = "arn:aws:iam::${local.platform_account_id}:root"
+        AWS = "arn:aws:iam::${local.shared_services_account_id}:root"
       }
       Action = "sts:AssumeRole"
       Condition = {
         ArnLike = {
-          "aws:PrincipalArn" = "arn:aws:iam::${local.platform_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
+          "aws:PrincipalArn" = "arn:aws:iam::${local.shared_services_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
         }
       }
     }]
