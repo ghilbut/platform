@@ -8,10 +8,10 @@ provider "aws" {
       managed_by      = "opentofu"
       org             = "ghilbut"
       project         = "platform"
-      service         = "foundation"
+      service         = "platform"
       component       = "workload-access"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/foundation/workload/tofu/"
+      "opentofu/path" = "aws/platform/tofu/"
     }
   }
 }
@@ -31,10 +31,10 @@ provider "aws" {
       managed_by      = "opentofu"
       org             = "ghilbut"
       project         = "platform"
-      service         = "foundation"
+      service         = "platform"
       component       = "state"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/foundation/state/tofu/"
+      "opentofu/path" = "aws/platform/tofu/"
     }
   }
 }

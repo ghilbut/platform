@@ -21,8 +21,7 @@ title: AWS account split inventory
 |---|---|---|
 | `platform/aws/foundation/accounts.tfstate` | `aws/foundation/accounts/tofu/` | Management |
 | `platform/aws/foundation/identity.tfstate` | `aws/foundation/identity/tofu/` | Management |
-| `platform/aws/foundation/state.tfstate` | `aws/foundation/state/tofu/` | Platform |
-| `platform/aws/foundation/workload.tfstate` | `aws/foundation/workload/tofu/` | Platform |
+| `platform/aws/platform.tfstate` | `aws/platform/tofu/` | Platform |
 | `platform/aws/cdn.tfstate` | `aws/cdn/tofu/` | Platform |
 | `platform/domains.tfstate` | `domains/tofu/` | Domains |
 | `platform/apps.tfstate` | `apps/tofu/` | Platform |

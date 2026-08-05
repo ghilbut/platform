@@ -24,10 +24,6 @@ locals {
     "platform/aws/foundation/identity.tfstate.tflock",
   ]
   platform_state_object_keys = [
-    "platform/aws/foundation/state.tfstate",
-    "platform/aws/foundation/state.tfstate.tflock",
-    "platform/aws/foundation/workload.tfstate",
-    "platform/aws/foundation/workload.tfstate.tflock",
     "platform/aws/platform.tfstate",
     "platform/aws/platform.tfstate.tflock",
   ]
