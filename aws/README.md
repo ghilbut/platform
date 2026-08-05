@@ -131,8 +131,9 @@ execution role을 관리한다. `aws.shared_services` provider alias는 SharedSe
 선택하고 backend의 고정 profile이 제거된 뒤다.
 
 Management `tofu-apply`는 Domains `OrganizationAccountAccessRole`을 수임하여 Domains execution
-role policy를 bootstrap한다. 이 권한은 Domains account `869061964712`의 해당 role ARN에만
-적용된다.
+role policy를 bootstrap한다. `OrganizationAccountAccessRole`은 Domains account 전체 관리자
+권한을 갖는다. Management의 수임 권한은 Domains account `869061964712`의 해당 role ARN에만
+적용하며 Domains execution role을 다시 구성할 때 유지한다.
 
 ## CDN
 

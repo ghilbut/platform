@@ -388,8 +388,22 @@ aws configure set role_session_name ghilbut-domains-bootstrap \
   --profile ghilbut-domains-bootstrap
 aws configure set region us-east-1 --profile ghilbut-domains-bootstrap
 
+export TF_VAR_ghilbut_dkim_for_root_domain="$(
+  AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
+    tofu -chdir=domains/tofu state pull \
+    | jq -r '
+        .resources[]
+        | select(.type == "aws_route53_record" and .name == "google_dkim")
+        | .instances[0].attributes.records[0]
+      '
+)"
+
+AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=domains/tofu plan \
+    -out=/tmp/aws-domains-bootstrap.tfplan
+
 domains_apply_policy="$(
-  tofu -chdir=domains/tofu show -json /tmp/issue-139-domains.tfplan \
+  tofu -chdir=domains/tofu show -json /tmp/aws-domains-bootstrap.tfplan \
     | jq -c -r '
         .resource_changes[]
         | select(.address == "aws_iam_role_policy.tofu_apply")
@@ -404,10 +418,14 @@ AWS_PROFILE=ghilbut-domains-bootstrap AWS_SDK_LOAD_CONFIG=1 \
     --policy-document "$domains_apply_policy"
 
 unset domains_apply_policy
+unset TF_VAR_ghilbut_dkim_for_root_domain
 ```
 
 bootstrap 후 Domains saved plan을 다시 만든다. 새 plan에서 `aws_iam_role_policy.tofu_apply`는
 변경이 없어야 하며 `tofu-plan` role과 inline policy만 생성해야 한다.
+`OrganizationAccountAccessRole`은 Domains account 전체 관리자 권한을 갖는다. 이 절차의
+SSO → Management `tofu-apply` → Domains `OrganizationAccountAccessRole` chaining session은 최대
+1시간이며 `--duration-seconds`에 3600보다 큰 값을 지정하지 않는다.
 
 ## Billing activation and verification
 
