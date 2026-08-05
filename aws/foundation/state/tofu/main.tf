@@ -1,5 +1,7 @@
 locals {
-  state_bucket          = "ghilbut-tfstates-v2"
+  state_buckets = {
+    primary = "ghilbut-tfstates"
+  }
   management_account_id = "384959722788"
   domains_account_id    = "869061964712"
   platform_account_id   = "012646747332"
@@ -61,7 +63,9 @@ locals {
 }
 
 resource "aws_s3_bucket" "state" {
-  bucket        = local.state_bucket
+  for_each = local.state_buckets
+
+  bucket        = each.value
   force_destroy = false
 
   lifecycle {
@@ -70,7 +74,9 @@ resource "aws_s3_bucket" "state" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "state" {
-  bucket = aws_s3_bucket.state.id
+  for_each = local.state_buckets
+
+  bucket = aws_s3_bucket.state[each.key].id
 
   rule {
     object_ownership = "BucketOwnerEnforced"
@@ -78,7 +84,9 @@ resource "aws_s3_bucket_ownership_controls" "state" {
 }
 
 resource "aws_s3_bucket_public_access_block" "state" {
-  bucket = aws_s3_bucket.state.id
+  for_each = local.state_buckets
+
+  bucket = aws_s3_bucket.state[each.key].id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -87,7 +95,9 @@ resource "aws_s3_bucket_public_access_block" "state" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
-  bucket = aws_s3_bucket.state.id
+  for_each = local.state_buckets
+
+  bucket = aws_s3_bucket.state[each.key].id
 
   rule {
     bucket_key_enabled = true
@@ -99,7 +109,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
 }
 
 resource "aws_s3_bucket_versioning" "state" {
-  bucket = aws_s3_bucket.state.id
+  for_each = local.state_buckets
+
+  bucket = aws_s3_bucket.state[each.key].id
 
   versioning_configuration {
     status = "Enabled"
@@ -107,6 +119,8 @@ resource "aws_s3_bucket_versioning" "state" {
 }
 
 data "aws_iam_policy_document" "state" {
+  for_each = local.state_buckets
+
   statement {
     sid    = "DenyInsecureTransport"
     effect = "Deny"
@@ -118,8 +132,8 @@ data "aws_iam_policy_document" "state" {
 
     actions = ["s3:*"]
     resources = [
-      aws_s3_bucket.state.arn,
-      "${aws_s3_bucket.state.arn}/*",
+      "arn:aws:s3:::${each.value}",
+      "arn:aws:s3:::${each.value}/*",
     ]
 
     condition {
@@ -143,7 +157,7 @@ data "aws_iam_policy_document" "state" {
 
       actions = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
       resources = [
-        for key in statement.value.object_keys : "${aws_s3_bucket.state.arn}/${key}"
+        for key in statement.value.object_keys : "arn:aws:s3:::${each.value}/${key}"
       ]
 
       condition {
@@ -171,7 +185,7 @@ data "aws_iam_policy_document" "state" {
 
       actions = ["s3:GetObject"]
       resources = [
-        for key in statement.value.read_only_object_keys : "${aws_s3_bucket.state.arn}/${key}"
+        for key in statement.value.read_only_object_keys : "arn:aws:s3:::${each.value}/${key}"
       ]
 
       condition {
@@ -195,7 +209,7 @@ data "aws_iam_policy_document" "state" {
       }
 
       actions   = ["s3:GetBucketLocation"]
-      resources = [aws_s3_bucket.state.arn]
+      resources = ["arn:aws:s3:::${each.value}"]
 
       condition {
         test     = "ArnLike"
@@ -218,7 +232,7 @@ data "aws_iam_policy_document" "state" {
       }
 
       actions   = ["s3:ListBucket"]
-      resources = [aws_s3_bucket.state.arn]
+      resources = ["arn:aws:s3:::${each.value}"]
 
       condition {
         test     = "ArnLike"
@@ -236,8 +250,8 @@ data "aws_iam_policy_document" "state" {
 }
 
 resource "aws_s3_bucket_policy" "state" {
-  bucket = aws_s3_bucket.state.id
-  policy = data.aws_iam_policy_document.state.json
+  for_each = local.state_buckets
 
-  depends_on = [aws_s3_bucket_public_access_block.state]
+  bucket = aws_s3_bucket.state[each.key].id
+  policy = data.aws_iam_policy_document.state[each.key].json
 }

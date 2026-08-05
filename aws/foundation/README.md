@@ -30,7 +30,7 @@ Management trusted access는 member 계정 이름을 관리하기 위해 활성�
 Foundation 운영 그룹과 그 멤버십을 관리한다. Identity Store의 사용자와 그 밖의 그룹은 외부
 IdP 또는 IAM Identity Center의 소유이며, 이 state에서 생성하거나 삭제하지 않는다.
 
-`state/tofu/`는 Platform 계정이 소유한 `ghilbut-tfstates-v2` bucket과 접근 정책을 관리한다.
+`state/tofu/`는 Platform 계정이 소유한 `ghilbut-tfstates` bucket과 접근 정책을 관리한다.
 각 source permission set에는 담당 OpenTofu state와 lock file만 허용한다. bucket은 versioning,
 AES256 암호화, public access 차단, bucket owner enforced object ownership을 적용한다.
 

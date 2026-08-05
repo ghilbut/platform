@@ -30,5 +30,5 @@ tofu init
 tofu apply
 ```
 
-OpenTofu 상태는 `s3://ghilbut-tfstates-v2/platform/github.tfstate`에 저장되며,
+OpenTofu 상태는 `s3://ghilbut-tfstates/platform/github.tfstate`에 저장되며,
 `ghilbut-tofu-apply-for-workloads` AWS 프로필을 사용합니다.

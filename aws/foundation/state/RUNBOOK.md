@@ -4,7 +4,7 @@ title: OpenTofu state backend
 
 # OpenTofu state backend
 
-Platform account `012646747332`의 `ghilbut-tfstates-v2` bucket이 모든 active OpenTofu
+Platform account `012646747332`의 `ghilbut-tfstates` bucket이 모든 active OpenTofu
 state를 저장한다. Bucket은 versioning, AES256 encryption, BucketOwnerEnforced ownership과
 public access block을 사용한다.
 
