@@ -43,10 +43,11 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 | `foundation/accounts/tofu/modules/management/` | Management account의 Account Management API 호출 |
 | `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management `tofu-apply` role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
+| `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
 | `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices `tofu-apply` role과 CPA IAM OIDC provider |
 
-Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 OU,
-SCP와 delegated administrator를 관리하는 root로 추가한다.
+Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
+Organization과 trusted access를 관리한다.
 
 ## State ownership
 
@@ -57,6 +58,7 @@ SCP와 delegated administrator를 관리하는 root로 추가한다.
 |---|---|---|---|
 | `aws/foundation/accounts/tofu/` | `platform/aws/foundation/accounts.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
 | `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
+| `aws/foundation/organizations/tofu/` | `platform/aws/foundation/organizations.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
 | `aws/shared-services/tofu/` | `platform/aws/shared-services.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
 | `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
 | `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
@@ -72,7 +74,7 @@ OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접�
 
 | Permission set | Assignment | Source profile | Account-local `tofu-apply` | Role owner | 사용하는 root |
 |---|---|---|---|---|---|
-| `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity |
+| `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
 | `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
 | `TofuApplyForDomains` | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `arn:aws:iam::869061964712:role/tofu-apply` | `domains/tofu/` | Domains |
 | `TofuApplyForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | 없음 | 없음 | UltaryDomains |

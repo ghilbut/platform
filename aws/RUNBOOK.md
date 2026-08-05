@@ -74,13 +74,14 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 |---:|---|---|---|---|
 | 1 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | 없음 |
 | 2 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
-| 3 | `aws/shared-services/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 4 | `github/tofu/` | Workloads | SharedServices `tofu-apply` | SharedServices role |
-| 5 | `aws/cdn/tofu/` | Workloads | SharedServices `tofu-apply` | GitHub OIDC provider |
-| 6 | `k3s/tofu/` | Workloads | direct source | CDN origin bucket와 `cpa` Kubernetes API |
-| 7 | `domains/tofu/` | Domains | Domains `tofu-apply` | CDN state |
-| 8 | `apps/tofu/` | Workloads | direct source | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 9 | `ultary/domains/tofu/` | UltaryDomains | direct source | UltaryDomains assignment |
+| 3 | `aws/foundation/organizations/tofu/` | Management | Management `tofu-apply` | Management `tofu-apply` role |
+| 4 | `aws/shared-services/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
+| 5 | `github/tofu/` | Workloads | SharedServices `tofu-apply` | SharedServices role |
+| 6 | `aws/cdn/tofu/` | Workloads | SharedServices `tofu-apply` | GitHub OIDC provider |
+| 7 | `k3s/tofu/` | Workloads | direct source | CDN origin bucket와 `cpa` Kubernetes API |
+| 8 | `domains/tofu/` | Domains | Domains `tofu-apply` | CDN state |
+| 9 | `apps/tofu/` | Workloads | direct source | SharedServices의 `TofuApplyForWorkloads` assignment |
+| 10 | `ultary/domains/tofu/` | UltaryDomains | direct source | UltaryDomains assignment |
 
 ## Plan and apply
 
@@ -137,6 +138,8 @@ apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/accounts/tofu /tmp/aws-foundation-accounts.tfplan
 apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/identity/tofu /tmp/aws-foundation-identity.tfplan
+apply_root ghilbut-tofu-apply-for-management \
+  aws/foundation/organizations/tofu /tmp/aws-foundation-organizations.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
   aws/shared-services/tofu /tmp/aws-shared-services.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
@@ -210,7 +213,7 @@ aws sts assume-role \
 ## State verification
 
 다음 명령은 active state object만 출력한다. 결과는
-[[aws/README#State ownership|State ownership]] 표의 아홉 key와 일치해야 한다.
+[[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
@@ -233,6 +236,7 @@ verify_root() {
 
 verify_root ghilbut-tofu-apply-for-management aws/foundation/accounts/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/identity/tofu
+verify_root ghilbut-tofu-apply-for-management aws/foundation/organizations/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
 verify_root ghilbut-tofu-apply-for-workloads github/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/cdn/tofu
