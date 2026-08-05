@@ -55,10 +55,10 @@ account에 적용되지 않는다.
 | `foundation/` | accounts, identity와 organizations 책임 경계 |
 | `foundation/accounts/tofu/` | AWS Organizations account와 Management account opt-in region |
 | `foundation/accounts/tofu/modules/management/` | Management account의 Account Management API 호출 |
-| `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management `tofu-apply` role |
+| `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management execution role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
-| `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices `tofu-apply` role과 CPA IAM OIDC provider |
+| `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices execution role과 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
 Organization, Infrastructure OU, SCP와 trusted access를 관리한다.
@@ -68,18 +68,18 @@ Organization, Infrastructure OU, SCP와 trusted access를 관리한다.
 모든 active state는 SharedServices 계정의 versioned S3 bucket `ghilbut-tfstates`에 저장하고 같은
 이름의 `.tflock` object를 사용한다. 하나의 resource는 하나의 state만 관리한다.
 
-| Root | State key | Account | Source profile |
-|---|---|---|---|
-| `aws/foundation/accounts/tofu/` | `platform/aws/foundation/accounts.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
-| `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
-| `aws/foundation/organizations/tofu/` | `platform/aws/foundation/organizations.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
-| `aws/shared-services/tofu/` | `platform/aws/shared-services.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
-| `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
-| `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
-| `github/tofu/` | `platform/github.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
-| `k3s/tofu/` | `k3s.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
-| `domains/tofu/` | `platform/domains.tfstate` | Domains | `ghilbut-tofu-apply-for-domains` |
-| `ultary/domains/tofu/` | `ultary/domains.tfstate` | UltaryDomains | `ghilbut-tofu-apply-for-ultary-domains` |
+| Root | State key | Account | Plan source profile | Apply source profile |
+|---|---|---|---|---|
+| `aws/foundation/accounts/tofu/` | `platform/aws/foundation/accounts.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
+| `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
+| `aws/foundation/organizations/tofu/` | `platform/aws/foundation/organizations.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
+| `aws/shared-services/tofu/` | `platform/aws/shared-services.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `github/tofu/` | `platform/github.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `k3s/tofu/` | `k3s.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `domains/tofu/` | `platform/domains.tfstate` | Domains | `ghilbut-tofu-plan-for-domains` | `ghilbut-tofu-apply-for-domains` |
+| `ultary/domains/tofu/` | `ultary/domains.tfstate` | UltaryDomains | `ghilbut-tofu-plan-for-ultary-domains` | `ghilbut-tofu-apply-for-ultary-domains` |
 
 ## Management access
 
@@ -96,24 +96,33 @@ Console을 열 수 있다.
 
 ## OpenTofu access
 
-`TofuApplyFor*`는 IAM Identity Center source identity다. `tofu-apply`는 각 계정 안에서
-OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접근한다.
+`TofuPlanFor*`와 `TofuApplyFor*`는 IAM Identity Center source identity다. Backend는 source
+profile로 접근한다. Provider는 account-local `tofu-plan` 또는 `tofu-apply` execution role을
+수임한다.
 
-| Permission set | Assignment | Source profile | Account-local `tofu-apply` | Role owner | 사용하는 root |
+| Permission set | Assignment | Source profile | Account-local role | Role owner | 사용하는 root |
 |---|---|---|---|---|---|
+| `TofuPlanForManagement` | Management `384959722788` | `ghilbut-tofu-plan-for-management` | `arn:aws:iam::384959722788:role/tofu-plan` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
 | `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
+| `TofuPlanForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `arn:aws:iam::012646747332:role/tofu-plan` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
 | `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
+| `TofuPlanForDomains` | Domains `869061964712` | `ghilbut-tofu-plan-for-domains` | `arn:aws:iam::869061964712:role/tofu-plan` | `domains/tofu/` | Domains |
 | `TofuApplyForDomains` | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `arn:aws:iam::869061964712:role/tofu-apply` | `domains/tofu/` | Domains |
+| `TofuPlanForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-plan-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 | `TofuApplyForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 
-`TofuApplyForWorkloads`는 workload 운영 계정이 공유한다. 현재 assignment는 SharedServices
-`012646747332` 하나다. `TofuApplyForDomains`는 Domains account에만 할당한다.
-`FoundationManagement`와 `Billing`은 OpenTofu source profile로 사용하지 않는다.
+`TofuPlanForWorkloads`와 `TofuApplyForWorkloads`는 workload 운영 계정이 공유한다. 현재
+assignment는 SharedServices `012646747332` 하나다. Domains permission set은 Domains account에만
+할당한다. `FoundationManagement`와 `Billing`은 OpenTofu source profile로 사용하지 않는다.
 
-`aws/shared-services/tofu/`는 SharedServices `tofu-apply` role과 CPA OIDC provider를 source
-profile로 직접 관리한다. 같은 root의 S3 resource는 `aws.shared_services` provider alias로
-SharedServices `tofu-apply` role을 수임한다. `apps/tofu/`, `k3s/tofu/`와 UltaryDomains는 source
-identity를 provider에서 직접 사용한다.
+Plan source identity는 `.tfstate`를 읽고 해당 `.tflock`을 읽고 쓰고 삭제한다. Apply source
+identity는 해당 `.tfstate`와 `.tflock`을 읽고 쓰고 삭제한다. `tofu-plan` role은 managed
+resource를 읽으며 `tofu-apply` role은 managed resource를 변경한다. UltaryDomains는 account-local
+execution role 없이 source identity를 provider에서 직접 사용한다.
+
+Permission set session duration과 account-local role의 configured maximum session duration은
+4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
+session은 최대 1시간이다.
 
 ## CDN
 

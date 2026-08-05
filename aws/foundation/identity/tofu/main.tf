@@ -29,6 +29,7 @@ locals {
     shared_services = {
       account_id          = local.shared_services_account_id
       tofu_apply_role_arn = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-apply"
+      tofu_plan_role_arn  = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-plan"
       state_object_keys = [
         "k3s.tfstate",
         "k3s.tfstate.tflock",
@@ -360,6 +361,284 @@ module "tofu_apply_for_ultary_domains" {
         Resource = flatten([
           for bucket in local.state_buckets : [
             for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
+      },
+      {
+        Sid      = "UltaryDomainsStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+      },
+      {
+        Sid      = "UltaryDomainsStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.ultary_domains_state_object_keys
+          }
+        }
+      },
+    ]
+  })
+  account_assignments = {
+    ultary_domains = {
+      account_id     = "971119963968"
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "tofu_plan_for_management" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "TofuPlanForManagement"
+  description  = "OpenTofu plan access for Management account resources."
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AssumeTofuPlanRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::384959722788:role/tofu-plan"
+      },
+      {
+        Sid    = "FoundationStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.foundation_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if !endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid    = "FoundationStateLocks"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.foundation_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid      = "FoundationStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+      },
+      {
+        Sid      = "FoundationStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.foundation_state_object_keys
+          }
+        }
+      },
+    ]
+  })
+  account_assignments = {
+    management = {
+      account_id     = "384959722788"
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "tofu_plan_for_domains" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "TofuPlanForDomains"
+  description  = "OpenTofu plan access for Domains DNS resources."
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AssumeDomainsPlanRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-plan"
+      },
+      {
+        Sid    = "DomainsStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if !endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid    = "DomainsStateLocks"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid    = "DomainsRemoteStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.domains_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+          ]
+        ])
+      },
+      {
+        Sid      = "DomainsStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+      },
+      {
+        Sid      = "DomainsStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = concat(local.domains_state_object_keys, local.domains_remote_state_object_keys)
+          }
+        }
+      },
+    ]
+  })
+  account_assignments = {
+    domains = {
+      account_id     = local.domains_account_id
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "tofu_plan_for_workloads" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "TofuPlanForWorkloads"
+  description  = "OpenTofu plan access for workload infrastructure."
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "AssumeTofuPlanRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = [for account in values(local.workload_accounts) : account.tofu_plan_role_arn]
+      },
+      {
+        Sid    = "WorkloadStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if !endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid    = "WorkloadStateLocks"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid      = "WorkloadStateBucketLocation"
+        Effect   = "Allow"
+        Action   = "s3:GetBucketLocation"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+      },
+      {
+        Sid      = "WorkloadStateBucket"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
+        Condition = {
+          StringLike = {
+            "s3:prefix" = local.workload_state_object_keys
+          }
+        }
+      },
+    ]
+  })
+  account_assignments = {
+    for name, account in local.workload_accounts : name => {
+      account_id     = account.account_id
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "tofu_plan_for_ultary_domains" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "TofuPlanForUltaryDomains"
+  description  = "OpenTofu plan access for Ultary Domains Route 53 resources."
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "UltaryDomainsRead"
+        Effect = "Allow"
+        Action = [
+          "route53:Get*",
+          "route53:List*",
+          "route53:TestDNSAnswer",
+          "route53domains:Check*",
+          "route53domains:Get*",
+          "route53domains:List*",
+          "route53domains:View*",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "UltaryDomainsStateObjects"
+        Effect = "Allow"
+        Action = "s3:GetObject"
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if !endswith(key, ".tflock")
+          ]
+        ])
+      },
+      {
+        Sid    = "UltaryDomainsStateLocks"
+        Effect = "Allow"
+        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
+        Resource = flatten([
+          for bucket in local.state_buckets : [
+            for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            if endswith(key, ".tflock")
           ]
         ])
       },

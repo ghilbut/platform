@@ -22,7 +22,7 @@ aws configure sso-session
 | SSO region | `us-east-1` |
 | SSO registration scopes | `sso:account:access` |
 
-여섯 source profile을 같은 session에 연결한다.
+열 개 source profile을 같은 session에 연결한다.
 
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-foundation-management
@@ -35,20 +35,40 @@ aws configure set sso_account_id 384959722788 --profile ghilbut-billing
 aws configure set sso_role_name Billing --profile ghilbut-billing
 aws configure set region us-east-1 --profile ghilbut-billing
 
+aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-management
+aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-plan-for-management
+aws configure set sso_role_name TofuPlanForManagement --profile ghilbut-tofu-plan-for-management
+aws configure set region us-east-1 --profile ghilbut-tofu-plan-for-management
+
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-management
 aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-apply-for-management
 aws configure set sso_role_name TofuApplyForManagement --profile ghilbut-tofu-apply-for-management
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-management
+
+aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-workloads
+aws configure set sso_account_id 012646747332 --profile ghilbut-tofu-plan-for-workloads
+aws configure set sso_role_name TofuPlanForWorkloads --profile ghilbut-tofu-plan-for-workloads
+aws configure set region us-east-1 --profile ghilbut-tofu-plan-for-workloads
 
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_account_id 012646747332 --profile ghilbut-tofu-apply-for-workloads
 aws configure set sso_role_name TofuApplyForWorkloads --profile ghilbut-tofu-apply-for-workloads
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-workloads
 
+aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-domains
+aws configure set sso_account_id 869061964712 --profile ghilbut-tofu-plan-for-domains
+aws configure set sso_role_name TofuPlanForDomains --profile ghilbut-tofu-plan-for-domains
+aws configure set region us-east-1 --profile ghilbut-tofu-plan-for-domains
+
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-domains
 aws configure set sso_account_id 869061964712 --profile ghilbut-tofu-apply-for-domains
 aws configure set sso_role_name TofuApplyForDomains --profile ghilbut-tofu-apply-for-domains
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-domains
+
+aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-ultary-domains
+aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-plan-for-ultary-domains
+aws configure set sso_role_name TofuPlanForUltaryDomains --profile ghilbut-tofu-plan-for-ultary-domains
+aws configure set region us-east-1 --profile ghilbut-tofu-plan-for-ultary-domains
 
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-apply-for-ultary-domains
@@ -69,27 +89,40 @@ export AWS_SDK_LOAD_CONFIG=1
 
 aws sso login --profile ghilbut-foundation-management
 aws sso login --profile ghilbut-billing
+aws sso login --profile ghilbut-tofu-plan-for-management
 aws sso login --profile ghilbut-tofu-apply-for-management
+aws sso login --profile ghilbut-tofu-plan-for-workloads
 aws sso login --profile ghilbut-tofu-apply-for-workloads
+aws sso login --profile ghilbut-tofu-plan-for-domains
 aws sso login --profile ghilbut-tofu-apply-for-domains
+aws sso login --profile ghilbut-tofu-plan-for-ultary-domains
 aws sso login --profile ghilbut-tofu-apply-for-ultary-domains
 
 aws sts get-caller-identity --profile ghilbut-foundation-management \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-billing \
   --query Account --output text
+aws sts get-caller-identity --profile ghilbut-tofu-plan-for-management \
+  --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-management \
+  --query Account --output text
+aws sts get-caller-identity --profile ghilbut-tofu-plan-for-workloads \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads \
   --query Account --output text
+aws sts get-caller-identity --profile ghilbut-tofu-plan-for-domains \
+  --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-domains \
+  --query Account --output text
+aws sts get-caller-identity --profile ghilbut-tofu-plan-for-ultary-domains \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
   --query Account --output text
 ```
 
-FoundationManagement, Billing과 Management 결과는 `384959722788`이다. 나머지 결과는
-순서대로 `012646747332`, `869061964712`, `971119963968`이다.
+FoundationManagement, Billing, Management Plan과 Management Apply 결과는 `384959722788`이다.
+Workloads Plan과 Apply는 `012646747332`, Domains Plan과 Apply는 `869061964712`, UltaryDomains
+Plan과 Apply는 `971119963968`이다.
 
 ## Execution order
 
@@ -266,9 +299,21 @@ aws sts assume-role \
   --query 'AssumedRoleUser.Arn' --output text
 
 aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-management \
+  --role-arn arn:aws:iam::384959722788:role/tofu-plan \
+  --role-session-name verify-management-tofu-plan \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
   --profile ghilbut-tofu-apply-for-management \
   --role-arn arn:aws:iam::384959722788:role/tofu-apply \
   --role-session-name verify-management-tofu-apply \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-workloads \
+  --role-arn arn:aws:iam::012646747332:role/tofu-plan \
+  --role-session-name verify-shared-services-tofu-plan \
   --query 'AssumedRoleUser.Arn' --output text
 
 aws sts assume-role \
@@ -278,11 +323,46 @@ aws sts assume-role \
   --query 'AssumedRoleUser.Arn' --output text
 
 aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-domains \
+  --role-arn arn:aws:iam::869061964712:role/tofu-plan \
+  --role-session-name verify-domains-tofu-plan \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
   --profile ghilbut-tofu-apply-for-domains \
   --role-arn arn:aws:iam::869061964712:role/tofu-apply \
   --role-session-name verify-domains-tofu-apply \
   --query 'AssumedRoleUser.Arn' --output text
 ```
+
+Plan source identity에서 해당 `tofu-apply` role 수임이 거부되는지 확인한다.
+
+```sh
+if aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-management \
+  --role-arn arn:aws:iam::384959722788:role/tofu-apply \
+  --role-session-name reject-management-tofu-apply; then
+  exit 1
+fi
+
+if aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-workloads \
+  --role-arn arn:aws:iam::012646747332:role/tofu-apply \
+  --role-session-name reject-shared-services-tofu-apply; then
+  exit 1
+fi
+
+if aws sts assume-role \
+  --profile ghilbut-tofu-plan-for-domains \
+  --role-arn arn:aws:iam::869061964712:role/tofu-apply \
+  --role-session-name reject-domains-tofu-apply; then
+  exit 1
+fi
+```
+
+세 명령은 `AccessDenied`를 반환해야 한다. Plan permission set session duration과 `tofu-plan`
+role의 configured maximum session duration은 4시간이다. IAM role chaining을 사용하는
+`tofu-plan` session은 최대 1시간이다.
 
 ## Billing activation and verification
 
@@ -328,6 +408,40 @@ Billing Console 접근을 별도로 검증한다.
 chaining을 사용하므로 `billing` role session은 최대 1시간이다.
 
 ## State verification
+
+Plan source identity가 해당 state를 읽는지 확인한다. `head-object`는 state 내용을 출력하지
+않는다.
+
+```sh
+verify_plan_state_read() {
+  profile_name="$1"
+  state_key="$2"
+
+  AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
+    aws s3api head-object \
+      --bucket ghilbut-tfstates \
+      --key "$state_key" \
+      --query '{Length:ContentLength,Version:VersionId}'
+}
+
+verify_plan_state_read ghilbut-tofu-plan-for-management \
+  platform/aws/foundation/accounts.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-management \
+  platform/aws/foundation/identity.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-management \
+  platform/aws/foundation/organizations.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-workloads k3s.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/apps.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/aws/cdn.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/aws/shared-services.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/github.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-domains platform/domains.tfstate
+verify_plan_state_read ghilbut-tofu-plan-for-ultary-domains ultary/domains.tfstate
+```
+
+Plan source policy에서 `s3:PutObject`와 `s3:DeleteObject` resource는 해당 `.tflock` ARN만
+포함한다. 실제 `.tfstate` object에 쓰기 요청을 보내지 않는다. Plan의 lock 생성과 제거는
+OpenTofu plan을 실행하여 확인한다.
 
 다음 명령은 active state object만 출력한다. 결과는
 [[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
