@@ -8,6 +8,11 @@ output "shared_services_account_id" {
   value       = aws_organizations_account.shared_services.id
 }
 
+output "security_tooling_account_id" {
+  description = "SecurityTooling AWS account ID."
+  value       = aws_organizations_account.security_tooling.id
+}
+
 output "ultary_domains_account_id" {
   description = "UltaryDomains AWS account ID."
   value       = aws_organizations_account.ultary.id

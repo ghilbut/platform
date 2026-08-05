@@ -370,7 +370,7 @@ AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
   aws organizations list-accounts-for-parent \
     --parent-id "$security_ou_id" --query 'Accounts[].Name' --output json
 
-for account_id in 384959722788 012646747332 869061964712 971119963968; do
+for account_id in 384959722788 012646747332 869061964712 954066442429 971119963968; do
   AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
     aws organizations list-policies-for-target \
       --target-id "$account_id" --filter SERVICE_CONTROL_POLICY \
@@ -387,7 +387,50 @@ done
 - 각 account의 직접 연결 SCP: `FullAWSAccess`
 - Root account: Management, UltaryDomains
 - Infrastructure OU account: Domains, SharedServices
-- Security OU account: 없음
+- Security OU account: SecurityTooling
+
+SecurityTooling account와 비활성 opt-in Region을 확인한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations describe-account \
+    --account-id 954066442429 \
+    --query 'Account.[Id,Name,Email,State,Paths[0]]' --output table
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws account list-regions \
+    --account-id 954066442429 \
+    --region-opt-status-contains DISABLED \
+    --query 'Regions[].RegionName' --output table
+```
+
+계정 결과는 다음 값과 일치해야 한다.
+
+- ID: `954066442429`
+- Name: `SecurityTooling`
+- Email: `aws-security-tooling@ghilbut.com`
+- State: `ACTIVE`
+- Path: `o-ncl6mypc8p/r-k1tk/ou-k1tk-rx2wvnws/954066442429/`
+
+비활성 Region 결과는 다음 17개와 일치해야 한다.
+
+- `af-south-1`
+- `ap-east-1`
+- `ap-east-2`
+- `ap-south-2`
+- `ap-southeast-3`
+- `ap-southeast-4`
+- `ap-southeast-5`
+- `ap-southeast-6`
+- `ap-southeast-7`
+- `ca-west-1`
+- `eu-central-2`
+- `eu-south-1`
+- `eu-south-2`
+- `il-central-1`
+- `me-central-1`
+- `me-south-1`
+- `mx-central-1`
 
 ## IAM Identity Center verification
 

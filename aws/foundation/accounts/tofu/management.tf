@@ -1,6 +1,4 @@
-module "management" {
-  source = "./modules/management"
-
+locals {
   disabled_opt_in_regions = toset([
     "af-south-1",
     "ap-east-1",
@@ -20,4 +18,17 @@ module "management" {
     "me-south-1",
     "mx-central-1",
   ])
+}
+
+module "management" {
+  source = "./modules/account-regions"
+
+  disabled_opt_in_regions = local.disabled_opt_in_regions
+}
+
+module "security_tooling_regions" {
+  source = "./modules/account-regions"
+
+  account_id              = aws_organizations_account.security_tooling.id
+  disabled_opt_in_regions = local.disabled_opt_in_regions
 }
