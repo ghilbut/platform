@@ -4,10 +4,10 @@ locals {
   state_buckets = {
     primary = "ghilbut-tfstates"
   }
-  management_account_id = "384959722788"
-  domains_account_id    = "869061964712"
-  platform_account_id   = data.aws_caller_identity.current.account_id
-  ultary_account_id     = "971119963968"
+  management_account_id      = "384959722788"
+  domains_account_id         = "869061964712"
+  shared_services_account_id = data.aws_caller_identity.current.account_id
+  ultary_account_id          = "971119963968"
 
   state_access = {
     management = {
@@ -33,10 +33,10 @@ locals {
         "platform/aws/cdn.tfstate",
       ]
     }
-    platform = {
-      sid_prefix            = "Platform"
-      account_id            = local.platform_account_id
-      principal_arn_pattern = "arn:aws:iam::${local.platform_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
+    shared_services = {
+      sid_prefix            = "SharedServices"
+      account_id            = local.shared_services_account_id
+      principal_arn_pattern = "arn:aws:iam::${local.shared_services_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
       object_keys = [
         "k3s.tfstate",
         "k3s.tfstate.tflock",

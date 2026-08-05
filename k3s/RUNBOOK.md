@@ -209,7 +209,7 @@ AWS 계정은 cluster issuer당 IAM OIDC provider를 하나 사용한다. IAM ro
 3. 정확한 `system:serviceaccount:<namespace>:<serviceaccount>` subject
 
 CPA OIDC provider의 TLS intermediate CA SHA-1 thumbprint는 `domains/tofu`와
-`aws/platform/tofu`의 `cpa_oidc_thumbprint`로 관리한다.
+`aws/shared-services/tofu`의 `cpa_oidc_thumbprint`로 관리한다.
 
 ### 3. 확인
 

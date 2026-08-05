@@ -43,7 +43,7 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 | `foundation/accounts/tofu/modules/management/` | Management account의 Account Management API 호출 |
 | `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps group, account assignment와 Management `tofu-apply` role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
-| `platform/tofu/` | `ghilbut-tfstates`, SharedServices `tofu-apply` role과 CPA IAM OIDC provider |
+| `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices `tofu-apply` role과 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 OU,
 SCP와 delegated administrator를 관리하는 root로 추가한다.
@@ -57,7 +57,7 @@ SCP와 delegated administrator를 관리하는 root로 추가한다.
 |---|---|---|---|
 | `aws/foundation/accounts/tofu/` | `platform/aws/foundation/accounts.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
 | `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | Management | `ghilbut-tofu-apply-for-management` |
-| `aws/platform/tofu/` | `platform/aws/platform.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
+| `aws/shared-services/tofu/` | `platform/aws/shared-services.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
 | `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
 | `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
 | `github/tofu/` | `platform/github.tfstate` | SharedServices | `ghilbut-tofu-apply-for-workloads` |
@@ -73,7 +73,7 @@ OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접�
 | Permission set | Assignment | Source profile | Account-local `tofu-apply` | Role owner | 사용하는 root |
 |---|---|---|---|---|---|
 | `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity |
-| `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/platform/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
+| `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
 | `TofuApplyForDomains` | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `arn:aws:iam::869061964712:role/tofu-apply` | `domains/tofu/` | Domains |
 | `TofuApplyForUltaryDomains` | UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | 없음 | 없음 | UltaryDomains |
 
@@ -82,8 +82,8 @@ OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접�
 `FoundationManagement`는 Management console 관리용 permission set이며 OpenTofu source
 profile로 사용하지 않는다.
 
-`aws/platform/tofu/`는 SharedServices `tofu-apply` role과 CPA OIDC provider를 source profile로
-직접 관리한다. 같은 root의 S3 resource는 `aws.platform` provider alias로 SharedServices
+`aws/shared-services/tofu/`는 SharedServices `tofu-apply` role과 CPA OIDC provider를 source
+profile로 직접 관리한다. 같은 root의 S3 resource는 `aws.shared_services` provider alias로 SharedServices
 `tofu-apply` role을 수임한다. `apps/tofu/`, `k3s/tofu/`와 UltaryDomains는 source identity를
 provider에서 직접 사용한다.
 

@@ -1,6 +1,6 @@
-output "platform_account_id" {
+output "shared_services_account_id" {
   description = "SharedServices AWS account ID."
-  value       = local.platform_account_id
+  value       = local.shared_services_account_id
 }
 
 output "tofu_execution_role_arn" {
