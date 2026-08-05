@@ -31,6 +31,9 @@ data:
         bind 192.168.254.4
         errors
         cache 60
+        header {
+            response set ra
+        }
         etcd ghilbut.com {
             endpoint http://etcd:2379
             path /skydns
@@ -50,6 +53,9 @@ data:
         bind 192.168.254.4
         errors
         cache 60
+        header {
+            response set ra
+        }
         etcd ghilbut.net {
             endpoint http://etcd:2379
             path /skydns

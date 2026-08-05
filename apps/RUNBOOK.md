@@ -203,7 +203,7 @@ dig @192.168.254.4 ghilbut.net SOA
 ASUS Router 설정을 적용한 뒤 LAN 클라이언트의 네트워크를 다시 연결하고 다음 명령을 실행한다.
 
 ```shell
-dig ghilbut.com SOA
+nslookup ghilbut.com
 ```
 
 출력의 `SERVER`가 `192.168.254.4#53(192.168.254.4)`이면 LAN 클라이언트가 CoreDNS를 기본 DNS server로 사용한다.
