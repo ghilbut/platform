@@ -124,6 +124,12 @@ Permission set session duration과 account-local role의 configured maximum sess
 4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
 session은 최대 1시간이다.
 
+`aws/shared-services/tofu/`의 기본 provider는 source identity를 직접 사용하여 account-local
+execution role을 관리한다. `aws.shared_services` provider alias는 SharedServices `tofu-apply`를
+수임한다. `apps/tofu/`, `k3s/tofu/`와 UltaryDomains는 source identity를 provider에서 직접
+사용한다. Plan source profile을 전체 root plan에 사용하는 시점은 provider가 `tofu-plan`을
+선택하고 backend의 고정 profile이 제거된 뒤다.
+
 ## CDN
 
 `aws/cdn/tofu/`는 `ghilbut-cdn-platform` bucket과

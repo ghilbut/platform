@@ -441,7 +441,8 @@ verify_plan_state_read ghilbut-tofu-plan-for-ultary-domains ultary/domains.tfsta
 
 Plan source policy에서 `s3:PutObject`와 `s3:DeleteObject` resource는 해당 `.tflock` ARN만
 포함한다. 실제 `.tfstate` object에 쓰기 요청을 보내지 않는다. Plan의 lock 생성과 제거는
-OpenTofu plan을 실행하여 확인한다.
+provider가 `tofu-plan`을 선택하고 backend의 고정 profile이 제거된 root에서 OpenTofu plan을
+실행하여 확인한다.
 
 다음 명령은 active state object만 출력한다. 결과는
 [[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
