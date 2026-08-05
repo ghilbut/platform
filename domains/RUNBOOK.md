@@ -18,9 +18,10 @@ CPA IAM OIDC provider와 DNS 전용 IAM role을 관리한다.
 | State key | `platform/domains.tfstate` |
 | CDN remote state | `platform/aws/cdn.tfstate` read-only |
 
-Backend와 CDN remote state는 `AWS_PROFILE`의 source identity를 사용한다. Provider는 기본으로
-`tofu-plan`을 수임한다. Apply 전용 로컬 작업 공간은 `tofu-apply.auto.tfvars`로 `tofu-apply`를
-지정한다.
+Backend와 CDN remote state는 SharedServices `tofu-state-readonly`를 수임한다. Apply backend는
+`tofu-state-apply.tfbackend`로 SharedServices `tofu-state-apply`를 수임한다. Provider는 기본으로
+Domains `tofu-plan`을 수임한다. Apply 전용 로컬 작업 공간은 `tofu-apply.auto.tfvars`로 Domains
+`tofu-apply`를 지정한다.
 
 ## Profile
 
@@ -79,7 +80,8 @@ aws_execution_role_arn = "arn:aws:iam::869061964712:role/tofu-apply"
 export AWS_PROFILE=ghilbut-tofu-apply-for-domains
 export AWS_SDK_LOAD_CONFIG=1
 
-tofu -chdir=domains/tofu init -reconfigure
+tofu -chdir=domains/tofu init -reconfigure \
+  -backend-config=tofu-state-apply.tfbackend
 
 export TF_VAR_ghilbut_dkim_for_root_domain="$(
   tofu -chdir=domains/tofu state pull |

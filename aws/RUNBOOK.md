@@ -160,7 +160,8 @@ Plan과 Apply는 `971119963968`이다. SecurityTooling Plan과 Apply는 `9540664
 ### Credential mode
 
 Override가 없는 checkout은 Plan mode다. `AWS_PROFILE`에 대응하는 `TofuPlanFor*` source profile을
-지정하면 backend는 source identity를 사용하고 provider는 기본 `tofu-plan` role을 수임한다.
+지정하면 backend는 SharedServices `tofu-state-readonly`를 수임하고 provider는 기본 `tofu-plan`
+role을 수임한다. UltaryDomains provider는 source identity를 직접 사용한다.
 
 Apply 전용 로컬 작업 공간은 다음 아홉 root에 `tofu-apply.auto.tfvars`를 둔다.
 
@@ -192,26 +193,53 @@ Domains root의 파일은 다음 값을 사용한다.
 aws_execution_role_arn = "arn:aws:iam::869061964712:role/tofu-apply"
 ```
 
+모든 열 root의 Apply backend는 git에서 제외한 `tofu-state-apply.tfbackend`를 둔다.
+
+```hcl
+assume_role = {
+  role_arn = "arn:aws:iam::012646747332:role/tofu-state-apply"
+}
+```
+
 Apply mode에서는 대응하는 `TofuApplyFor*` source profile을 `AWS_PROFILE`에 지정한다. 자동 variable
 file은 plan에도 적용되므로 Plan source profile과 함께 사용하지 않는다. `tofu-apply.auto.tfvars`와
 `TF_VAR_aws_execution_role_arn`을 함께 사용하지 않는다. UltaryDomains는 override file 없이 Plan
 또는 Apply source profile을 provider에 직접 사용한다.
 
-Source profile을 바꾸거나 기존 backend의 고정 profile을 제거한 뒤에는 각 root에서 다음 명령을
-실행한다.
+Plan mode로 전환할 때는 backend 기본값인 `tofu-state-readonly`로 다시 초기화한다.
 
 ```sh
-AWS_PROFILE='<source-profile>' AWS_SDK_LOAD_CONFIG=1 \
+AWS_PROFILE='<plan-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir='<root-path>' init -reconfigure
 ```
+
+Apply mode로 전환할 때는 로컬 backend 설정으로 다시 초기화한다.
+
+```sh
+AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir='<root-path>' init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
+```
+
+Backend override는 `init` 결과에 저장된다. Source profile 또는 실행 mode를 바꿀 때마다
+`init -reconfigure`를 실행한다.
 
 새 account에서 `tofu-plan`과 `tofu-apply` role을 처음 생성할 때만 source identity를 provider에
 직접 사용한다.
 
+```hcl
+# bootstrap.tfvars
+aws_execution_role_arn = null
+```
+
 ```sh
 AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir='<role-owner-root>' init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
+
+AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir='<role-owner-root>' plan \
-    -var='aws_execution_role_arn=null' \
+    -var-file=bootstrap.tfvars \
     -out=/tmp/bootstrap-execution-roles.tfplan
 
 AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
@@ -293,7 +321,8 @@ apply_root() {
   plan_path="$3"
 
   AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
-    tofu -chdir="$root_path" init -reconfigure
+    tofu -chdir="$root_path" init -reconfigure \
+      -backend-config=tofu-state-apply.tfbackend
   AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
     tofu -chdir="$root_path" validate
   AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
@@ -612,50 +641,55 @@ chaining을 사용하므로 `billing` role session은 최대 1시간이다.
 
 ## State verification
 
-Plan source identity가 해당 state를 읽는지 확인한다. `head-object`는 state 내용을 출력하지
-않는다.
+중앙 state role의 권한 결정을 확인한다. `.tfstate` 쓰기 요청은 실행하지 않는다.
 
 ```sh
-verify_plan_state_read() {
-  profile_name="$1"
-  state_key="$2"
+simulate_state_role() {
+  role_name="$1"
 
-  AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
-    aws s3api head-object \
-      --bucket ghilbut-tfstates \
-      --key "$state_key" \
-      --query '{Length:ContentLength,Version:VersionId}'
+  AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+    aws iam simulate-principal-policy \
+    --policy-source-arn "arn:aws:iam::012646747332:role/$role_name" \
+    --action-names s3:GetObject s3:PutObject s3:DeleteObject \
+    --resource-arns \
+      arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services.tfstate \
+      arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services.tfstate.tflock \
+      arn:aws:s3:::ghilbut-tfstates/recovery/platform/aws/shared-services.tfstate \
+      arn:aws:s3:::ghilbut-tfstates-v2/platform/aws/shared-services.tfstate \
+    --output json \
+  | jq -r '
+      .EvaluationResults[]
+      | .EvalActionName as $action
+      | .ResourceSpecificResults[]
+      | [$action, .EvalResourceName, .EvalResourceDecision]
+      | @tsv
+    '
 }
 
-verify_plan_state_read ghilbut-tofu-plan-for-management \
-  platform/aws/foundation/accounts.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-management \
-  platform/aws/foundation/identity.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-management \
-  platform/aws/foundation/organizations.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-workloads k3s.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/apps.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/aws/cdn.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/aws/shared-services.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-workloads platform/github.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-domains platform/domains.tfstate
-verify_plan_state_read ghilbut-tofu-plan-for-ultary-domains ultary/domains.tfstate
+simulate_state_role tofu-state-readonly
+simulate_state_role tofu-state-apply
 ```
 
-Plan source policy에서 `s3:PutObject`와 `s3:DeleteObject` resource는 해당 `.tflock` ARN만
-포함한다. 실제 `.tfstate` object에 쓰기 요청을 보내지 않는다. Plan의 lock 생성과 제거는
-provider가 `tofu-plan`을 선택하고 backend의 고정 profile이 제거된 root에서 OpenTofu plan을
-실행하여 확인한다.
+`tofu-state-readonly`는 `.tfstate`의 `GetObject`와 `.tflock`의 세 작업만 `allowed`다.
+`tofu-state-apply`는 active `.tfstate`와 `.tflock`의 세 작업이 모두 `allowed`다. Recovery key와
+`ghilbut-tfstates-v2` 결과는 모두 `implicitDeny`다. Plan의 lock 생성과 제거는 기본 Plan
+backend로 OpenTofu plan을 실행하여 확인한다.
 
-다음 명령은 active state object만 출력한다. 결과는
+다음 명령은 `tofu-state-readonly`가 읽는 active state object만 출력한다. 결과는
 [[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  aws s3api list-objects-v2 \
-    --bucket ghilbut-tfstates \
-    --query 'Contents[?ends_with(Key, `.tfstate`) && !starts_with(Key, `recovery/`)].Key' \
-    --output text
+  aws iam get-role-policy \
+    --role-name tofu-state-readonly \
+    --policy-name tofu-state-readonly-inline \
+    --query PolicyDocument --output json \
+  | jq -r '
+      .Statement[]
+      | select(.Sid == "ReadStateObjects")
+      | .Resource[]
+      | sub("arn:aws:s3:::ghilbut-tfstates/"; "")
+    '
 ```
 
 적용한 모든 root의 최종 plan은 변경이 없어야 한다.

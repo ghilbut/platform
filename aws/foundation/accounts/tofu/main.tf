@@ -5,6 +5,9 @@ data "terraform_remote_state" "organizations" {
     bucket = "ghilbut-tfstates"
     key    = "platform/aws/foundation/organizations.tfstate"
     region = "us-east-1"
+    assume_role = {
+      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
+    }
   }
 }
 

@@ -7,6 +7,9 @@ data "terraform_remote_state" "accounts" {
     bucket = "ghilbut-tfstates"
     key    = "platform/aws/foundation/accounts.tfstate"
     region = "us-east-1"
+    assume_role = {
+      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
+    }
   }
 }
 
@@ -17,60 +20,24 @@ locals {
   domains_account_id          = data.terraform_remote_state.accounts.outputs.domains_account_id
   security_tooling_account_id = data.terraform_remote_state.accounts.outputs.security_tooling_account_id
   shared_services_account_id  = data.terraform_remote_state.accounts.outputs.shared_services_account_id
-  state_buckets               = ["ghilbut-tfstates"]
-  foundation_state_object_keys = [
-    "platform/aws/foundation/accounts.tfstate",
-    "platform/aws/foundation/accounts.tfstate.tflock",
-    "platform/aws/foundation/identity.tfstate",
-    "platform/aws/foundation/identity.tfstate.tflock",
-    "platform/aws/foundation/organizations.tfstate",
-    "platform/aws/foundation/organizations.tfstate.tflock",
+  state_apply_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-apply"
+  state_readonly_role_arn     = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-readonly"
+  state_bucket_resources = [
+    "arn:aws:s3:::ghilbut-tfstates",
+    "arn:aws:s3:::ghilbut-tfstates/*",
   ]
   workload_accounts = {
     security_tooling = {
       account_id          = local.security_tooling_account_id
       tofu_apply_role_arn = "arn:aws:iam::${local.security_tooling_account_id}:role/tofu-apply"
       tofu_plan_role_arn  = "arn:aws:iam::${local.security_tooling_account_id}:role/tofu-plan"
-      state_object_keys = [
-        "platform/aws/security-tooling.tfstate",
-        "platform/aws/security-tooling.tfstate.tflock",
-      ]
     }
     shared_services = {
       account_id          = local.shared_services_account_id
       tofu_apply_role_arn = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-apply"
       tofu_plan_role_arn  = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-plan"
-      state_object_keys = [
-        "k3s.tfstate",
-        "k3s.tfstate.tflock",
-        "platform/apps.tfstate",
-        "platform/apps.tfstate.tflock",
-        "platform/aws/cdn.tfstate",
-        "platform/aws/cdn.tfstate.tflock",
-        "platform/aws/shared-services.tfstate",
-        "platform/aws/shared-services.tfstate.tflock",
-        "platform/github.tfstate",
-        "platform/github.tfstate.tflock",
-      ]
     }
   }
-  workload_state_object_keys = sort(distinct(flatten([
-    for account in values(local.workload_accounts) : account.state_object_keys
-  ])))
-  workload_remote_state_object_keys = [
-    "platform/aws/foundation/accounts.tfstate",
-  ]
-  domains_state_object_keys = [
-    "platform/domains.tfstate",
-    "platform/domains.tfstate.tflock",
-  ]
-  domains_remote_state_object_keys = [
-    "platform/aws/cdn.tfstate",
-  ]
-  ultary_domains_state_object_keys = [
-    "ultary/domains.tfstate",
-    "ultary/domains.tfstate.tflock",
-  ]
 
   central_administration_denied_actions = [
     "account:*",
@@ -194,37 +161,20 @@ module "tofu_apply_for_management" {
         Resource = "*"
       },
       {
-        Sid      = "AssumeTofuExecutionRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::384959722788:role/tofu-apply"
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "FoundationStateObjects"
+        Sid    = "AssumeTofuExecutionRole"
         Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.foundation_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid      = "FoundationStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "FoundationStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = local.foundation_state_object_keys
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = [
+          "arn:aws:iam::384959722788:role/tofu-apply",
+          local.state_apply_role_arn,
+          local.state_readonly_role_arn,
+        ]
       },
     ]
   })
@@ -247,47 +197,20 @@ module "tofu_apply_for_domains" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "AssumeDomainsExecutionRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply"
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "DomainsStateObjects"
+        Sid    = "AssumeDomainsExecutionRole"
         Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid      = "DomainsStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid    = "DomainsRemoteStateObjects"
-        Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.domains_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid      = "DomainsStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = concat(local.domains_state_object_keys, local.domains_remote_state_object_keys)
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = [
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply",
+          local.state_apply_role_arn,
+          local.state_readonly_role_arn,
+        ]
       },
     ]
   })
@@ -320,47 +243,19 @@ module "tofu_apply_for_workloads" {
         Resource = "*"
       },
       {
-        Sid      = "AssumeTofuExecutionRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = [for account in values(local.workload_accounts) : account.tofu_apply_role_arn]
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "WorkloadStateObjects"
+        Sid    = "AssumeTofuExecutionRole"
         Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid    = "WorkloadRemoteStateObjects"
-        Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.workload_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid      = "WorkloadStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "WorkloadStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = concat(local.workload_state_object_keys, local.workload_remote_state_object_keys)
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = concat(
+          [for account in values(local.workload_accounts) : account.tofu_apply_role_arn],
+          [local.state_apply_role_arn, local.state_readonly_role_arn],
+        )
       },
     ]
   })
@@ -386,31 +281,19 @@ module "tofu_apply_for_ultary_domains" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "UltaryDomainsStateObjects"
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
+      },
+      {
+        Sid    = "AssumeStateRole"
         Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid      = "UltaryDomainsStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "UltaryDomainsStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = local.ultary_domains_state_object_keys
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = [
+          local.state_apply_role_arn,
+          local.state_readonly_role_arn,
+        ]
       },
     ]
   })
@@ -433,49 +316,19 @@ module "tofu_plan_for_management" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "AssumeTofuPlanRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::384959722788:role/tofu-plan"
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "FoundationStateObjects"
+        Sid    = "AssumeTofuPlanRole"
         Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.foundation_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if !endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid    = "FoundationStateLocks"
-        Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.foundation_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid      = "FoundationStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "FoundationStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = local.foundation_state_object_keys
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = [
+          "arn:aws:iam::384959722788:role/tofu-plan",
+          local.state_readonly_role_arn,
+        ]
       },
     ]
   })
@@ -498,59 +351,19 @@ module "tofu_plan_for_domains" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "AssumeDomainsPlanRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-plan"
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "DomainsStateObjects"
+        Sid    = "AssumeDomainsPlanRole"
         Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if !endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid    = "DomainsStateLocks"
-        Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid    = "DomainsRemoteStateObjects"
-        Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.domains_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid      = "DomainsStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "DomainsStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = concat(local.domains_state_object_keys, local.domains_remote_state_object_keys)
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = [
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-plan",
+          local.state_readonly_role_arn,
+        ]
       },
     ]
   })
@@ -573,59 +386,19 @@ module "tofu_plan_for_workloads" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "AssumeTofuPlanRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = [for account in values(local.workload_accounts) : account.tofu_plan_role_arn]
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "WorkloadStateObjects"
+        Sid    = "AssumeTofuPlanRole"
         Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if !endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid    = "WorkloadRemoteStateObjects"
-        Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.workload_remote_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-          ]
-        ])
-      },
-      {
-        Sid    = "WorkloadStateLocks"
-        Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid      = "WorkloadStateBucketLocation"
-        Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "WorkloadStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = concat(local.workload_state_object_keys, local.workload_remote_state_object_keys)
-          }
-        }
+        Action = "sts:AssumeRole"
+        Resource = concat(
+          [for account in values(local.workload_accounts) : account.tofu_plan_role_arn],
+          [local.state_readonly_role_arn],
+        )
       },
     ]
   })
@@ -662,43 +435,16 @@ module "tofu_plan_for_ultary_domains" {
         Resource = "*"
       },
       {
-        Sid    = "UltaryDomainsStateObjects"
-        Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if !endswith(key, ".tflock")
-          ]
-        ])
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = local.state_bucket_resources
       },
       {
-        Sid    = "UltaryDomainsStateLocks"
-        Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
-        Resource = flatten([
-          for bucket in local.state_buckets : [
-            for key in local.ultary_domains_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
-            if endswith(key, ".tflock")
-          ]
-        ])
-      },
-      {
-        Sid      = "UltaryDomainsStateBucketLocation"
+        Sid      = "AssumeStateRole"
         Effect   = "Allow"
-        Action   = "s3:GetBucketLocation"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-      },
-      {
-        Sid      = "UltaryDomainsStateBucket"
-        Effect   = "Allow"
-        Action   = "s3:ListBucket"
-        Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
-        Condition = {
-          StringLike = {
-            "s3:prefix" = local.ultary_domains_state_object_keys
-          }
-        }
+        Action   = "sts:AssumeRole"
+        Resource = local.state_readonly_role_arn
       },
     ]
   })

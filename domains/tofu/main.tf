@@ -39,6 +39,9 @@ data "terraform_remote_state" "cdn" {
     encrypt = true
     key     = "platform/aws/cdn.tfstate"
     region  = "us-east-1"
+    assume_role = {
+      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
+    }
   }
 }
 

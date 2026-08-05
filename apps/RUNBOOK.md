@@ -218,7 +218,8 @@ SharedServices `tofu-apply` role을 지정한다.
 
 ```shell
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=apps/tofu init -reconfigure
+  tofu -chdir=apps/tofu init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=apps/tofu plan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
@@ -248,7 +249,8 @@ kubectl --context cpa -n external-dns logs deployment/private --tail=100
 
 ```shell
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=apps/tofu init -reconfigure
+  tofu -chdir=apps/tofu init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=apps/tofu plan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \

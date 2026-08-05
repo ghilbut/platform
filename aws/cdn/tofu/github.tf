@@ -10,5 +10,8 @@ data "terraform_remote_state" "github" {
     encrypt = true
     key     = local.github_state_key
     region  = "us-east-1"
+    assume_role = {
+      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
+    }
   }
 }

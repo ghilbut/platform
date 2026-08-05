@@ -73,6 +73,8 @@ resource "aws_iam_role_policy" "tofu_plan" {
           "arn:aws:iam::${local.shared_services_account_id}:role/cdn-platform-lambda",
           "arn:aws:iam::${local.shared_services_account_id}:role/tofu-apply",
           "arn:aws:iam::${local.shared_services_account_id}:role/tofu-plan",
+          "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-apply",
+          "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-readonly",
         ]
       },
       {

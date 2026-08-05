@@ -41,12 +41,15 @@ aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=github/tofu init -reconfigure
+  tofu -chdir=github/tofu init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=github/tofu plan -out=/tmp/github.tfplan
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
   tofu -chdir=github/tofu apply /tmp/github.tfplan
 ```
 
-OpenTofu 상태는 `s3://ghilbut-tfstates/platform/github.tfstate`에 저장됩니다. Backend는
-`AWS_PROFILE`을 사용하고 provider는 Plan에서 `tofu-plan`, Apply에서 `tofu-apply`를 수임합니다.
+OpenTofu 상태는 `s3://ghilbut-tfstates/platform/github.tfstate`에 저장됩니다. Backend는 Plan에서
+`tofu-state-readonly`, Apply에서 `tofu-state-apply`를 수임합니다. Provider는 Plan에서
+`tofu-plan`, Apply에서 `tofu-apply`를 수임합니다. Backend와 provider는 같은 `AWS_PROFILE`의
+source identity를 사용합니다.
