@@ -182,10 +182,34 @@ module "tofu_apply_for_domains" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "AssumeDomainsExecutionRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains"
+        Sid    = "AssumeDomainsExecutionRole"
+        Effect = "Allow"
+        Action = "sts:AssumeRole"
+        Resource = [
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply",
+          "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains",
+        ]
+      },
+      {
+        Sid    = "BootstrapDomainsExecutionRole"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:DeleteRolePolicy",
+          "iam:GetRole",
+          "iam:GetRolePolicy",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListInstanceProfilesForRole",
+          "iam:ListRolePolicies",
+          "iam:PutRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+        ]
+        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply"
       },
       {
         Sid    = "DomainsStateObjects"
