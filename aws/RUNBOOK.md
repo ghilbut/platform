@@ -22,9 +22,19 @@ aws configure sso-session
 | SSO region | `us-east-1` |
 | SSO registration scopes | `sso:account:access` |
 
-네 source profile을 같은 session에 연결한다.
+여섯 source profile을 같은 session에 연결한다.
 
 ```sh
+aws configure set sso_session ghilbut --profile ghilbut-foundation-management
+aws configure set sso_account_id 384959722788 --profile ghilbut-foundation-management
+aws configure set sso_role_name FoundationManagement --profile ghilbut-foundation-management
+aws configure set region us-east-1 --profile ghilbut-foundation-management
+
+aws configure set sso_session ghilbut --profile ghilbut-billing
+aws configure set sso_account_id 384959722788 --profile ghilbut-billing
+aws configure set sso_role_name Billing --profile ghilbut-billing
+aws configure set region us-east-1 --profile ghilbut-billing
+
 aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-management
 aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-apply-for-management
 aws configure set sso_role_name TofuApplyForManagement --profile ghilbut-tofu-apply-for-management
@@ -44,6 +54,12 @@ aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-ultary-do
 aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set sso_role_name TofuApplyForUltaryDomains --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domains
+
+aws configure set source_profile ghilbut-billing --profile ghilbut-billing-role
+aws configure set role_arn arn:aws:iam::384959722788:role/billing \
+  --profile ghilbut-billing-role
+aws configure set role_session_name ghilbut-billing --profile ghilbut-billing-role
+aws configure set region us-east-1 --profile ghilbut-billing-role
 ```
 
 로그인하고 계정 ID를 확인한다.
@@ -51,11 +67,17 @@ aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domai
 ```sh
 export AWS_SDK_LOAD_CONFIG=1
 
+aws sso login --profile ghilbut-foundation-management
+aws sso login --profile ghilbut-billing
 aws sso login --profile ghilbut-tofu-apply-for-management
 aws sso login --profile ghilbut-tofu-apply-for-workloads
 aws sso login --profile ghilbut-tofu-apply-for-domains
 aws sso login --profile ghilbut-tofu-apply-for-ultary-domains
 
+aws sts get-caller-identity --profile ghilbut-foundation-management \
+  --query Account --output text
+aws sts get-caller-identity --profile ghilbut-billing \
+  --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-management \
   --query Account --output text
 aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads \
@@ -66,7 +88,8 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
   --query Account --output text
 ```
 
-결과 순서는 `384959722788`, `012646747332`, `869061964712`, `971119963968`이다.
+FoundationManagement, Billing과 Management 결과는 `384959722788`이다. 나머지 결과는
+순서대로 `012646747332`, `869061964712`, `971119963968`이다.
 
 ## Execution order
 
@@ -237,6 +260,12 @@ Identity apply가 생성한 모든 request의 `Status`는 `SUCCEEDED`여야 한�
 
 ```sh
 aws sts assume-role \
+  --profile ghilbut-billing \
+  --role-arn arn:aws:iam::384959722788:role/billing \
+  --role-session-name verify-management-billing \
+  --query 'AssumedRoleUser.Arn' --output text
+
+aws sts assume-role \
   --profile ghilbut-tofu-apply-for-management \
   --role-arn arn:aws:iam::384959722788:role/tofu-apply \
   --role-session-name verify-management-tofu-apply \
@@ -254,6 +283,49 @@ aws sts assume-role \
   --role-session-name verify-domains-tofu-apply \
   --query 'AssumedRoleUser.Arn' --output text
 ```
+
+## Billing activation and verification
+
+Management root user가 account별 Billing Console 접근 설정을 한 번 활성화한다.
+
+1. Management root user로 AWS Management Console에 로그인한다.
+2. [Account](https://console.aws.amazon.com/billing/home?#/account)를 연다.
+3. `IAM user and role access to Billing information`에서 `Edit`를 선택한다.
+4. `Activate IAM access`를 선택한다.
+5. `Update`를 선택한다.
+
+이 설정은 OpenTofu로 관리하지 않는다. AWS는 root user가 Billing Console에서 변경하는 절차를
+안내한다. Cost Explorer API는 이 설정의 적용 대상이 아니므로 다음 조회는 IAM policy와 API
+접근만 검증한다.
+
+```sh
+aws ce get-cost-and-usage \
+  --profile ghilbut-billing \
+  --region us-east-1 \
+  --time-period Start=2026-08-01,End=2026-09-01 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost \
+  --query 'length(ResultsByTime)' --output text
+
+aws ce get-cost-and-usage \
+  --profile ghilbut-billing-role \
+  --region us-east-1 \
+  --time-period Start=2026-08-01,End=2026-09-01 \
+  --granularity MONTHLY \
+  --metrics UnblendedCost \
+  --query 'length(ResultsByTime)' --output text
+```
+
+두 결과는 모두 `1`이다.
+
+Billing Console 접근을 별도로 검증한다.
+
+1. [AWS access portal](https://ghilbut.awsapps.com/start)을 연다.
+2. Management account `384959722788`의 `Billing` permission set으로 Console을 연다.
+3. Billing Home, Bills와 Cost Explorer를 각각 열고 내용이 표시되는지 확인한다.
+
+`Billing` permission set의 session duration은 4시간이다. `ghilbut-billing-role`은 IAM role
+chaining을 사용하므로 `billing` role session은 최대 1시간이다.
 
 ## State verification
 
