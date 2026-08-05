@@ -13,11 +13,7 @@
 | 경로                                        | 책임                                                                                |
 |---------------------------------------------|-------------------------------------------------------------------------------------|
 | `apps/`                                     | 인프라와 플랫폼을 관리하는 어플리케이션들                                           |
-| `aws/`                                      | AWS 관리 그룹 디렉토리                                                              |
-| `aws/cdn`                                   | CloudFront와 S3 조합의 CDN                                                          |
-| [aws/foundation/](aws/foundation/README.md) | AWS 계정, IAM Identity Center와 AWS Organizations 관리                               |
-| `aws/platform/`                             | Platform 계정 공용 AWS 리소스                                                        |
-| `aws/cdn/`                                  | AWS CloudFront 기반의 CDN 인프라와 어플리케이션                                     |
+| [aws/](aws/README.md)                       | AWS 계정, 접근 권한과 Platform 서비스                                                |
 | `docs/`                                     | 참고 문서                                                                           |
 | `domains/`                                  | 도메인과 DNS 서버 관리                                                              |
 | `github/`                                   | Github 계정 관리                                                                    |
