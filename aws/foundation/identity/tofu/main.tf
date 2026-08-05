@@ -11,22 +11,39 @@ data "terraform_remote_state" "accounts" {
 }
 
 locals {
-  instance_arn        = tolist(data.aws_ssoadmin_instances.current.arns)[0]
-  identity_store_id   = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
-  ghilbut_user_id     = "7488a448-2051-70eb-80b8-106a98d83549"
-  domains_account_id  = data.terraform_remote_state.accounts.outputs.domains_account_id
-  platform_account_id = data.terraform_remote_state.accounts.outputs.platform_account_id
-  state_buckets       = ["ghilbut-tfstates"]
+  instance_arn               = tolist(data.aws_ssoadmin_instances.current.arns)[0]
+  identity_store_id          = tolist(data.aws_ssoadmin_instances.current.identity_store_ids)[0]
+  ghilbut_user_id            = "7488a448-2051-70eb-80b8-106a98d83549"
+  domains_account_id         = data.terraform_remote_state.accounts.outputs.domains_account_id
+  shared_services_account_id = data.terraform_remote_state.accounts.outputs.shared_services_account_id
+  state_buckets              = ["ghilbut-tfstates"]
   foundation_state_object_keys = [
     "platform/aws/foundation/accounts.tfstate",
     "platform/aws/foundation/accounts.tfstate.tflock",
     "platform/aws/foundation/identity.tfstate",
     "platform/aws/foundation/identity.tfstate.tflock",
   ]
-  platform_state_object_keys = [
-    "platform/aws/platform.tfstate",
-    "platform/aws/platform.tfstate.tflock",
-  ]
+  workload_accounts = {
+    shared_services = {
+      account_id          = local.shared_services_account_id
+      tofu_apply_role_arn = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-apply"
+      state_object_keys = [
+        "k3s.tfstate",
+        "k3s.tfstate.tflock",
+        "platform/apps.tfstate",
+        "platform/apps.tfstate.tflock",
+        "platform/aws/cdn.tfstate",
+        "platform/aws/cdn.tfstate.tflock",
+        "platform/aws/platform.tfstate",
+        "platform/aws/platform.tfstate.tflock",
+        "platform/github.tfstate",
+        "platform/github.tfstate.tflock",
+      ]
+    }
+  }
+  workload_state_object_keys = sort(distinct(flatten([
+    for account in values(local.workload_accounts) : account.state_object_keys
+  ])))
   domains_state_object_keys = [
     "platform/domains.tfstate",
     "platform/domains.tfstate.tflock",
@@ -256,7 +273,7 @@ module "tofu_apply_for_workloads" {
         Sid      = "AssumeTofuExecutionRole"
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${local.platform_account_id}:role/tofu-apply"
+        Resource = [for account in values(local.workload_accounts) : account.tofu_apply_role_arn]
       },
       {
         Sid    = "WorkloadStateObjects"
@@ -264,7 +281,7 @@ module "tofu_apply_for_workloads" {
         Action = ["s3:DeleteObject", "s3:GetObject", "s3:PutObject"]
         Resource = flatten([
           for bucket in local.state_buckets : [
-            for key in local.platform_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
+            for key in local.workload_state_object_keys : "arn:aws:s3:::${bucket}/${key}"
           ]
         ])
       },
@@ -281,15 +298,15 @@ module "tofu_apply_for_workloads" {
         Resource = [for bucket in local.state_buckets : "arn:aws:s3:::${bucket}"]
         Condition = {
           StringLike = {
-            "s3:prefix" = local.platform_state_object_keys
+            "s3:prefix" = local.workload_state_object_keys
           }
         }
       },
     ]
   })
   account_assignments = {
-    platform = {
-      account_id     = local.platform_account_id
+    for name, account in local.workload_accounts : name => {
+      account_id     = account.account_id
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
