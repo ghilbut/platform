@@ -47,7 +47,7 @@ IAM Identity Center start URL은 `https://ghilbut.awsapps.com/start`이다.
 | `shared-services/tofu/` | `ghilbut-tfstates`, SharedServices `tofu-apply` role과 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
-Organization, OU, SCP와 delegated administrator를 관리한다.
+Organization과 trusted access를 관리한다.
 
 ## State ownership
 
