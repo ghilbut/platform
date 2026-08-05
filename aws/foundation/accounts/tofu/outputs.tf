@@ -3,11 +3,6 @@ output "domains_account_id" {
   value       = aws_organizations_account.domains.id
 }
 
-output "platform_account_id" {
-  description = "SharedServices AWS account ID. Retained until every consumer uses shared_services_account_id."
-  value       = aws_organizations_account.shared_services.id
-}
-
 output "shared_services_account_id" {
   description = "SharedServices AWS account ID."
   value       = aws_organizations_account.shared_services.id
