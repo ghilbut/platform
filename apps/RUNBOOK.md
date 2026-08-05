@@ -13,7 +13,7 @@ Agent가 다음 순서로 설치를 수행한다.
 | 순서 | 애플리케이션 | 수동 작업 |
 | --- | --- | --- |
 | 1 | [[#1. Argo CD Application bootstrap\|Argo CD Application bootstrap]] | 없음 |
-| 2 | [[#2. Istio system과 Argo CD sidecar\|Istio system과 Argo CD sidecar]] | 없음 |
+| 2 | [[#2. Istio CNI, Istio system과 Argo CD sidecar\|Istio CNI, Istio system과 Argo CD sidecar]] | 없음 |
 | 3 | [[#3. OpenEBS LVM\|OpenEBS LVM]] | 없음 |
 | 4 | [[#4. CoreDNS\|CoreDNS]] | ASUS Router 설정 |
 | 5 | [[#5. external-dns\|external-dns]] | 없음 |
@@ -59,7 +59,29 @@ kubectl --context cpa -n argo get application argo-apps
 kubectl --context cpa -n argo get applications
 ```
 
-### 2. Istio system과 Argo CD sidecar
+### 2. Istio CNI, Istio system과 Argo CD sidecar
+
+[Istio CNI](https://istio.io/latest/docs/setup/additional-setup/cni/)를 Cilium 뒤의 chained CNI plugin으로 설치한다. Istio CNI가 sidecar traffic redirection을 설정하므로 workload Pod는 privileged `istio-init` container 없이 restricted Pod Security Standards를 충족한다.
+
+Istio CNI는 Cilium을 대체하지 않는다. `istio-cni`를 먼저 sync하고 DaemonSet이 Ready인 상태를 확인한다. 그 다음 `istio-system`을 sync한다.
+
+```shell
+argocd app sync istio-cni \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+argocd app wait istio-cni \
+  --sync \
+  --health \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n kube-system get daemonset istio-cni-node
+```
 
 [Istio sidecar injection](https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/)과 [Istiod Helm chart values](https://raw.githubusercontent.com/istio/istio/1.30.3/manifests/charts/istio-control/istio-discovery/values.yaml)를 참고한다.
 
@@ -71,16 +93,30 @@ kubectl --context cpa -n argo get applications
 - `local-path-storage`
 - `istio-system`
 
-`istio-system`을 sync한 뒤 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod의 restartable init container에 `istio-proxy`가 있어야 한다.
+`istio-system`을 sync한 뒤 Argo CD Deployment와 StatefulSet을 재배포한다. 각 Argo CD Pod는 `istio-proxy`를 포함하고 `istio-init` container를 포함하지 않아야 한다.
 
 ```shell
 argocd app sync istio-system \
   --kube-context cpa \
   --port-forward \
   --port-forward-namespace argo \
-  --plaintext
+  --plaintext \
+  --timeout 1200
+argocd app wait istio-system \
+  --sync \
+  --kube-context cpa \
+  --port-forward \
+  --port-forward-namespace argo \
+  --plaintext \
+  --timeout 1200
+kubectl --context cpa -n istio-system wait \
+  --for=condition=Available deployment/istiod \
+  --timeout=10m
 kubectl --context cpa -n argo rollout restart deployment,statefulset
-kubectl --context cpa -n argo rollout status deployment,statefulset --timeout=10m
+kubectl --context cpa -n argo wait \
+  --for=condition=Ready pod \
+  --all \
+  --timeout=10m
 kubectl --context cpa -n argo get pods -o json \
   | jq -r '.items[] | [.metadata.name, ([.spec.initContainers[].name] | join(","))] | @tsv'
 ```
