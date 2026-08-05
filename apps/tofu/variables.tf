@@ -1,6 +1,6 @@
 variable "aws_profile" {
   type        = string
-  description = "AWS CLI profile for the Platform account that owns the Apps state."
+  description = "AWS CLI profile for the SharedServices account that owns the Apps state."
   default     = "ghilbut-tofu-apply-for-workloads"
 }
 

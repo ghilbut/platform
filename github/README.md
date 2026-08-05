@@ -4,7 +4,7 @@
 
 ## GitHub Actions OIDC
 
-`tofu/`는 Platform 계정에서 공유하는 GitHub Actions OIDC provider를 관리합니다.
+`tofu/`는 SharedServices 계정에서 공유하는 GitHub Actions OIDC provider를 관리합니다.
 provider URL은 `https://token.actions.githubusercontent.com`이고, 허용 audience는
 `sts.amazonaws.com`입니다.
 
