@@ -83,9 +83,9 @@ OpenTofu가 수임하는 execution role이다. Backend는 source profile로 접�
 profile로 사용하지 않는다.
 
 `aws/shared-services/tofu/`는 SharedServices `tofu-apply` role과 CPA OIDC provider를 source
-profile로 직접 관리한다. 같은 root의 S3 resource는 `aws.shared_services` provider alias로 SharedServices
-`tofu-apply` role을 수임한다. `apps/tofu/`, `k3s/tofu/`와 UltaryDomains는 source identity를
-provider에서 직접 사용한다.
+profile로 직접 관리한다. 같은 root의 S3 resource는 `aws.shared_services` provider alias로
+SharedServices `tofu-apply` role을 수임한다. `apps/tofu/`, `k3s/tofu/`와 UltaryDomains는 source
+identity를 provider에서 직접 사용한다.
 
 ## CDN
 
