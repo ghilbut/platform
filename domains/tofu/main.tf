@@ -38,7 +38,6 @@ data "terraform_remote_state" "cdn" {
     bucket  = "ghilbut-tfstates"
     encrypt = true
     key     = "platform/aws/cdn.tfstate"
-    profile = "ghilbut-tofu-apply-for-domains"
     region  = "us-east-1"
   }
 }

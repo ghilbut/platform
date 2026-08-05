@@ -4,7 +4,6 @@ terraform {
   backend "s3" {
     bucket       = "ghilbut-tfstates"
     key          = "platform/apps.tfstate"
-    profile      = "ghilbut-tofu-apply-for-workloads"
     region       = "us-east-1"
     encrypt      = true
     use_lockfile = true

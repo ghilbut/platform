@@ -20,15 +20,33 @@ AWS 계정에서는 같은 OIDC provider URL을 하나만 등록할 수 있습�
 이 분리는 CDN을 변경하거나 제거해도 다른 서비스의 GitHub Actions 신뢰 기반에 영향을
 주지 않게 합니다.
 
-## 배포
+## Plan과 Apply
 
 GitHub Actions OIDC를 처음 사용하는 서비스보다 먼저 적용합니다.
 
+Override가 없는 checkout은 Plan source와 기본 `tofu-plan` role을 사용합니다.
+
 ```sh
-cd github/tofu
-tofu init
-tofu apply
+AWS_PROFILE=ghilbut-tofu-plan-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=github/tofu init -reconfigure
+AWS_PROFILE=ghilbut-tofu-plan-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=github/tofu plan -detailed-exitcode
 ```
 
-OpenTofu 상태는 `s3://ghilbut-tfstates/platform/github.tfstate`에 저장되며,
-`ghilbut-tofu-apply-for-workloads` AWS 프로필을 사용합니다.
+Apply 전용 로컬 작업 공간의 `github/tofu/tofu-apply.auto.tfvars`는 다음 값을 포함합니다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
+```
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=github/tofu init -reconfigure
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=github/tofu plan -out=/tmp/github.tfplan
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=github/tofu apply /tmp/github.tfplan
+```
+
+OpenTofu 상태는 `s3://ghilbut-tfstates/platform/github.tfstate`에 저장됩니다. Backend는
+`AWS_PROFILE`을 사용하고 provider는 Plan에서 `tofu-plan`, Apply에서 `tofu-apply`를 수임합니다.

@@ -126,31 +126,96 @@ Plan과 Apply는 `971119963968`이다.
 
 ## Execution order
 
-| 순서 | Root | Profile | Provider access | 선행 조건 |
+| 순서 | Root | Apply profile | Apply provider access | 선행 조건 |
 |---:|---|---|---|---|
-| 1 | `aws/foundation/organizations/tofu/` | Management | Management `tofu-apply` | 없음 |
-| 2 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | organizations state |
-| 3 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
-| 4 | `aws/shared-services/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 5 | `github/tofu/` | Workloads | SharedServices `tofu-apply` | SharedServices role |
-| 6 | `aws/cdn/tofu/` | Workloads | SharedServices `tofu-apply` | GitHub OIDC provider |
-| 7 | `k3s/tofu/` | Workloads | direct source | CDN origin bucket와 `cpa` Kubernetes API |
-| 8 | `domains/tofu/` | Domains | Domains `tofu-apply` | CDN state |
-| 9 | `apps/tofu/` | Workloads | direct source | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 10 | `ultary/domains/tofu/` | UltaryDomains | direct source | UltaryDomains assignment |
+| 1 | `aws/foundation/organizations/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | 없음 |
+| 2 | `aws/foundation/accounts/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | organizations state |
+| 3 | `aws/foundation/identity/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | accounts state |
+| 4 | `aws/shared-services/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
+| 5 | `github/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices role |
+| 6 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
+| 7 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
+| 8 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
+| 9 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
+| 10 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
 
 ## Plan and apply
+
+### Credential mode
+
+Override가 없는 checkout은 Plan mode다. `AWS_PROFILE`에 대응하는 `TofuPlanFor*` source profile을
+지정하면 backend는 source identity를 사용하고 provider는 기본 `tofu-plan` role을 수임한다.
+
+Apply 전용 로컬 작업 공간은 다음 아홉 root에 `tofu-apply.auto.tfvars`를 둔다.
+
+- `aws/foundation/organizations/tofu/`
+- `aws/foundation/accounts/tofu/`
+- `aws/foundation/identity/tofu/`
+- `aws/shared-services/tofu/`
+- `github/tofu/`
+- `aws/cdn/tofu/`
+- `k3s/tofu/`
+- `domains/tofu/`
+- `apps/tofu/`
+
+Management root 세 곳의 파일은 다음 값을 사용한다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::384959722788:role/tofu-apply"
+```
+
+SharedServices root 다섯 곳의 파일은 다음 값을 사용한다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
+```
+
+Domains root의 파일은 다음 값을 사용한다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::869061964712:role/tofu-apply"
+```
+
+Apply mode에서는 대응하는 `TofuApplyFor*` source profile을 `AWS_PROFILE`에 지정한다. 자동 variable
+file은 plan에도 적용되므로 Plan source profile과 함께 사용하지 않는다. `tofu-apply.auto.tfvars`와
+`TF_VAR_aws_execution_role_arn`을 함께 사용하지 않는다. UltaryDomains는 override file 없이 Plan
+또는 Apply source profile을 provider에 직접 사용한다.
+
+Source profile을 바꾸거나 기존 backend의 고정 profile을 제거한 뒤에는 각 root에서 다음 명령을
+실행한다.
+
+```sh
+AWS_PROFILE='<source-profile>' AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir='<root-path>' init -reconfigure
+```
+
+새 account에서 `tofu-plan`과 `tofu-apply` role을 처음 생성할 때만 source identity를 provider에
+직접 사용한다.
+
+```sh
+AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir='<role-owner-root>' plan \
+    -var='aws_execution_role_arn=null' \
+    -out=/tmp/bootstrap-execution-roles.tfplan
+
+AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir='<role-owner-root>' apply \
+    /tmp/bootstrap-execution-roles.tfplan
+```
+
+두 execution role이 생성되면 `null`을 제거하고 기본 Plan 또는 로컬 Apply mode를 사용한다.
+기존 account에서는 `null`을 사용하지 않는다.
 
 ### Required variables
 
 Domains DKIM 값은 기존 state에서 읽고 shell output으로 출력하지 않는다.
 
 ```sh
-AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+AWS_PROFILE=ghilbut-tofu-plan-for-domains \
   tofu -chdir=domains/tofu init -reconfigure
 
 export TF_VAR_ghilbut_dkim_for_root_domain="$(
-  AWS_PROFILE=ghilbut-tofu-apply-for-domains \
+  AWS_PROFILE=ghilbut-tofu-plan-for-domains \
     tofu -chdir=domains/tofu state pull \
     | jq -r '
         .resources[]
@@ -167,6 +232,37 @@ UltaryDomains는 다음 필수 variable을 승인된 로컬 환경 변수나 git
 - `ultary_co_txt_for_sub_domains`
 - `ultary_co_cname_for_sub_domains`
 - `ultary_co_dkim_for_sub_domains`
+
+### Default plan
+
+`tofu-apply.auto.tfvars`가 없는 checkout에서 다음 순서로 plan한다.
+
+```sh
+plan_root() {
+  profile_name="$1"
+  root_path="$2"
+
+  AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
+    tofu -chdir="$root_path" init -reconfigure
+  AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
+    tofu -chdir="$root_path" validate
+  AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
+    tofu -chdir="$root_path" plan -detailed-exitcode
+}
+
+plan_root ghilbut-tofu-plan-for-management aws/foundation/organizations/tofu
+plan_root ghilbut-tofu-plan-for-management aws/foundation/accounts/tofu
+plan_root ghilbut-tofu-plan-for-management aws/foundation/identity/tofu
+plan_root ghilbut-tofu-plan-for-workloads aws/shared-services/tofu
+plan_root ghilbut-tofu-plan-for-workloads github/tofu
+plan_root ghilbut-tofu-plan-for-workloads aws/cdn/tofu
+plan_root ghilbut-tofu-plan-for-workloads k3s/tofu
+plan_root ghilbut-tofu-plan-for-domains domains/tofu
+plan_root ghilbut-tofu-plan-for-workloads apps/tofu
+plan_root ghilbut-tofu-plan-for-ultary-domains ultary/domains/tofu
+```
+
+각 명령의 성공 결과는 exit code `0`이다. K3s plan에는 `cpa` Kubernetes API 연결이 필요하다.
 
 ### Apply current infrastructure
 
@@ -224,10 +320,8 @@ apply_root ghilbut-tofu-apply-for-domains \
 apply_root ghilbut-tofu-apply-for-workloads \
   apps/tofu /tmp/apps.tfplan
 
-export TF_VAR_aws_profile=ghilbut-tofu-apply-for-ultary-domains
 apply_root ghilbut-tofu-apply-for-ultary-domains \
   ultary/domains/tofu /tmp/ultary-domains.tfplan
-unset TF_VAR_aws_profile
 ```
 
 ## AWS Organizations verification
@@ -364,150 +458,6 @@ fi
 role의 configured maximum session duration은 4시간이다. IAM role chaining을 사용하는
 `tofu-plan` session은 최대 1시간이다.
 
-### Domains execution role bootstrap
-
-Domains `tofu-apply`가 `tofu-plan` 관리 권한을 갖지 않은 상태에서 두 resource를 함께 추가하면
-apply가 실패한다. `TofuApplyForDomains`에 Domains `tofu-apply` inline policy 변경 권한을
-일시적으로 추가하고 계획한 policy를 적용한 뒤 permission set을 원래 policy로 복원한다.
-
-```sh
-bootstrap_domains_execution_role() (
-  set -eu
-
-export TF_VAR_ghilbut_dkim_for_root_domain="$(
-  AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
-    tofu -chdir=domains/tofu state pull \
-    | jq -r '
-        .resources[]
-        | select(.type == "aws_route53_record" and .name == "google_dkim")
-        | .instances[0].attributes.records[0]
-      '
-)"
-
-AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=domains/tofu plan \
-    -out=/tmp/aws-domains-bootstrap.tfplan
-
-domains_apply_policy="$(
-  tofu -chdir=domains/tofu show -json /tmp/aws-domains-bootstrap.tfplan \
-    | jq -c -r '
-        .resource_changes[]
-        | select(.address == "aws_iam_role_policy.tofu_apply")
-        | .change.after.policy
-      '
-)"
-
-instance_arn=arn:aws:sso:::instance/ssoins-7223d00af1910289
-domains_account_id=869061964712
-
-domains_permission_set_arn="$(
-  for candidate_arn in $(
-    AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-      aws sso-admin list-permission-sets \
-        --instance-arn "$instance_arn" \
-        --query 'PermissionSets[]' --output text
-  ); do
-    permission_set_name="$(
-      AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-        aws sso-admin describe-permission-set \
-          --instance-arn "$instance_arn" \
-          --permission-set-arn "$candidate_arn" \
-          --query 'PermissionSet.Name' --output text
-    )"
-    if [ "$permission_set_name" = TofuApplyForDomains ]; then
-      echo "$candidate_arn"
-      break
-    fi
-  done
-)"
-test -n "$domains_permission_set_arn"
-
-original_domains_policy="$(
-  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-    aws sso-admin get-inline-policy-for-permission-set \
-      --instance-arn "$instance_arn" \
-      --permission-set-arn "$domains_permission_set_arn" \
-      --query InlinePolicy --output text
-)"
-test -n "$original_domains_policy"
-
-bootstrap_domains_policy="$(
-  jq -c '
-    .Statement += [{
-      Sid: "BootstrapDomainsExecutionRolePolicy",
-      Effect: "Allow",
-      Action: "iam:PutRolePolicy",
-      Resource: "arn:aws:iam::869061964712:role/tofu-apply"
-    }]
-  ' <<<"$original_domains_policy"
-)"
-
-provision_domains_permission_set() {
-  request_id="$(
-    AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-      aws sso-admin provision-permission-set \
-        --instance-arn "$instance_arn" \
-        --permission-set-arn "$domains_permission_set_arn" \
-        --target-type AWS_ACCOUNT \
-        --target-id "$domains_account_id" \
-        --query 'PermissionSetProvisioningStatus.RequestId' --output text
-  )"
-
-  while true; do
-    request_status="$(
-      AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-        aws sso-admin describe-permission-set-provisioning-status \
-          --instance-arn "$instance_arn" \
-          --provision-permission-set-request-id "$request_id" \
-          --query 'PermissionSetProvisioningStatus.Status' --output text
-    )"
-    case "$request_status" in
-      SUCCEEDED) break ;;
-      FAILED) return 1 ;;
-      *) sleep 2 ;;
-    esac
-  done
-}
-
-restore_domains_source_policy() {
-  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-    aws sso-admin put-inline-policy-to-permission-set \
-      --instance-arn "$instance_arn" \
-      --permission-set-arn "$domains_permission_set_arn" \
-      --inline-policy "$original_domains_policy"
-  provision_domains_permission_set
-}
-
-trap restore_domains_source_policy EXIT INT TERM
-
-AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
-  aws sso-admin put-inline-policy-to-permission-set \
-    --instance-arn "$instance_arn" \
-    --permission-set-arn "$domains_permission_set_arn" \
-    --inline-policy "$bootstrap_domains_policy"
-provision_domains_permission_set
-
-AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
-  aws iam put-role-policy \
-    --role-name tofu-apply \
-    --policy-name tofu-apply-inline \
-    --policy-document "$domains_apply_policy"
-
-restore_domains_source_policy
-trap - EXIT INT TERM
-
-AWS_PROFILE=ghilbut-tofu-apply-for-domains AWS_SDK_LOAD_CONFIG=1 \
-  tofu -chdir=domains/tofu plan -out=/tmp/aws-domains.tfplan
-
-)
-
-bootstrap_domains_execution_role
-```
-
-`/tmp/aws-domains.tfplan`에서 `aws_iam_role_policy.tofu_apply`는 변경이 없어야 하며 `tofu-plan`
-role과 inline policy만 생성해야 한다. `TofuApplyForDomains`의 최종 inline policy에는
-`BootstrapDomainsExecutionRolePolicy`가 없어야 한다.
-
 ## Billing activation and verification
 
 Management root user가 account별 Billing Console 접근 설정을 한 번 활성화한다.
@@ -620,9 +570,7 @@ verify_root ghilbut-tofu-apply-for-workloads k3s/tofu
 verify_root ghilbut-tofu-apply-for-domains domains/tofu
 verify_root ghilbut-tofu-apply-for-workloads apps/tofu
 
-export TF_VAR_aws_profile=ghilbut-tofu-apply-for-ultary-domains
 verify_root ghilbut-tofu-apply-for-ultary-domains ultary/domains/tofu
-unset TF_VAR_aws_profile
 unset TF_VAR_ghilbut_dkim_for_root_domain
 ```
 

@@ -12,9 +12,3 @@ variable "aws_execution_role_arn" {
     error_message = "aws_execution_role_arn must be null or the SharedServices account tofu-plan or tofu-apply role ARN."
   }
 }
-
-variable "cdn_bucket" {
-  type        = string
-  description = "S3 bucket used as the CloudFront origin"
-  default     = "ghilbut-cdn-platform"
-}

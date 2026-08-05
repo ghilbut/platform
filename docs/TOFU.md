@@ -9,6 +9,23 @@
 - module도 이 파일 구분을 따르며, 수명 주기나 권한 경계가 없는 wrapper module은 만들지
   않는다.
 
+## AWS credential 선택
+
+- S3 backend와 `terraform_remote_state`는 고정 `profile`을 선언하지 않는다. `AWS_PROFILE`이
+  IAM Identity Center source identity를 선택한다.
+- Account-local execution role이 있는 root는 `aws_execution_role_arn` 변수를 사용한다. 기본값은
+  해당 account의 `tofu-plan` role ARN이다.
+- Apply 전용 로컬 작업 공간은 git에서 제외한 `tofu-apply.auto.tfvars`에서 같은 변수에
+  `tofu-apply` role ARN을 지정한다. `TF_VAR_aws_execution_role_arn`은 사용하지 않는다.
+- `aws_execution_role_arn = null`은 execution role을 생성하는 새 account bootstrap에서만
+  source identity를 provider에 직접 사용한다. 기존 account에서는 `null`을 사용하지 않는다.
+- Source identity와 execution role의 작업 종류를 일치시킨다. Plan source는 `tofu-plan`, Apply
+  source는 `tofu-apply`를 사용한다.
+- Source profile을 바꾸거나 backend의 고정 profile을 제거한 뒤에는 `tofu init -reconfigure`를
+  실행한다.
+- UltaryDomains는 account-local execution role 없이 `AWS_PROFILE`의 source identity를
+  provider에 직접 사용한다.
+
 ## 상태 소유권
 
 - `github/tofu`는 계정 공용 GitHub Actions OIDC provider만 관리한다.

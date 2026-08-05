@@ -120,19 +120,22 @@ identity는 해당 `.tfstate`와 `.tflock`을 읽고 쓰고 삭제한다. `tofu-
 resource를 읽으며 `tofu-apply` role은 managed resource를 변경한다. UltaryDomains는 account-local
 execution role 없이 source identity를 provider에서 직접 사용한다.
 
+Role-backed root의 `aws_execution_role_arn` 기본값은 account-local `tofu-plan` role이다. Apply
+전용 로컬 작업 공간은 git에서 제외한 `tofu-apply.auto.tfvars`로 account-local `tofu-apply` role을
+지정한다. Backend와 remote state는 `AWS_PROFILE`의 source identity를 사용한다. Plan source
+profile과 `tofu-plan`, Apply source profile과 `tofu-apply`를 각각 함께 사용한다.
+
+`aws_execution_role_arn = null`은 execution role이 아직 없는 새 account bootstrap에서만 source
+identity를 provider에 직접 연결한다. 기존 Management, SharedServices와 Domains account에서는
+`null`을 사용하지 않는다.
+
 Permission set session duration과 account-local role의 configured maximum session duration은
 4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
 session은 최대 1시간이다.
 
-`aws/shared-services/tofu/`의 기본 provider는 source identity를 직접 사용하여 account-local
-execution role을 관리한다. `aws.shared_services` provider alias는 SharedServices `tofu-apply`를
-수임한다. `apps/tofu/`, `k3s/tofu/`와 UltaryDomains는 source identity를 provider에서 직접
-사용한다. Plan source profile을 전체 root plan에 사용하는 시점은 provider가 `tofu-plan`을
-선택하고 backend의 고정 profile이 제거된 뒤다.
-
-Domains `tofu-plan`을 처음 만들 때 `TofuApplyForDomains`에 Domains `tofu-apply` inline policy
-변경 권한을 일시적으로 추가한다. `tofu-apply`가 `tofu-plan` 관리 권한을 갖는 즉시 임시 권한을
-제거한다. 임시 권한은 permission set의 최종 정책과 OpenTofu configuration에 남기지 않는다.
+`aws/shared-services/tofu/`의 기본 provider와 `aws.shared_services` provider alias는 모두
+`aws_execution_role_arn`을 수임한다. UltaryDomains만 `AWS_PROFILE` source identity를 provider에서
+직접 사용한다.
 
 ## CDN
 
