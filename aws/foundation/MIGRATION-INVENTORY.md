@@ -39,7 +39,7 @@ title: AWS account split inventory
 | Route 53 Domains | `ghilbut.com`, `ghilbut.net` | Registered domain |
 | Route 53 hosted zone | `Z193YX3H31OEZV`, `Z3951CLN9YN7OQ` | DNS record |
 | IAM Identity Center role | `AWSReservedSSO_TofuApplyForDomains_*` | Domains source identity |
-| OpenTofu role | `tofu-apply-domains` | Domains DNS apply |
+| OpenTofu role | `tofu-apply` | Domains DNS apply |
 | CPA IAM OIDC provider | `oidc.k3s.ghilbut.com/cpa` | DNS workload federation |
 | cert-manager role | `domains-cpa-cert-manager` | Route 53 DNS-01 TXT record |
 | external-dns role | `domains-cpa-external-dns` | `id.ghilbut.com` CNAME과 TXT record |

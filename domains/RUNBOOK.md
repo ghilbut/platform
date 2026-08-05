@@ -13,11 +13,11 @@ CPA IAM OIDC provider와 DNS 전용 IAM role을 관리한다.
 |---|---|
 | Source profile | `ghilbut-tofu-apply-for-domains` |
 | Permission set | `TofuApplyForDomains` |
-| Execution role | `arn:aws:iam::869061964712:role/tofu-apply-domains` |
+| Execution role | `arn:aws:iam::869061964712:role/tofu-apply` |
 | State key | `platform/domains.tfstate` |
 | CDN remote state | `platform/aws/cdn.tfstate` read-only |
 
-`TofuApplyForDomains`와 `tofu-apply-domains`는 DNS와 이 root의 state에 필요한 권한만
+`TofuApplyForDomains`와 `tofu-apply`는 DNS와 이 root의 state에 필요한 권한만
 가진다.
 
 ## Profile

@@ -185,7 +185,7 @@ module "tofu_apply_for_domains" {
         Sid      = "AssumeDomainsExecutionRole"
         Effect   = "Allow"
         Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply-domains"
+        Resource = "arn:aws:iam::${local.domains_account_id}:role/tofu-apply"
       },
       {
         Sid    = "DomainsStateObjects"

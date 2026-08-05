@@ -1,5 +1,5 @@
 resource "aws_iam_role" "tofu_apply" {
-  name                 = "tofu-apply-domains"
+  name                 = "tofu-apply"
   description          = "OpenTofu execution role for Domains account Route 53 resources."
   max_session_duration = 14400
 
@@ -26,7 +26,7 @@ resource "aws_iam_role" "tofu_apply" {
 }
 
 resource "aws_iam_role_policy" "tofu_apply" {
-  name = "tofu-apply-domains-inline"
+  name = "tofu-apply-inline"
   role = aws_iam_role.tofu_apply.name
   policy = jsonencode({
     Version = "2012-10-17"
@@ -47,7 +47,7 @@ resource "aws_iam_role_policy" "tofu_apply" {
           "iam:ListInstanceProfilesForRole",
           "iam:ListRolePolicies",
         ]
-        Resource = "arn:aws:iam::869061964712:role/tofu-apply-domains"
+        Resource = "arn:aws:iam::869061964712:role/tofu-apply"
       },
       {
         Sid    = "ManageDnsFederationRoles"
