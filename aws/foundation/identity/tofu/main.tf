@@ -131,12 +131,20 @@ module "billing" {
   ])
   inline_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid      = "AssumeBillingRole"
-      Effect   = "Allow"
-      Action   = "sts:AssumeRole"
-      Resource = "arn:aws:iam::384959722788:role/billing"
-    }]
+    Statement = [
+      {
+        Sid      = "ViewCostExplorerReports"
+        Effect   = "Allow"
+        Action   = "ce:DescribeReport"
+        Resource = "*"
+      },
+      {
+        Sid      = "AssumeBillingRole"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::384959722788:role/billing"
+      },
+    ]
   })
   account_assignments = {
     management = {

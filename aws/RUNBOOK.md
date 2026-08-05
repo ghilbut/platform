@@ -492,11 +492,41 @@ aws ce get-cost-and-usage \
 
 두 결과는 모두 `1`이다.
 
+`ce:DescribeReport`는 Cost Explorer 보고서 화면을 표시하는 읽기 권한이다. AWS 관리형
+`job-function/Billing` policy와 별도로 `Billing` permission set과 `billing` role에 부여한다.
+두 principal의 권한 결정을 확인한다.
+
+```sh
+billing_sso_role_arn="$(
+  aws iam list-roles \
+    --profile ghilbut-foundation-management \
+    --query 'Roles[?starts_with(RoleName, `AWSReservedSSO_Billing_`)] | [0].Arn' \
+    --output text
+)"
+
+aws iam simulate-principal-policy \
+  --profile ghilbut-foundation-management \
+  --policy-source-arn "$billing_sso_role_arn" \
+  --action-names ce:DescribeReport \
+  --query 'EvaluationResults[0].EvalDecision' \
+  --output text
+
+aws iam simulate-principal-policy \
+  --profile ghilbut-foundation-management \
+  --policy-source-arn arn:aws:iam::384959722788:role/billing \
+  --action-names ce:DescribeReport \
+  --query 'EvaluationResults[0].EvalDecision' \
+  --output text
+```
+
+두 결과는 모두 `allowed`이다.
+
 Billing Console 접근을 별도로 검증한다.
 
 1. [AWS access portal](https://ghilbut.awsapps.com/start)을 연다.
 2. Management account `384959722788`의 `Billing` permission set으로 Console을 연다.
 3. Billing Home, Bills와 Cost Explorer를 각각 열고 내용이 표시되는지 확인한다.
+4. Cost Explorer에 `ce:DescribeReport` 권한 오류가 표시되지 않는지 확인한다.
 
 `Billing` permission set의 session duration은 4시간이다. `ghilbut-billing-role`은 IAM role
 chaining을 사용하므로 `billing` role session은 최대 1시간이다.
