@@ -1,6 +1,22 @@
+data "terraform_remote_state" "organizations" {
+  backend = "s3"
+
+  config = {
+    bucket = "ghilbut-tfstates"
+    key    = "platform/aws/foundation/organizations.tfstate"
+    region = "us-east-1"
+  }
+}
+
+locals {
+  organization_root_id = data.terraform_remote_state.organizations.outputs.root_id
+  infrastructure_ou_id = data.terraform_remote_state.organizations.outputs.infrastructure_ou_id
+}
+
 resource "aws_organizations_account" "management" {
-  name  = "Management"
-  email = "aws@ghilbut.com"
+  name      = "Management"
+  email     = "aws@ghilbut.com"
+  parent_id = local.organization_root_id
 
   tags = {
     created_by = "manual"
@@ -12,8 +28,9 @@ resource "aws_organizations_account" "management" {
 }
 
 resource "aws_organizations_account" "domains" {
-  name  = "Domains"
-  email = "aws-domains@ghilbut.com"
+  name      = "Domains"
+  email     = "aws-domains@ghilbut.com"
+  parent_id = local.infrastructure_ou_id
 
   tags = {
     created_by = "manual"
@@ -25,8 +42,9 @@ resource "aws_organizations_account" "domains" {
 }
 
 resource "aws_organizations_account" "shared_services" {
-  name  = "SharedServices"
-  email = "aws-platform@ghilbut.com"
+  name      = "SharedServices"
+  email     = "aws-platform@ghilbut.com"
+  parent_id = local.infrastructure_ou_id
 
   lifecycle {
     prevent_destroy = true
@@ -34,8 +52,9 @@ resource "aws_organizations_account" "shared_services" {
 }
 
 resource "aws_organizations_account" "ultary" {
-  name  = "UltaryDomains"
-  email = "aws-ultary-domains@ghilbut.com"
+  name      = "UltaryDomains"
+  email     = "aws-ultary-domains@ghilbut.com"
+  parent_id = local.organization_root_id
 
   tags = {
     created_by = "manual"

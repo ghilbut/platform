@@ -72,9 +72,9 @@ aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
 
 | 순서 | Root | Profile | Provider access | 선행 조건 |
 |---:|---|---|---|---|
-| 1 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | 없음 |
-| 2 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
-| 3 | `aws/foundation/organizations/tofu/` | Management | Management `tofu-apply` | Management `tofu-apply` role |
+| 1 | `aws/foundation/organizations/tofu/` | Management | Management `tofu-apply` | 없음 |
+| 2 | `aws/foundation/accounts/tofu/` | Management | Management `tofu-apply` | organizations state |
+| 3 | `aws/foundation/identity/tofu/` | Management | Management `tofu-apply` | accounts state |
 | 4 | `aws/shared-services/tofu/` | Workloads | direct source와 SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
 | 5 | `github/tofu/` | Workloads | SharedServices `tofu-apply` | SharedServices role |
 | 6 | `aws/cdn/tofu/` | Workloads | SharedServices `tofu-apply` | GitHub OIDC provider |
@@ -135,11 +135,11 @@ apply_root() {
 }
 
 apply_root ghilbut-tofu-apply-for-management \
+  aws/foundation/organizations/tofu /tmp/aws-foundation-organizations.tfplan
+apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/accounts/tofu /tmp/aws-foundation-accounts.tfplan
 apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/identity/tofu /tmp/aws-foundation-identity.tfplan
-apply_root ghilbut-tofu-apply-for-management \
-  aws/foundation/organizations/tofu /tmp/aws-foundation-organizations.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
   aws/shared-services/tofu /tmp/aws-shared-services.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
@@ -173,6 +173,51 @@ apply_root ghilbut-tofu-apply-for-ultary-domains \
   ultary/domains/tofu /tmp/ultary-domains.tfplan
 unset TF_VAR_aws_profile
 ```
+
+## AWS Organizations verification
+
+`SERVICE_CONTROL_POLICY`를 비활성화하지 않는다. 비활성화하면 Root, OU와 account의 모든
+SCP 연결이 삭제되고 자동으로 복구되지 않는다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-roots \
+    --query 'Roots[?Id==`r-k1tk`].PolicyTypes' --output json
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-policies-for-target \
+    --target-id r-k1tk --filter SERVICE_CONTROL_POLICY \
+    --query 'Policies[].Name' --output json
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-policies-for-target \
+    --target-id ou-k1tk-nmjtvc69 --filter SERVICE_CONTROL_POLICY \
+    --query 'Policies[].Name' --output json
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-accounts-for-parent \
+    --parent-id r-k1tk --query 'Accounts[].Name' --output json
+
+AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+  aws organizations list-accounts-for-parent \
+    --parent-id ou-k1tk-nmjtvc69 --query 'Accounts[].Name' --output json
+
+for account_id in 384959722788 012646747332 869061964712 971119963968; do
+  AWS_PROFILE=ghilbut-tofu-apply-for-management AWS_SDK_LOAD_CONFIG=1 \
+    aws organizations list-policies-for-target \
+      --target-id "$account_id" --filter SERVICE_CONTROL_POLICY \
+      --query 'Policies[].Name' --output json
+done
+```
+
+결과는 다음 상태와 일치해야 한다.
+
+- Root policy type: `SERVICE_CONTROL_POLICY`, `ENABLED`
+- Root SCP: `FullAWSAccess`, `ProtectMemberAccounts`
+- Infrastructure OU SCP: `FullAWSAccess`
+- 각 account의 직접 연결 SCP: `FullAWSAccess`
+- Root account: Management, UltaryDomains
+- Infrastructure OU account: Domains, SharedServices
 
 ## IAM Identity Center verification
 
@@ -234,9 +279,9 @@ verify_root() {
     tofu -chdir="$root_path" plan -detailed-exitcode
 }
 
+verify_root ghilbut-tofu-apply-for-management aws/foundation/organizations/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/accounts/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/identity/tofu
-verify_root ghilbut-tofu-apply-for-management aws/foundation/organizations/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
 verify_root ghilbut-tofu-apply-for-workloads github/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/cdn/tofu
