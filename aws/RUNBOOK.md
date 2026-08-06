@@ -148,12 +148,13 @@ Plan과 Apply는 `971119963968`이다. SecurityTooling Plan과 Apply는 `9540664
 | 2 | `aws/foundation/accounts/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | organizations state |
 | 3 | `aws/foundation/identity/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | accounts state |
 | 4 | `aws/shared-services/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
-| 5 | `aws/security-tooling/tofu/` | `ghilbut-tofu-apply-for-security-tooling` | SecurityTooling `tofu-apply` | SecurityTooling의 Workloads assignment와 중앙 state role |
-| 6 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
-| 7 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
-| 8 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
-| 9 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 Workloads assignment |
-| 10 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
+| 5 | `aws/shared-services/state/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-state-admin` | 중앙 state role과 `tofu-state-admin` |
+| 6 | `aws/security-tooling/tofu/` | `ghilbut-tofu-apply-for-security-tooling` | SecurityTooling `tofu-apply` | SecurityTooling의 Workloads assignment와 중앙 state role |
+| 7 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
+| 8 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
+| 9 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
+| 10 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 Workloads assignment |
+| 11 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
 
 ## Plan and apply
 
@@ -169,6 +170,7 @@ Apply 전용 로컬 작업 공간은 다음 열 root에 `tofu-apply.auto.tfvars`
 - `aws/foundation/accounts/tofu/`
 - `aws/foundation/identity/tofu/`
 - `aws/shared-services/tofu/`
+- `aws/shared-services/state/tofu/`
 - `aws/security-tooling/tofu/`
 - `aws/cdn/tofu/`
 - `k3s/tofu/`
@@ -181,10 +183,16 @@ Management root 세 곳의 파일은 다음 값을 사용한다.
 aws_execution_role_arn = "arn:aws:iam::384959722788:role/tofu-apply"
 ```
 
-SharedServices root 다섯 곳의 파일은 다음 값을 사용한다.
+일반 SharedServices root 네 곳의 파일은 다음 값을 사용한다.
 
 ```hcl
 aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-apply"
+```
+
+State 관리 root의 파일은 다음 값을 사용한다.
+
+```hcl
+aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-state-admin"
 ```
 
 Domains root의 파일은 다음 값을 사용한다.
@@ -287,6 +295,7 @@ plan_root ghilbut-tofu-plan-for-management aws/foundation/organizations/tofu
 plan_root ghilbut-tofu-plan-for-management aws/foundation/accounts/tofu
 plan_root ghilbut-tofu-plan-for-management aws/foundation/identity/tofu
 plan_root ghilbut-tofu-plan-for-workloads aws/shared-services/tofu
+plan_root ghilbut-tofu-plan-for-workloads aws/shared-services/state/tofu
 plan_root ghilbut-tofu-plan-for-security-tooling aws/security-tooling/tofu
 plan_root ghilbut-tofu-plan-for-workloads aws/cdn/tofu
 plan_root ghilbut-tofu-plan-for-workloads k3s/tofu
@@ -328,6 +337,8 @@ apply_root ghilbut-tofu-apply-for-management \
   aws/foundation/identity/tofu /tmp/aws-foundation-identity.tfplan
 apply_root ghilbut-tofu-apply-for-workloads \
   aws/shared-services/tofu /tmp/aws-shared-services.tfplan
+apply_root ghilbut-tofu-apply-for-workloads \
+  aws/shared-services/state/tofu /tmp/aws-shared-services-state.tfplan
 apply_root ghilbut-tofu-apply-for-security-tooling \
   aws/security-tooling/tofu /tmp/aws-security-tooling.tfplan
 ```
@@ -358,27 +369,139 @@ apply_root ghilbut-tofu-apply-for-ultary-domains \
   ultary/domains/tofu /tmp/ultary-domains.tfplan
 ```
 
-### State administration bootstrap
+### State root migration
 
-State bucket 전용 root를 구성하기 전에 Foundation identity와 SharedServices를 순서대로 적용한다.
-Foundation identity는 `TofuApplyForWorkloads`에 `tofu-state-admin` 수임 권한을 부여한다.
-SharedServices는 역할을 만들고 `deployer`의 수임 권한과 예약 backend key 접근을 추가한다.
+`aws/shared-services/state/tofu/migration-import.tf`와
+`aws/shared-services/tofu/migration-removed.tf`가 있는 동안에는 이 절차만 실행한다. 일반 Apply
+순서를 실행하지 않는다. 새 state에 import한 다음 기존 state에서 주소를 제거한다. 순서를 바꾸지
+않는다.
+
+새 state root의 git 제외 파일은 각각 `tofu-state-admin` provider와 `tofu-state-apply` backend를
+지정한다.
+
+```hcl
+# aws/shared-services/state/tofu/tofu-apply.auto.tfvars
+aws_execution_role_arn = "arn:aws:iam::012646747332:role/tofu-state-admin"
+```
+
+```hcl
+# aws/shared-services/state/tofu/tofu-state-apply.tfbackend
+assume_role = {
+  role_arn = "arn:aws:iam::012646747332:role/tofu-state-apply"
+}
+```
+
+먼저 새 root를 초기화하고 8개 remote resource의 import plan을 저장한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/state/tofu init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/state/tofu plan \
+    -out=/tmp/aws-shared-services-state-import.tfplan
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/state/tofu show -no-color \
+    /tmp/aws-shared-services-state-import.tfplan
+```
+
+Plan에는 IAM role과 inline policy, S3 bucket, ownership controls, bucket policy, public access block,
+server-side encryption과 versioning의 import 8개가 있어야 한다. Bucket 이름과 ARN, versioning
+`Enabled`, `AES256` encryption, `BucketOwnerEnforced`, public access block 네 값과
+`DenyInsecureTransport` policy는 변경하지 않는다. `tofu-state-admin` trust policy도 변경하지
+않는다. Provider 기본 tag 경로와 `iam:UpdateAssumeRolePolicy` inline permission 변경만 허용한다.
+조건을 충족한 saved plan만 적용한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/state/tofu apply \
+    /tmp/aws-shared-services-state-import.tfplan
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/state/tofu state list
+```
+
+새 state에서 8개 managed resource 주소를 확인한 다음 기존 SharedServices root의 제거 plan을
+저장한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/tofu init -reconfigure \
+    -backend-config=tofu-state-apply.tfbackend
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/tofu plan \
+    -out=/tmp/aws-shared-services-state-remove.tfplan
+
+tofu -chdir=aws/shared-services/tofu show -json \
+  /tmp/aws-shared-services-state-remove.tfplan \
+| jq -e '
+    [
+      .resource_changes[]
+      | select(.change.actions | index("delete"))
+    ]
+    | length == 0
+  '
+```
+
+제거 plan에는 8개 resource의 `destroy = false` state 제거, state 관련 output 제거와 workload 정책
+강화만 있어야 한다. 기존 state가 기억하는 provider alias는 `migration-removed.tf`에서 제거 적용이
+끝날 때까지 유지한다. Remote resource 삭제가 없음을 위 명령으로 확인한 뒤 saved plan을 적용한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/tofu apply \
+    /tmp/aws-shared-services-state-remove.tfplan
+
+if AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  tofu -chdir=aws/shared-services/tofu state list \
+  | rg 'tofu_state_admin|aws_s3_bucket.*state'; then
+  echo 'Existing SharedServices state still owns state administration resources.' >&2
+  exit 1
+fi
+```
+
+기존 state에서 8개 주소가 제거되면 SecurityTooling의 공통 workload 정책을 적용한다.
 
 ```sh
 apply_root \
-  ghilbut-tofu-apply-for-management \
-  aws/foundation/identity/tofu \
-  /tmp/foundation-identity-state-admin-bootstrap.tfplan
-
-apply_root \
-  ghilbut-tofu-apply-for-workloads \
-  aws/shared-services/tofu \
-  /tmp/shared-services-state-admin-bootstrap.tfplan
+  ghilbut-tofu-apply-for-security-tooling \
+  aws/security-tooling/tofu \
+  /tmp/aws-security-tooling-state-isolation.tfplan
 ```
 
-SharedServices plan에는 state bucket, bucket policy, public access block, 암호화와 versioning 변경이
-없어야 한다. 적용 후 Workloads IAM Identity Center session을 새로 시작하고 아래 State verification을
-실행한다.
+두 임시 migration 파일을 삭제한다. 두 SharedServices root와 SecurityTooling을 다시 Plan하고 모두
+`No changes`인지 확인한 다음 변경을 커밋한다.
+
+```sh
+rm aws/shared-services/state/tofu/migration-import.tf
+rm aws/shared-services/tofu/migration-removed.tf
+
+verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
+verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/state/tofu
+verify_root ghilbut-tofu-apply-for-security-tooling aws/security-tooling/tofu
+```
+
+### State administration recovery
+
+`tofu-state-admin`의 trust policy가 Apply source와 `deployer`를 거부하거나 inline policy에서
+`iam:PutRolePolicy`를 제거하면 전용 state root가 원래 역할을 복구할 수 없다. 다음 순서로 임시 역할을
+사용한다.
+
+1. `aws/shared-services/tofu/`에 `tofu-state-admin-recovery` 역할과 정책을 선언한다. Trust는 기존
+   `tofu-state-admin`과 동일하게 유지하고 권한은 원래 역할의 trust, tag, inline policy와 active
+   bucket 설정 복구에 필요한 작업만 허용한다.
+2. SharedServices `tofu-apply`로 일반 root를 적용해 임시 역할을 만든다. 일반 workload 거부 정책은
+   원래 `tofu-state-admin` ARN만 대상으로 하므로 다른 이름의 임시 역할 생성은 허용한다.
+3. `aws/shared-services/state/tofu/variables.tf`가 임시 역할 ARN을 허용하도록 수정하고 로컬
+   `tofu-apply.auto.tfvars`에 같은 ARN을 지정한다.
+4. 전용 state root를 적용해 원래 `tofu-state-admin`의 trust와 inline policy를 복구한다.
+5. 로컬 override를 원래 `tofu-state-admin` ARN으로 되돌리고 `No changes`를 확인한다.
+6. 임시 역할 선언과 variable 허용을 제거한 뒤 일반 root를 적용해 임시 역할을 삭제한다.
+
+중앙 backend의 `tofu-state-readonly`와 `tofu-state-apply`는 이 복구 절차에서 변경하지 않는다.
 
 ## AWS Organizations verification
 
@@ -740,8 +863,8 @@ simulate_state_role tofu-state-readonly
 simulate_state_role tofu-state-apply
 ```
 
-`tofu-state-readonly`는 기존 key와 예약 key의 `.tfstate`에 대한 `GetObject`, 두 `.tflock`에 대한
-세 작업만 `allowed`다. `tofu-state-apply`는 두 key의 `.tfstate`와 `.tflock`에 대한 세 작업이 모두
+`tofu-state-readonly`는 두 SharedServices root의 `.tfstate`에 대한 `GetObject`, 두 `.tflock`에
+대한 세 작업만 `allowed`다. `tofu-state-apply`는 두 key의 `.tfstate`와 `.tflock`에 대한 세 작업이 모두
 `allowed`다. Recovery key와 `ghilbut-tfstates-v2` 결과는 모두 `implicitDeny`다. Plan의 lock 생성과
 제거는 기본 Plan backend로 OpenTofu plan을 실행하여 확인한다.
 
@@ -831,12 +954,25 @@ env -u AWS_PROFILE \
       | @tsv
     '
 
+env -u AWS_PROFILE \
+  AWS_ACCESS_KEY_ID="$access_key" \
+  AWS_SECRET_ACCESS_KEY="$secret_key" \
+  AWS_SESSION_TOKEN="$session_token" \
+  AWS_SDK_LOAD_CONFIG=0 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn "$state_admin_role_arn" \
+    --action-names iam:UpdateAssumeRolePolicy \
+    --resource-arns "$state_admin_role_arn" \
+    --query 'EvaluationResults[0].EvalDecision' \
+    --output text
+
 unset simulation_credentials access_key secret_key session_token
 ```
 
 Apply source의 `AssumedRoleUser.Arn`이 출력되고 Plan source 수임은 실패해야 한다. `deployer`의
 `sts:AssumeRole` simulation은 `allowed`다. Lifecycle을 포함한 bucket 설정 작업은 `allowed`,
-`s3:DeleteBucket`은 `explicitDeny`, state object 세 작업은 `implicitDeny`다.
+`s3:DeleteBucket`은 `explicitDeny`, state object 세 작업은 `implicitDeny`다. 자신의
+`iam:UpdateAssumeRolePolicy`는 `allowed`다.
 
 Workload Apply provider role의 state 객체 권한 결정을 확인한다.
 
@@ -887,10 +1023,40 @@ simulate_workload_apply_state() {
     AWS_SDK_LOAD_CONFIG=0 \
     aws iam simulate-principal-policy \
     --policy-source-arn "arn:aws:iam::$account_id:role/tofu-apply" \
-    --action-names s3:PutLifecycleConfiguration \
+    --action-names \
+      s3:DeleteBucketPolicy \
+      s3:GetBucketPolicy \
+      s3:PutBucketEncryption \
+      s3:PutBucketPolicy \
+      s3:PutBucketPublicAccessBlock \
+      s3:PutBucketVersioning \
+      s3:PutLifecycleConfiguration \
+      s3:PutReplicationConfiguration \
     --resource-arns \
       arn:aws:s3:::ghilbut-tfstates \
       arn:aws:s3:::ghilbut-tfstates-v2 \
+    --output json \
+  | jq -r '
+      .EvaluationResults[]
+      | .EvalActionName as $action
+      | .ResourceSpecificResults[]
+      | [$action, .EvalResourceName, .EvalResourceDecision]
+      | @tsv
+    '
+
+  env -u AWS_PROFILE \
+    AWS_ACCESS_KEY_ID="$access_key" \
+    AWS_SECRET_ACCESS_KEY="$secret_key" \
+    AWS_SESSION_TOKEN="$session_token" \
+    AWS_SDK_LOAD_CONFIG=0 \
+    aws iam simulate-principal-policy \
+    --policy-source-arn "arn:aws:iam::$account_id:role/tofu-apply" \
+    --action-names \
+      iam:DeleteRolePolicy \
+      iam:PutRolePolicy \
+      iam:UpdateAssumeRolePolicy \
+      sts:AssumeRole \
+    --resource-arns arn:aws:iam::012646747332:role/tofu-state-admin \
     --output json \
   | jq -r '
       .EvaluationResults[]
@@ -907,12 +1073,11 @@ simulate_workload_apply_state \
   ghilbut-tofu-apply-for-security-tooling 954066442429
 ```
 
-각 `simulate_workload_apply_state` 호출은 두 명령에서 열네 개 권한 결정을 출력한다. 두 호출에서
-출력하는 스물여덟 개 권한 결정은 모두 `explicitDeny`다.
+각 `simulate_workload_apply_state` 호출은 세 명령에서 서른두 개 권한 결정을 출력한다. 두 호출에서
+출력하는 예순네 개 권한 결정은 모두 `explicitDeny`다.
 
 다음 명령은 `tofu-state-readonly`가 읽는 state object를 출력한다. 결과는
-[[aws/README#State ownership|State ownership]] 표의 열 개 active key와 예약 key
-`platform/aws/shared-services/state.tfstate`를 포함한 열한 개다.
+[[aws/README#State ownership|State ownership]] 표의 열한 개 active key와 일치한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
@@ -943,6 +1108,7 @@ verify_root ghilbut-tofu-apply-for-management aws/foundation/organizations/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/accounts/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/identity/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
+verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/state/tofu
 verify_root ghilbut-tofu-apply-for-security-tooling aws/security-tooling/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/cdn/tofu
 verify_root ghilbut-tofu-apply-for-workloads k3s/tofu
@@ -965,13 +1131,14 @@ scripts/opentofu-plan-roots.sh changed HEAD^ HEAD
 scripts/opentofu-plan-roots.test.sh
 ```
 
-목록은 다음 여덟 root를 순서대로 출력한다.
+목록은 다음 아홉 root를 순서대로 출력한다.
 
 ```text
 aws/foundation/organizations/tofu
 aws/foundation/accounts/tofu
 aws/foundation/identity/tofu
 aws/shared-services/tofu
+aws/shared-services/state/tofu
 aws/security-tooling/tofu
 aws/cdn/tofu
 domains/tofu
@@ -987,7 +1154,11 @@ apps/tofu
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-plan-for-workloads AWS_SDK_LOAD_CONFIG=1 \
-  scripts/opentofu-plan.sh aws/shared-services/tofu aws/cdn/tofu apps/tofu
+  scripts/opentofu-plan.sh \
+    aws/shared-services/tofu \
+    aws/shared-services/state/tofu \
+    aws/cdn/tofu \
+    apps/tofu
 ```
 
 수동 전체 Plan workflow를 `main`에서 실행하고 결과를 확인한다.

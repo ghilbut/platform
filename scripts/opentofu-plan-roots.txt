@@ -3,6 +3,7 @@ aws/foundation/organizations/tofu
 aws/foundation/accounts/tofu
 aws/foundation/identity/tofu
 aws/shared-services/tofu
+aws/shared-services/state/tofu
 aws/security-tooling/tofu
 aws/cdn/tofu
 domains/tofu
