@@ -26,6 +26,12 @@ CPA는 단일 control-plane K3s 클러스터다. 인증 정보와 token은 기�
 | Argo CD chart | `9.5.13` |
 | OpenEBS LVM device | `/dev/sda10` |
 | OpenEBS LVM volume group | `openebs` |
+| etcd snapshot schedule | `0 */6 * * *` |
+| local snapshot retention | `8` |
+| S3 bucket | `ghilbut-backups` |
+| S3 folder | `k3s/cpa` |
+| S3 snapshot retention | `28` |
+| S3 noncurrent version retention | 90일 |
 
 ## B. host와 OpenEBS LVM
 
@@ -93,6 +99,7 @@ export SERVER_IP='192.168.254.4'
 export SERVICE_CIDR='172.31.128.0/17'
 export CLUSTER_DNS_IP='172.31.128.10'
 export OIDC_ISSUER='https://oidc.k3s.ghilbut.com/cpa'
+export K3S_VERSION='v1.36.2+k3s1'
 
 if [ -x /usr/local/bin/k3s-uninstall.sh ]; then
   sudo /usr/local/bin/k3s-uninstall.sh
@@ -114,7 +121,10 @@ export INSTALL_K3S_EXEC="\
 --node-name=$CLUSTER \
 --service-cidr $SERVICE_CIDR"
 
-curl -sfL https://get.k3s.io | sudo env INSTALL_K3S_EXEC="$INSTALL_K3S_EXEC" sh -
+curl -sfL https://get.k3s.io | sudo env \
+  INSTALL_K3S_EXEC="$INSTALL_K3S_EXEC" \
+  INSTALL_K3S_VERSION="$K3S_VERSION" \
+  sh -
 sudo systemctl is-active k3s
 sudo k3s --version
 ```
@@ -149,7 +159,123 @@ kubectl config view --minify --raw \
 kubectl get nodes -o wide
 ```
 
-## E. ServiceAccount OIDC와 AWS IAM federation
+## E. etcd snapshot S3
+
+정기 snapshot은 6시간마다 생성한다. Local filesystem에는 8개를 유지하고 S3에는 28개를
+유지한다. K3s가 S3 current snapshot을 정리하면 bucket versioning이 삭제 전 version을 90일간
+유지한다.
+
+정기 snapshot은 `k3s-cpa-snapshot` IAM user의 access key를 사용한다. Access key와
+`/var/lib/rancher/k3s/server/token`의 복구 사본은 CPA와 Git 저장소 밖의 secret store에 보관한다.
+
+### 1. S3 configuration Secret
+
+Secret store에서 정기 snapshot access key를 가져온 뒤 관리자 컴퓨터에서 실행한다. 명령을 마친
+뒤 shell 변수에서 값을 제거한다.
+
+```shell
+# administrator computer
+printf 'K3s S3 access key ID: '
+read -r K3S_S3_ACCESS_KEY_ID
+printf 'K3s S3 secret access key: '
+read -r -s K3S_S3_SECRET_ACCESS_KEY
+printf '\n'
+
+test -n "$K3S_S3_ACCESS_KEY_ID"
+test -n "$K3S_S3_SECRET_ACCESS_KEY"
+
+kubectl --context cpa apply -f - <<YAML
+apiVersion: v1
+kind: Secret
+metadata:
+  name: k3s-etcd-snapshot-s3-config
+  namespace: kube-system
+type: etcd.k3s.cattle.io/s3-config-secret
+stringData:
+  etcd-s3-access-key: "$K3S_S3_ACCESS_KEY_ID"
+  etcd-s3-secret-key: "$K3S_S3_SECRET_ACCESS_KEY"
+  etcd-s3-bucket: "ghilbut-backups"
+  etcd-s3-folder: "k3s/cpa"
+  etcd-s3-region: "us-east-1"
+  etcd-s3-retention: "28"
+  etcd-s3-insecure: "false"
+  etcd-s3-skip-ssl-verify: "false"
+  etcd-s3-timeout: "5m"
+YAML
+
+unset K3S_S3_ACCESS_KEY_ID K3S_S3_SECRET_ACCESS_KEY
+kubectl --context cpa -n kube-system get secret \
+  k3s-etcd-snapshot-s3-config \
+  -o jsonpath='{.type}{"\n"}'
+```
+
+### 2. 정기 snapshot 설정
+
+S3 configuration Secret을 사용할 때 K3s server에는 `etcd-s3`와 `etcd-s3-config-secret`만 S3
+설정으로 지정한다. 다른 S3 설정은 모두 Secret에 둔다.
+
+```shell
+# cpa
+sudo install -D -m 600 /dev/stdin \
+  /etc/rancher/k3s/config.yaml.d/20-etcd-snapshot.yaml <<'YAML'
+etcd-snapshot-compress: true
+etcd-snapshot-schedule-cron: "0 */6 * * *"
+etcd-snapshot-retention: 8
+etcd-s3: true
+etcd-s3-config-secret: k3s-etcd-snapshot-s3-config
+YAML
+
+sudo systemctl restart k3s
+sudo systemctl is-active k3s
+```
+
+### 3. Server token 확인
+
+Secret store에 원래 `/var/lib/rancher/k3s/server/token`의 정확한 값을 저장한다. 저장한 값을 다시
+가져와 CPA의 token과 일치하는지 확인한다. Token은 화면에 출력하지 않는다.
+
+```shell
+# administrator computer
+printf 'Stored CPA K3s server token: '
+read -r -s K3S_SERVER_TOKEN
+printf '\n'
+
+test -n "$K3S_SERVER_TOKEN"
+CPA_SERVER_TOKEN="$(ssh cpa 'sudo cat /var/lib/rancher/k3s/server/token')"
+test "$CPA_SERVER_TOKEN" = "$K3S_SERVER_TOKEN"
+unset CPA_SERVER_TOKEN K3S_SERVER_TOKEN
+```
+
+### 4. 수동 snapshot과 확인
+
+수동 snapshot으로 local 저장과 S3 업로드를 함께 확인한다. `cpa-s3-check` snapshot은 정기
+snapshot retention 대상이 아니므로 확인을 마친 뒤 이름을 지정하여 삭제한다.
+
+```shell
+# administrator computer
+ssh cpa 'sudo k3s etcd-snapshot save --name cpa-s3-check'
+ssh cpa 'sudo k3s etcd-snapshot ls' \
+  | grep -F 's3://ghilbut-backups/k3s/cpa/'
+
+kubectl --context cpa get etcdsnapshotfile \
+  -l etcd.k3s.cattle.io/snapshot-storage-node=s3 \
+  -o custom-columns=NAME:.metadata.name,SNAPSHOT:.spec.snapshotName,LOCATION:.spec.location,READY:.status.readyToUse,CREATED:.status.creationTime
+```
+
+표의 `READY`가 `true`이고 `LOCATION`이 `s3://ghilbut-backups/k3s/cpa/`로 시작해야 한다. 출력의
+`SNAPSHOT` 값을 사용하여 확인용 snapshot을 삭제한다.
+
+```shell
+# cpa
+export SNAPSHOT_NAME='<SNAPSHOT>'
+sudo k3s etcd-snapshot delete "$SNAPSHOT_NAME"
+sudo k3s etcd-snapshot ls
+unset SNAPSHOT_NAME
+```
+
+삭제 뒤 목록에 지정한 `SNAPSHOT_NAME`이 없어야 한다.
+
+## F. ServiceAccount OIDC와 AWS IAM federation
 
 > [!info] 공통 절차
 > ![[k3s/RUNBOOK#D. ServiceAccount OIDC와 AWS IAM federation]]
@@ -179,7 +305,7 @@ diff \
     https://oidc.k3s.ghilbut.com/cpa/openid/v1/jwks | jq -S .)
 ```
 
-## F. Cilium
+## G. Cilium
 
 ```shell
 # administrator computer
@@ -222,6 +348,6 @@ kubectl --context cpa get pods -A \
 kubectl --context cpa wait --for=condition=Ready node/cpa --timeout=10m
 ```
 
-## G. Applications
+## H. Applications
 
 CPA는 단일 control-plane cluster로 실행한다. Cilium node와 ServiceAccount OIDC issuer 검증을 마친 뒤 [[apps/runbooks/BOOTSTRAP|Bootstrap]]을 실행한다. CPA는 Argo CD를 설치하고, GPA는 CPA Argo CD의 관리 대상으로 등록한다.
