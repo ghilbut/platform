@@ -8,6 +8,7 @@ locals {
     "platform/aws/foundation/organizations.tfstate",
     "platform/aws/security-tooling.tfstate",
     "platform/aws/shared-services.tfstate",
+    "platform/aws/shared-services/state.tfstate",
     "platform/domains.tfstate",
     "ultary/domains.tfstate",
   ]

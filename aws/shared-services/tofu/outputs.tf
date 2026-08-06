@@ -13,6 +13,11 @@ output "tofu_execution_role_arn" {
   value       = aws_iam_role.tofu_apply.arn
 }
 
+output "tofu_state_admin_role_arn" {
+  description = "OpenTofu state bucket administration role ARN."
+  value       = aws_iam_role.tofu_state_admin.arn
+}
+
 output "tofu_state_apply_role_arn" {
   description = "OpenTofu Apply backend state role ARN."
   value       = aws_iam_role.tofu_state_apply.arn

@@ -20,6 +20,7 @@ locals {
   domains_account_id          = data.terraform_remote_state.accounts.outputs.domains_account_id
   security_tooling_account_id = data.terraform_remote_state.accounts.outputs.security_tooling_account_id
   shared_services_account_id  = data.terraform_remote_state.accounts.outputs.shared_services_account_id
+  state_admin_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-admin"
   state_apply_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-apply"
   state_readonly_role_arn     = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-readonly"
   # Bucket and object ARNs denied to OpenTofu source identities.
@@ -254,7 +255,7 @@ module "tofu_apply_for_workloads" {
         Action = "sts:AssumeRole"
         Resource = concat(
           [for account in values(local.workload_accounts) : account.tofu_apply_role_arn],
-          [local.state_apply_role_arn, local.state_readonly_role_arn],
+          [local.state_admin_role_arn, local.state_apply_role_arn, local.state_readonly_role_arn],
         )
       },
     ]
