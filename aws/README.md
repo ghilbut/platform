@@ -45,7 +45,7 @@ Management account에 적용되지 않는다.
 
 | 경로 | 책임 |
 |---|---|
-| `cdn/` | SharedServices 계정의 CloudFront CDN과 배포 코드 |
+| [cdn/](cdn/README.md) | SharedServices 계정의 CloudFront CDN과 배포 코드 |
 | `cdn/lambda/` | S3 원본 확인과 SPA fallback을 처리하는 Lambda@Edge 소스와 테스트 |
 | `cdn/tofu/` | S3, ACM, Lambda@Edge, CloudFront와 OAC |
 | `cdn/tofu/modules/certificate/` | ACM certificate와 DNS validation output |
