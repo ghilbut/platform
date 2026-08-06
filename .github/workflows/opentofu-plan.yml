@@ -1,0 +1,90 @@
+name: OpenTofu Plan
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/opentofu-plan.yml
+      - scripts/opentofu-plan-roots.txt
+      - scripts/opentofu-plan-roots.sh
+      - scripts/opentofu-plan-roots.test.sh
+      - scripts/opentofu-plan.sh
+      - "**/*.tf"
+      - "**/*.tf.json"
+      - "**/*.tfvars"
+      - "**/.terraform.lock.hcl"
+      - aws/cdn/**
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    name: Plan CI-managed roots
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require main branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo 'OpenTofu Plan only runs from the main branch.' >&2
+          exit 1
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Test OpenTofu root selection
+        run: scripts/opentofu-plan-roots.test.sh
+
+      - name: Select OpenTofu roots
+        id: roots
+        env:
+          BEFORE_REVISION: ${{ github.event.before }}
+          HEAD_REVISION: ${{ github.sha }}
+          ROOTS_FILE: ${{ runner.temp }}/opentofu-plan-roots
+        run: |
+          if [[ '${{ github.event_name }}' == 'workflow_dispatch' ]]; then
+            scripts/opentofu-plan-roots.sh all > "$ROOTS_FILE"
+          else
+            scripts/opentofu-plan-roots.sh \
+              changed "$BEFORE_REVISION" "$HEAD_REVISION" > "$ROOTS_FILE"
+          fi
+
+          root_count="$(awk 'NF { count++ } END { print count + 0 }' "$ROOTS_FILE")"
+          echo "count=$root_count" >> "$GITHUB_OUTPUT"
+
+          if [[ "$root_count" -eq 0 ]]; then
+            echo 'No CI-managed OpenTofu root changed.'
+          else
+            echo 'Selected OpenTofu roots:'
+            sed 's/^/  /' "$ROOTS_FILE"
+          fi
+
+      - name: Configure AWS credentials
+        if: steps.roots.outputs.count != '0'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_IAM_ROLE_DEPLOYER_ARN }}
+          disable-retry: true
+
+      - name: Setup OpenTofu
+        if: steps.roots.outputs.count != '0'
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+          tofu_version: 1.12.4
+
+      - name: Run OpenTofu Plans
+        if: steps.roots.outputs.count != '0'
+        env:
+          ROOTS_FILE: ${{ runner.temp }}/opentofu-plan-roots
+        run: |
+          mapfile -t roots < "$ROOTS_FILE"
+          scripts/opentofu-plan.sh "${roots[@]}"

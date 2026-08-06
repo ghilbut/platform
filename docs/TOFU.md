@@ -83,5 +83,13 @@
   못한다.
 - Domains `tofu-apply`의 `iam:UpdateAssumeRolePolicy`는 자신의 trust policy에만 적용한다.
 - GitHub OIDC는 현재 `deployer`에 로그인한다. Tekton은 같은 role trust에 인증 방식을 추가한다.
+- `scripts/opentofu-plan-roots.sh`는 전체 또는 Git revision 사이에서 변경된 CI 관리 root를
+  선택한다. `scripts/opentofu-plan.sh`는 전달받은 root를 순서대로 Plan하고 모든 실패 root를
+  출력한다. GitHub Actions와 Tekton은 이 두 스크립트를 함께 사용한다.
+- CI Plan은 기본 backend와 provider 설정만 사용한다. `tofu-apply.auto.tfvars`,
+  `tofu-state-apply.tfbackend`, `TF_VAR_aws_execution_role_arn`, `TF_CLI_ARGS`, `TF_CLI_ARGS_init`과
+  `TF_CLI_ARGS_plan`을 사용하지 않는다.
+- CI 관리 root는 `scripts/opentofu-plan-roots.txt`에서 관리한다. GitHub-hosted runner에서 같은
+  입력과 네트워크를 재현할 수 있는 root만 등록한다.
 - CI target 집합을 바꾸면 같은 target으로 `tofu plan -refresh-only`를 실행한다. 추가 권한이
   필요하면 모든 workload account의 execution role 정책을 함께 변경한다.

@@ -1,0 +1,9 @@
+# GitHub-hosted runner에서 재현 가능한 CI 관리 OpenTofu root다.
+aws/foundation/organizations/tofu
+aws/foundation/accounts/tofu
+aws/foundation/identity/tofu
+aws/shared-services/tofu
+aws/security-tooling/tofu
+aws/cdn/tofu
+domains/tofu
+apps/tofu

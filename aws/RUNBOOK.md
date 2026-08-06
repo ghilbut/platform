@@ -955,6 +955,53 @@ verify_root ghilbut-tofu-apply-for-ultary-domains ultary/domains/tofu
 `tofu plan -detailed-exitcode`는 변경이 없으면 `0`, 변경이 있으면 `2`, 실패하면 `1`을 반환한다.
 K3s plan에는 `cpa` Kubernetes API 연결이 필요하다.
 
+## CI Plan verification
+
+현재 CI 관리 root 전체와 두 Git revision 사이에서 변경된 root를 확인한다.
+
+```sh
+scripts/opentofu-plan-roots.sh all
+scripts/opentofu-plan-roots.sh changed HEAD^ HEAD
+scripts/opentofu-plan-roots.test.sh
+```
+
+목록은 다음 여덟 root를 순서대로 출력한다.
+
+```text
+aws/foundation/organizations/tofu
+aws/foundation/accounts/tofu
+aws/foundation/identity/tofu
+aws/shared-services/tofu
+aws/security-tooling/tofu
+aws/cdn/tofu
+domains/tofu
+apps/tofu
+```
+
+`k3s/tofu/`는 `cpa` Kubernetes API와 로컬 `kubectl` context가 필요하므로 이 목록에 포함하지
+않는다. `ultary/domains/tofu/`는 `deployer` 인가 범위 밖이며 필수 입력값을 별도로 관리하므로
+포함하지 않는다.
+
+공용 Plan 스크립트는 Apply provider override가 없는 작업 공간에서 실행한다. 로컬 실행은 root에
+맞는 Plan source profile 하나를 선택한다.
+
+```sh
+AWS_PROFILE=ghilbut-tofu-plan-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  scripts/opentofu-plan.sh aws/shared-services/tofu aws/cdn/tofu apps/tofu
+```
+
+수동 전체 Plan workflow를 `main`에서 실행하고 결과를 확인한다.
+
+```sh
+gh workflow run opentofu-plan.yml --ref main
+gh run list --workflow opentofu-plan.yml --limit 1
+gh run watch --repo ghilbut/platform
+```
+
+모든 root가 `OpenTofu Plan succeeded`를 출력하면 성공이다. 하나 이상의 root가 실패하면 workflow는
+실패하고 마지막에 실패한 root를 모두 출력한다. 변경된 CI 관리 root가 없으면 AWS 자격 증명을
+요청하지 않고 성공한다.
+
 ## CDN verification
 
 공용 `deployer` role ARN repository variable을 설정하고 확인한다.
