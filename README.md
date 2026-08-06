@@ -14,7 +14,6 @@
 |---------------------------------------------|-------------------------------------------------------------------------------------|
 | `apps/`                                     | 인프라와 플랫폼을 관리하는 어플리케이션들                                           |
 | [aws/](aws/README.md)                       | AWS 계정, 접근 권한과 Platform 서비스                                                |
-| `docs/`                                     | 참고 문서                                                                           |
 | `domains/`                                  | 도메인과 DNS 서버 관리                                                              |
 | `github/`                                   | Github 계정 관리                                                                    |
 | `k3s/`                                      | 온프레미스 K3s 관리 및 클라우드 연동                                                |
@@ -25,4 +24,4 @@
 
 ### OpenTofu
 
-OpenTofu 작성·상태·배포 지침은 [docs/TOFU.md](docs/TOFU.md)를 따른다.
+OpenTofu 작성·상태·배포 지침은 [[knowledge/rulebooks/TOFU|OpenTofu Rulebook]]을 따른다.
