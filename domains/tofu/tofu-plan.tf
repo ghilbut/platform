@@ -21,6 +21,16 @@ resource "aws_iam_role" "tofu_plan" {
           "aws:PrincipalArn" = "arn:aws:iam::869061964712:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForDomains_*"
         }
       }
+      }, {
+      Sid       = "AllowDeployer"
+      Effect    = "Allow"
+      Principal = { AWS = "arn:aws:iam::012646747332:root" }
+      Action    = "sts:AssumeRole"
+      Condition = {
+        ArnEquals = {
+          "aws:PrincipalArn" = "arn:aws:iam::012646747332:role/deployer"
+        }
+      }
     }]
   })
 }

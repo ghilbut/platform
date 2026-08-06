@@ -82,21 +82,3 @@ module "origin_access" {
 
   depends_on = [module.s3]
 }
-
-module "github_actions" {
-  source = "./modules/github-actions"
-
-  acm_certificate_arn              = module.certificate.arn
-  cdn_bucket_arn                   = module.s3.arn
-  cloudfront_distribution_arn      = module.cloudfront.arn
-  cloudfront_function_arn          = module.edge.viewer_request_function_arn
-  github_actions_oidc_provider_arn = data.terraform_remote_state.github.outputs.github_actions_oidc_provider_arn
-  lambda_function_arn              = module.edge.lambda_function_base_arn
-  lambda_role_arn                  = module.edge.lambda_role_arn
-  name                             = var.name
-  origin_access_control_arn        = module.cloudfront.origin_access_control_arn
-  repository_full_name             = "${var.github_owner}/${var.github_repository}"
-  repo                             = local.repo
-  state_bucket                     = "ghilbut-tfstates"
-  state_key                        = "platform/aws/cdn.tfstate"
-}

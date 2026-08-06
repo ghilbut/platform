@@ -9,19 +9,34 @@ resource "aws_iam_role" "tofu_apply" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid    = "AllowIdentityCenterPermissionSet"
-      Effect = "Allow"
-      Principal = {
-        AWS = "arn:aws:iam::${local.shared_services_account_id}:root"
-      }
-      Action = "sts:AssumeRole"
-      Condition = {
-        ArnLike = {
-          "aws:PrincipalArn" = "arn:aws:iam::${local.shared_services_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
+    Statement = [
+      {
+        Sid    = "AllowIdentityCenterPermissionSet"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${local.shared_services_account_id}:root"
         }
-      }
-    }]
+        Action = "sts:AssumeRole"
+        Condition = {
+          ArnLike = {
+            "aws:PrincipalArn" = "arn:aws:iam::${local.shared_services_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*"
+          }
+        }
+      },
+      {
+        Sid    = "AllowDeployer"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${local.shared_services_account_id}:root"
+        }
+        Action = "sts:AssumeRole"
+        Condition = {
+          ArnEquals = {
+            "aws:PrincipalArn" = local.deployer_role_arn
+          }
+        }
+      },
+    ]
   })
 }
 

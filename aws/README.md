@@ -47,11 +47,10 @@ Management account에 적용되지 않는다.
 |---|---|
 | `cdn/` | SharedServices 계정의 CloudFront CDN과 배포 코드 |
 | `cdn/lambda/` | S3 원본 확인과 SPA fallback을 처리하는 Lambda@Edge 소스와 테스트 |
-| `cdn/tofu/` | S3, ACM, Lambda@Edge, CloudFront, OAC와 GitHub Actions IAM role |
+| `cdn/tofu/` | S3, ACM, Lambda@Edge, CloudFront와 OAC |
 | `cdn/tofu/modules/certificate/` | ACM certificate와 DNS validation output |
 | `cdn/tofu/modules/cloudfront/` | CloudFront distribution과 function |
 | `cdn/tofu/modules/edge/` | Lambda bundle object, 실행 role과 Lambda@Edge function |
-| `cdn/tofu/modules/github-actions/` | CDN 배포용 GitHub Actions role |
 | `cdn/tofu/modules/origin-access/` | CloudFront OAC |
 | `cdn/tofu/modules/s3/` | 비공개 CDN origin bucket과 object |
 | `foundation/` | accounts, identity와 organizations 책임 경계 |
@@ -61,7 +60,7 @@ Management account에 적용되지 않는다.
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
 | `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu Plan과 Apply execution role |
-| `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, SharedServices execution role과 CPA IAM OIDC provider |
+| `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, `deployer`, SharedServices execution role, GitHub Actions와 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
 Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한다.
@@ -85,7 +84,6 @@ SharedServices `tofu-state-apply`를 수임한다. 이 역할은 active `.tfstat
 | `aws/security-tooling/tofu/` | `platform/aws/security-tooling.tfstate` | SecurityTooling | `ghilbut-tofu-plan-for-security-tooling` | `ghilbut-tofu-apply-for-security-tooling` |
 | `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
-| `github/tofu/` | `platform/github.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `k3s/tofu/` | `k3s.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `domains/tofu/` | `platform/domains.tfstate` | Domains | `ghilbut-tofu-plan-for-domains` | `ghilbut-tofu-apply-for-domains` |
 | `ultary/domains/tofu/` | `ultary/domains.tfstate` | UltaryDomains | `ghilbut-tofu-plan-for-ultary-domains` | `ghilbut-tofu-apply-for-ultary-domains` |
@@ -127,10 +125,26 @@ assignment는 SharedServices `012646747332`와 SecurityTooling `954066442429`이
 permission set은 Domains account에만 할당한다. `FoundationManagement`와 `Billing`은 OpenTofu
 source profile로 사용하지 않는다.
 
+이 문서에서 workload account는 Workloads permission set을 공유하는 SharedServices와
+SecurityTooling이다. Management는 Foundation 전용 account이며 Domains와 UltaryDomains는 DNS
+전용 account다.
+
+Workloads permission set과 `deployer`는 인증 후 execution role을 수임하는 source identity다.
+두 source identity는 workload resource를 직접 관리하지 않는다. 각 workload account의
+`tofu-plan`과 `tofu-apply`가 최종 인가를 제공한다. `tofu-plan`은 `ReadOnlyAccess`를 사용하고
+`tofu-apply`는 `PowerUserAccess`, `IAMFullAccess`와 중앙 관리 기능 거부 정책을 사용한다. 모든
+workload account에 같은 정책을 적용하며 account별 resource 정책을 추가하지 않는다.
+`tofu-plan`은 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체 읽기가 명시적으로 거부된다.
+
+SharedServices `deployer`는 Management, SharedServices, SecurityTooling과 Domains의
+`tofu-plan`·`tofu-apply` 및 공용 state role을 수임한다. 현재 GitHub OIDC가 이 role에 로그인하며
+향후 Tekton도 같은 role을 사용한다. UltaryDomains는 별도 운영 계정이므로 포함하지 않는다.
+단일 source role의 범위는 각 target role 정책과 GitHub main branch OIDC 조건으로 제한한다.
+
 Plan source identity는 `tofu-state-readonly`와 matching `tofu-plan`만 수임한다. Apply source
 identity는 `tofu-state-apply`, remote state 읽기용 `tofu-state-readonly`와 matching `tofu-apply`를
 수임한다. 모든 source identity는 `ghilbut-tfstates` 직접 접근이 거부된다. `tofu-plan` role은
-managed resource를 읽으며 `tofu-apply` role은 managed resource를 변경한다. UltaryDomains는
+workload resource를 읽으며 `tofu-apply` role은 workload resource를 변경한다. UltaryDomains는
 account-local execution role 없이 source identity를 provider에서 직접 사용한다.
 
 Role-backed root의 `aws_execution_role_arn` 기본값은 account-local `tofu-plan` role이다. Apply
@@ -139,17 +153,16 @@ Role-backed root의 `aws_execution_role_arn` 기본값은 account-local `tofu-pl
 git에서 제외한 `tofu-state-apply.tfbackend`로 `tofu-state-apply`를 지정한다. Remote state는 항상
 `tofu-state-readonly`를 수임한다. Plan과 Apply는 각각 대응하는 source profile 하나만 사용한다.
 
-두 state role의 trust는 Organization `o-ncl6mypc8p` 소속이고 이름이 matching `TofuPlanFor*` 또는
-`TofuApplyFor*`인 IAM Identity Center role만 허용한다. Account wildcard는 앞으로 추가할 workload
-account의 같은 permission set을 포함한다. 사용자 role과 다른 Organization의 role은 수임할 수
-없다.
+공용 state role 두 개의 trust는 Organization `o-ncl6mypc8p` 소속이고 이름이 matching
+`TofuPlanFor*` 또는 `TofuApplyFor*`인 IAM Identity Center role과 SharedServices `deployer`만
+허용한다. Account wildcard는 앞으로 추가할 workload account의 같은 permission set을 포함한다.
+사용자 role과 다른 Organization의 role은 수임할 수 없다.
 
 `aws_execution_role_arn = null`은 execution role이 아직 없는 새 account bootstrap에서만 source
-identity를 provider에 직접 연결한다. Management, SharedServices, SecurityTooling과 Domains
-account의 일반 실행에서는 `null`을 사용하지 않는다.
+identity를 provider에 직접 연결한다. 기존 account에서는 `null`을 사용하지 않는다.
 
-SecurityTooling `tofu-apply`는 SecurityTooling의 `tofu-apply`와 `tofu-plan` role만 관리한다.
-SecurityTooling `tofu-plan`은 두 role과 STS caller identity만 읽는다.
+Domains `tofu-apply`는 자신의 trust policy만 갱신한다. 이 권한은 permission set과 `deployer`
+trust를 OpenTofu로 유지하기 위해 필요하며 다른 IAM role에는 적용되지 않는다.
 
 Permission set session duration과 account-local role의 configured maximum session duration은
 4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
@@ -172,7 +185,13 @@ K3s root는 다음 CPA OIDC object를 origin bucket에 동기화한다.
 
 GitHub Actions는 오류 페이지, Lambda bundle, Lambda@Edge와 CloudFront 배포만 갱신한다.
 S3 bucket, ACM certificate, CloudFront Function, IAM role과 Route 53 변경은 로컬 OpenTofu가
-관리한다.
+관리한다. Lambda bundle은 git에서 관리하므로 clone 직후에도 Plan이 성공한다.
+
+CDN 배포 workflow는 AWS profile을 사용하지 않는다. 현재 GitHub OIDC가 SharedServices
+`deployer`를 사용한다. Backend는 `tofu-state-apply`를 수임하고 provider는 `tofu-apply`를
+수임한다. 같은 `deployer`가 향후 OpenTofu Plan·Apply와 CDN 배포를 포함한 CI/CD를 담당한다.
+Tekton은 `deployer` trust에 인증 방식을 추가하여 같은 역할을 사용한다. 개발자의 기본 backend와
+provider는 각각 `tofu-state-readonly`와 `tofu-plan`을 수임한다.
 
 ## AWS-managed resources
 

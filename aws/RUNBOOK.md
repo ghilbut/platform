@@ -149,12 +149,11 @@ Plan과 Apply는 `971119963968`이다. SecurityTooling Plan과 Apply는 `9540664
 | 3 | `aws/foundation/identity/tofu/` | `ghilbut-tofu-apply-for-management` | Management `tofu-apply` | accounts state |
 | 4 | `aws/shared-services/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 `TofuApplyForWorkloads` assignment |
 | 5 | `aws/security-tooling/tofu/` | `ghilbut-tofu-apply-for-security-tooling` | SecurityTooling `tofu-apply` | SecurityTooling의 Workloads assignment와 중앙 state role |
-| 6 | `github/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices role |
-| 7 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
-| 8 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
-| 9 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
-| 10 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 Workloads assignment |
-| 11 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
+| 6 | `aws/cdn/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | GitHub OIDC provider |
+| 7 | `k3s/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | CDN origin bucket와 `cpa` Kubernetes API |
+| 8 | `domains/tofu/` | `ghilbut-tofu-apply-for-domains` | Domains `tofu-apply` | CDN state |
+| 9 | `apps/tofu/` | `ghilbut-tofu-apply-for-workloads` | SharedServices `tofu-apply` | SharedServices의 Workloads assignment |
+| 10 | `ultary/domains/tofu/` | `ghilbut-tofu-apply-for-ultary-domains` | direct source | UltaryDomains assignment |
 
 ## Plan and apply
 
@@ -171,7 +170,6 @@ Apply 전용 로컬 작업 공간은 다음 열 root에 `tofu-apply.auto.tfvars`
 - `aws/foundation/identity/tofu/`
 - `aws/shared-services/tofu/`
 - `aws/security-tooling/tofu/`
-- `github/tofu/`
 - `aws/cdn/tofu/`
 - `k3s/tofu/`
 - `domains/tofu/`
@@ -260,23 +258,6 @@ AWS_PROFILE='<apply-source-profile>' AWS_SDK_LOAD_CONFIG=1 \
 
 ### Required variables
 
-Domains DKIM 값은 기존 state에서 읽고 shell output으로 출력하지 않는다.
-
-```sh
-AWS_PROFILE=ghilbut-tofu-plan-for-domains \
-  tofu -chdir=domains/tofu init -reconfigure
-
-export TF_VAR_ghilbut_dkim_for_root_domain="$(
-  AWS_PROFILE=ghilbut-tofu-plan-for-domains \
-    tofu -chdir=domains/tofu state pull \
-    | jq -r '
-        .resources[]
-        | select(.type == "aws_route53_record" and .name == "google_dkim")
-        | .instances[0].attributes.records[0]
-      '
-)"
-```
-
 UltaryDomains는 다음 필수 variable을 승인된 로컬 환경 변수나 git에서 제외한 variable file로
 제공한다. Map variable의 환경 변수 값은 JSON object다.
 
@@ -307,7 +288,6 @@ plan_root ghilbut-tofu-plan-for-management aws/foundation/accounts/tofu
 plan_root ghilbut-tofu-plan-for-management aws/foundation/identity/tofu
 plan_root ghilbut-tofu-plan-for-workloads aws/shared-services/tofu
 plan_root ghilbut-tofu-plan-for-security-tooling aws/security-tooling/tofu
-plan_root ghilbut-tofu-plan-for-workloads github/tofu
 plan_root ghilbut-tofu-plan-for-workloads aws/cdn/tofu
 plan_root ghilbut-tofu-plan-for-workloads k3s/tofu
 plan_root ghilbut-tofu-plan-for-domains domains/tofu
@@ -350,8 +330,6 @@ apply_root ghilbut-tofu-apply-for-workloads \
   aws/shared-services/tofu /tmp/aws-shared-services.tfplan
 apply_root ghilbut-tofu-apply-for-security-tooling \
   aws/security-tooling/tofu /tmp/aws-security-tooling.tfplan
-apply_root ghilbut-tofu-apply-for-workloads \
-  github/tofu /tmp/github.tfplan
 ```
 
 CDN apply 전에 Lambda bundle을 만든다.
@@ -617,6 +595,23 @@ fi
 role의 configured maximum session duration은 4시간이다. IAM role chaining을 사용하는
 `tofu-plan` session은 최대 1시간이다.
 
+세 root의 중앙 관리 기능 거부 목록이 같은지 확인한다. 두 `diff` 명령은 출력 없이 종료되어야
+한다.
+
+```zsh
+diff -u \
+  <(sed -n '/central_administration_denied_actions = \[/,/^  \]$/p' \
+    aws/foundation/identity/tofu/main.tf) \
+  <(sed -n '/central_administration_denied_actions = \[/,/^  \]$/p' \
+    aws/shared-services/tofu/main.tf)
+
+diff -u \
+  <(sed -n '/central_administration_denied_actions = \[/,/^  \]$/p' \
+    aws/foundation/identity/tofu/main.tf) \
+  <(sed -n '/central_administration_denied_actions = \[/,/^  \]$/p' \
+    aws/security-tooling/tofu/main.tf)
+```
+
 ## Billing activation and verification
 
 Management root user가 account별 Billing Console 접근 설정을 한 번 활성화한다.
@@ -759,29 +754,34 @@ verify_root ghilbut-tofu-apply-for-management aws/foundation/accounts/tofu
 verify_root ghilbut-tofu-apply-for-management aws/foundation/identity/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/shared-services/tofu
 verify_root ghilbut-tofu-apply-for-security-tooling aws/security-tooling/tofu
-verify_root ghilbut-tofu-apply-for-workloads github/tofu
 verify_root ghilbut-tofu-apply-for-workloads aws/cdn/tofu
 verify_root ghilbut-tofu-apply-for-workloads k3s/tofu
 verify_root ghilbut-tofu-apply-for-domains domains/tofu
 verify_root ghilbut-tofu-apply-for-workloads apps/tofu
 
 verify_root ghilbut-tofu-apply-for-ultary-domains ultary/domains/tofu
-unset TF_VAR_ghilbut_dkim_for_root_domain
 ```
 
-`tofu plan -detailed-exitcode`의 성공 결과는 exit code `0`이다. K3s plan에는 `cpa`
-Kubernetes API 연결이 필요하다.
+`tofu plan -detailed-exitcode`는 변경이 없으면 `0`, 변경이 있으면 `2`, 실패하면 `1`을 반환한다.
+K3s plan에는 `cpa` Kubernetes API 연결이 필요하다.
 
 ## CDN verification
 
-GitHub Actions role ARN repository variable을 설정하고 확인한다.
+공용 `deployer` role ARN repository variable을 설정하고 확인한다.
+
+CDN 배포 role 전환은 다음 순서로 실행한다.
+
+1. `aws/shared-services/tofu/`를 Apply하여 `deployer`와 대상 role trust를 적용한다.
+2. `AWS_IAM_ROLE_DEPLOYER_ARN` repository variable을 설정한다.
+3. `aws/cdn/tofu/`를 Apply하여 `cdn-platform-github-actions`를 제거한다.
+4. CDN workflow를 실행하고 성공을 확인한다.
 
 ```sh
-gh variable set AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN \
+gh variable set AWS_IAM_ROLE_DEPLOYER_ARN \
   --repo ghilbut/platform \
-  --body 'arn:aws:iam::012646747332:role/cdn-platform-github-actions'
+  --body 'arn:aws:iam::012646747332:role/deployer'
 
-gh api repos/ghilbut/platform/actions/variables/AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN
+gh api repos/ghilbut/platform/actions/variables/AWS_IAM_ROLE_DEPLOYER_ARN
 ```
 
 CloudFront와 공개 CPA OIDC document를 확인한다.

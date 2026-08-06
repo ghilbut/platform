@@ -39,6 +39,7 @@ locals {
     }
   }
 
+  # Keep this list identical to SharedServices and SecurityTooling.
   central_administration_denied_actions = [
     "account:*",
     "aws-portal:*",
@@ -228,11 +229,7 @@ module "tofu_apply_for_workloads" {
 
   instance_arn = local.instance_arn
   name         = "TofuApplyForWorkloads"
-  description  = "OpenTofu apply access for workload infrastructure."
-  managed_policy_arns = toset([
-    "arn:aws:iam::aws:policy/IAMFullAccess",
-    "arn:aws:iam::aws:policy/PowerUserAccess",
-  ])
+  description  = "Source access to workload OpenTofu apply execution roles."
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -381,7 +378,7 @@ module "tofu_plan_for_workloads" {
 
   instance_arn = local.instance_arn
   name         = "TofuPlanForWorkloads"
-  description  = "OpenTofu plan access for workload infrastructure."
+  description  = "Source access to workload OpenTofu plan execution roles."
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

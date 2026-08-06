@@ -23,11 +23,6 @@ output "cloudfront_hosted_zone_id" {
   value       = module.cloudfront.hosted_zone_id
 }
 
-output "github_actions_role_arn" {
-  description = "Platform IAM role ARN for CDN GitHub Actions uploads."
-  value       = module.github_actions.role_arn
-}
-
 output "s3_bucket_name" {
   description = "Platform CDN origin bucket name."
   value       = module.s3.name

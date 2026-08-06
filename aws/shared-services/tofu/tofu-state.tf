@@ -9,7 +9,6 @@ locals {
     "platform/aws/security-tooling.tfstate",
     "platform/aws/shared-services.tfstate",
     "platform/domains.tfstate",
-    "platform/github.tfstate",
     "ultary/domains.tfstate",
   ]
   state_lock_object_keys = [for key in local.state_object_keys : "${key}.tflock"]
@@ -31,6 +30,7 @@ locals {
     "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForUltaryDomains_*",
     "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuApplyForWorkloads_*",
   ]
+  deployer_role_arn = "arn:aws:iam::012646747332:role/deployer"
   state_readonly_source_principal_arn_patterns = [
     "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForDomains_*",
     "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_TofuPlanForManagement_*",
@@ -50,20 +50,33 @@ resource "aws_iam_role" "tofu_state_apply" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "AllowApplySourceIdentities"
-      Effect    = "Allow"
-      Principal = { AWS = "*" }
-      Action    = "sts:AssumeRole"
-      Condition = {
-        StringEquals = {
-          "aws:PrincipalOrgID" = "o-ncl6mypc8p"
+    Statement = [
+      {
+        Sid       = "AllowApplySourceIdentities"
+        Effect    = "Allow"
+        Principal = { AWS = "*" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          StringEquals = {
+            "aws:PrincipalOrgID" = "o-ncl6mypc8p"
+          }
+          ArnLike = {
+            "aws:PrincipalArn" = local.state_apply_source_principal_arn_patterns
+          }
         }
-        ArnLike = {
-          "aws:PrincipalArn" = local.state_apply_source_principal_arn_patterns
+      },
+      {
+        Sid       = "AllowDeployer"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::012646747332:root" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          ArnEquals = {
+            "aws:PrincipalArn" = local.deployer_role_arn
+          }
         }
-      }
-    }]
+      },
+    ]
   })
 }
 
@@ -111,23 +124,36 @@ resource "aws_iam_role" "tofu_state_readonly" {
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid       = "AllowPlanSourceIdentities"
-      Effect    = "Allow"
-      Principal = { AWS = "*" }
-      Action    = "sts:AssumeRole"
-      Condition = {
-        StringEquals = {
-          "aws:PrincipalOrgID" = "o-ncl6mypc8p"
+    Statement = [
+      {
+        Sid       = "AllowPlanSourceIdentities"
+        Effect    = "Allow"
+        Principal = { AWS = "*" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          StringEquals = {
+            "aws:PrincipalOrgID" = "o-ncl6mypc8p"
+          }
+          ArnLike = {
+            "aws:PrincipalArn" = concat(
+              local.state_readonly_source_principal_arn_patterns,
+              local.state_apply_source_principal_arn_patterns,
+            )
+          }
         }
-        ArnLike = {
-          "aws:PrincipalArn" = concat(
-            local.state_readonly_source_principal_arn_patterns,
-            local.state_apply_source_principal_arn_patterns,
-          )
+      },
+      {
+        Sid       = "AllowDeployer"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::012646747332:root" }
+        Action    = "sts:AssumeRole"
+        Condition = {
+          ArnEquals = {
+            "aws:PrincipalArn" = local.deployer_role_arn
+          }
         }
-      }
-    }]
+      },
+    ]
   })
 }
 
