@@ -13,14 +13,14 @@ locals {
     "ultary/domains.tfstate",
   ]
   state_lock_object_keys = [for key in local.state_object_keys : "${key}.tflock"]
-  state_bucket_arns      = [for bucket in values(local.state_buckets) : "arn:aws:s3:::${bucket}"]
+  state_bucket_arns      = [for bucket in local.active_state_bucket_names : "arn:aws:s3:::${bucket}"]
   state_object_arns = flatten([
-    for bucket in values(local.state_buckets) : [
+    for bucket in local.active_state_bucket_names : [
       for key in local.state_object_keys : "arn:aws:s3:::${bucket}/${key}"
     ]
   ])
   state_lock_object_arns = flatten([
-    for bucket in values(local.state_buckets) : [
+    for bucket in local.active_state_bucket_names : [
       for key in local.state_lock_object_keys : "arn:aws:s3:::${bucket}/${key}"
     ]
   ])

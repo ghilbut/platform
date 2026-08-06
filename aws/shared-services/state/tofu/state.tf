@@ -1,5 +1,4 @@
 resource "aws_s3_bucket" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   bucket        = each.value
@@ -11,7 +10,6 @@ resource "aws_s3_bucket" "state" {
 }
 
 resource "aws_s3_bucket_ownership_controls" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   bucket = aws_s3_bucket.state[each.key].id
@@ -22,7 +20,6 @@ resource "aws_s3_bucket_ownership_controls" "state" {
 }
 
 resource "aws_s3_bucket_public_access_block" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   bucket = aws_s3_bucket.state[each.key].id
@@ -34,7 +31,6 @@ resource "aws_s3_bucket_public_access_block" "state" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   bucket = aws_s3_bucket.state[each.key].id
@@ -49,7 +45,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "state" {
 }
 
 resource "aws_s3_bucket_versioning" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   bucket = aws_s3_bucket.state[each.key].id
@@ -60,7 +55,6 @@ resource "aws_s3_bucket_versioning" "state" {
 }
 
 data "aws_iam_policy_document" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   statement {
@@ -87,7 +81,6 @@ data "aws_iam_policy_document" "state" {
 }
 
 resource "aws_s3_bucket_policy" "state" {
-  provider = aws.shared_services
   for_each = local.state_buckets
 
   bucket = aws_s3_bucket.state[each.key].id

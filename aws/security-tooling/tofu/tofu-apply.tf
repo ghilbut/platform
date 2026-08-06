@@ -63,23 +63,32 @@ resource "aws_iam_role_policy" "tofu_apply" {
         Resource = "*"
       },
       {
-        Sid    = "DenyDirectStateObjectAccess"
-        Effect = "Deny"
-        Action = [
-          "s3:AbortMultipartUpload",
-          "s3:DeleteObject*",
-          "s3:GetObject*",
-          "s3:ListMultipartUploadParts",
-          "s3:PutObject*",
-          "s3:RestoreObject",
-        ]
-        Resource = local.protected_state_object_arns
+        Sid      = "DenyDirectStateAccess"
+        Effect   = "Deny"
+        Action   = "s3:*"
+        Resource = concat(local.protected_state_bucket_arns, local.protected_state_object_arns)
       },
       {
-        Sid      = "DenyStateObjectExpiration"
-        Effect   = "Deny"
-        Action   = "s3:PutLifecycleConfiguration"
-        Resource = local.protected_state_bucket_arns
+        Sid    = "DenyStateAdministrationRoleChanges"
+        Effect = "Deny"
+        Action = [
+          "iam:AttachRolePolicy",
+          "iam:CreateRole",
+          "iam:DeleteRole",
+          "iam:DeleteRolePermissionsBoundary",
+          "iam:DeleteRolePolicy",
+          "iam:DetachRolePolicy",
+          "iam:PassRole",
+          "iam:PutRolePermissionsBoundary",
+          "iam:PutRolePolicy",
+          "iam:TagRole",
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+          "sts:AssumeRole",
+        ]
+        Resource = local.state_admin_role_arn
       },
     ]
   })

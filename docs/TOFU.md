@@ -20,11 +20,13 @@
   해당 account의 `tofu-plan` role ARN이다.
 - Apply 전용 로컬 작업 공간은 git에서 제외한 `tofu-apply.auto.tfvars`에서 같은 변수에
   `tofu-apply` role ARN을 지정한다. `TF_VAR_aws_execution_role_arn`은 사용하지 않는다.
+- `aws/shared-services/state/tofu/`의 Apply 전용 로컬 variable file은 `tofu-state-admin` role ARN을
+  지정한다.
 - `aws_execution_role_arn = null`은 execution role을 생성하는 새 account bootstrap에서만
   source identity를 provider에 직접 사용한다. 기존 account에서는 `null`을 사용하지 않는다.
 - CDN 배포 workflow는 `deployment.tfvars`로 `tofu-apply`를 provider에서 수임한다.
 - Source identity와 execution role의 작업 종류를 일치시킨다. Plan source는 `tofu-plan`, Apply
-  source는 `tofu-apply`를 사용한다.
+  source는 일반 root에서 `tofu-apply`, state 관리 root에서 `tofu-state-admin`을 사용한다.
 - Source profile이나 backend role을 바꾼 뒤에는 `tofu init -reconfigure`를 실행한다. Apply
   backend는 `-backend-config=tofu-state-apply.tfbackend`를 함께 지정한다.
 - UltaryDomains provider는 account-local execution role 없이 `AWS_PROFILE`의 source identity를
@@ -34,12 +36,13 @@
 
 - 중앙 state role과 state bucket은 SharedServices 계정에 함께 둔다. State bucket을 다른 계정으로
   옮기면 중앙 state role도 함께 옮기거나 새 bucket policy에 중앙 state role을 허용한다.
-- `tofu-state-admin`은 state bucket 설정과 자신의 IAM role 설명, session duration, tag, inline
-  policy를 관리한다. State object API의 직접 IAM 권한은 없지만 bucket policy를 통한 다른
-  principal의 object 접근 위임은 변경할 수 있다. State object는 backend의
+- `tofu-state-admin`은 state bucket 설정과 자신의 IAM role trust policy, 설명, session duration,
+  tag, inline policy를 관리한다. State object API의 직접 IAM 권한은 없지만 bucket policy를 통한
+  다른 principal의 object 접근 위임은 변경할 수 있다. State object는 backend의
   `tofu-state-readonly`와 `tofu-state-apply`가 사용한다.
-- `platform/aws/shared-services/state.tfstate`는 state bucket 전용 root의 예약 backend key다. 전용
-  root가 구성될 때까지 state bucket과 `tofu-state-admin`은 `aws/shared-services/tofu/`에서 관리한다.
+- `aws/shared-services/state/tofu/`는 `platform/aws/shared-services/state.tfstate`를 사용하며 active
+  state bucket과 `tofu-state-admin`을 관리한다. `aws/shared-services/tofu/`는 중앙 backend role을
+  관리한다.
 - `aws/shared-services/tofu/`는 `deployer`와 GitHub Actions OIDC provider를 함께 관리한다.
 - SharedServices의 `deployer`가 CI/CD source identity를 제공한다. GitHub repository variable은
   실행 Runbook에서 `gh variable set`으로 관리한다.
@@ -68,8 +71,9 @@
   대상으로 적용한다. IAM·DNS·ACM·CloudFront Function 변경은 로컬 apply의 책임이다.
 - CDN Lambda bundle은 git에서 관리한다. CI는 build 결과가 저장소와 일치하는지 확인한 뒤
   Lambda bundle을 적용한다.
-- `deployer`는 Management, SharedServices, SecurityTooling과 Domains의 `tofu-plan`·`tofu-apply`
-  및 공용 state role만 수임한다. 실제 읽기·쓰기 권한은 수임한 role이 제공한다.
+- `deployer`는 Management, SharedServices, SecurityTooling과 Domains의 `tofu-plan`·`tofu-apply`,
+  SharedServices의 `tofu-state-admin` 및 공용 state role만 수임한다. 실제 읽기·쓰기 권한은 수임한
+  role이 제공한다.
 - Workloads permission set과 `deployer`는 workload resource를 직접 관리하지 않는다. 두 source
   identity는 동일한 account-local execution role을 수임하여 같은 인가를 사용한다.
 - 모든 workload account의 `tofu-plan`은 `ReadOnlyAccess`를 사용한다. 모든 workload account의
@@ -78,9 +82,9 @@
   Foundation과 DNS 전용 인가 정책을 사용한다.
 - Workload `tofu-plan`은 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체를 직접 읽지 못한다.
   Backend는 `tofu-state-readonly`를 별도로 수임한다.
-- Workload `tofu-apply`는 두 state bucket의 객체를 직접 읽거나 변경하지 못한다. Backend는
-  `tofu-state-apply`를 별도로 수임한다. State 객체를 만료시키는 bucket lifecycle 설정도 만들지
-  못한다.
+- Workload `tofu-apply`는 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 bucket API와 object API를
+  직접 사용할 수 없다. `tofu-state-admin`도 수임하거나 변경할 수 없다. Backend는
+  `tofu-state-apply`를 별도로 수임한다.
 - Domains `tofu-apply`의 `iam:UpdateAssumeRolePolicy`는 자신의 trust policy에만 적용한다.
 - GitHub OIDC는 현재 `deployer`에 로그인한다. Tekton은 같은 role trust에 인증 방식을 추가한다.
 - `scripts/opentofu-plan-roots.sh`는 전체 또는 Git revision 사이에서 변경된 CI 관리 root를

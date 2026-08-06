@@ -60,7 +60,8 @@ Management account에 적용되지 않는다.
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
 | `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu Plan과 Apply execution role |
-| `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, `tofu-state-admin`, `deployer`, SharedServices execution role, GitHub Actions와 CPA IAM OIDC provider |
+| `shared-services/state/tofu/` | `ghilbut-tfstates`의 bucket 설정과 `tofu-state-admin` |
+| `shared-services/tofu/` | 중앙 state backend role, `deployer`, SharedServices workload execution role, GitHub Actions와 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
 Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한다.
@@ -75,9 +76,9 @@ Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한
 SharedServices `tofu-state-apply`를 수임한다. 이 역할은 active `.tfstate`와 `.tflock`을 읽고 쓰고
 삭제한다. 두 역할은 recovery state와 `ghilbut-tfstates-v2`에 접근하지 않는다.
 
-`platform/aws/shared-services/state.tfstate`는 state bucket 전용 root에 사용할 예약 key다. 중앙
-state role은 이 key와 대응하는 lock key에 접근할 수 있다. State bucket 리소스는 아직
-`aws/shared-services/tofu/`의 `platform/aws/shared-services.tfstate`가 소유한다.
+State bucket 6개 리소스와 `tofu-state-admin`은 `aws/shared-services/state/tofu/`의
+`platform/aws/shared-services/state.tfstate`가 소유한다. 중앙 state role은 이 key와 대응하는
+lock key에 접근한다.
 
 | Root | State key | Account | Plan source profile | Apply source profile |
 |---|---|---|---|---|
@@ -85,6 +86,7 @@ state role은 이 key와 대응하는 lock key에 접근할 수 있다. State bu
 | `aws/foundation/identity/tofu/` | `platform/aws/foundation/identity.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
 | `aws/foundation/organizations/tofu/` | `platform/aws/foundation/organizations.tfstate` | Management | `ghilbut-tofu-plan-for-management` | `ghilbut-tofu-apply-for-management` |
 | `aws/shared-services/tofu/` | `platform/aws/shared-services.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
+| `aws/shared-services/state/tofu/` | `platform/aws/shared-services/state.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `aws/security-tooling/tofu/` | `platform/aws/security-tooling.tfstate` | SecurityTooling | `ghilbut-tofu-plan-for-security-tooling` | `ghilbut-tofu-apply-for-security-tooling` |
 | `aws/cdn/tofu/` | `platform/aws/cdn.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
 | `apps/tofu/` | `platform/apps.tfstate` | SharedServices | `ghilbut-tofu-plan-for-workloads` | `ghilbut-tofu-apply-for-workloads` |
@@ -115,8 +117,8 @@ profile을 backend와 provider가 함께 사용한다. Backend는 SharedServices
 |---|---|---|---|---|---|
 | `TofuPlanForManagement` | Management `384959722788` | `ghilbut-tofu-plan-for-management` | `arn:aws:iam::384959722788:role/tofu-plan` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
 | `TofuApplyForManagement` | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `arn:aws:iam::384959722788:role/tofu-apply` | `aws/foundation/identity/tofu/` | Foundation accounts, identity, organizations |
-| `TofuPlanForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `arn:aws:iam::012646747332:role/tofu-plan` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
-| `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` | `aws/shared-services/tofu/` | SharedServices, CDN, apps, GitHub, K3s |
+| `TofuPlanForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `arn:aws:iam::012646747332:role/tofu-plan` | `aws/shared-services/tofu/` | SharedServices, state, CDN, apps, GitHub, K3s |
+| `TofuApplyForWorkloads` | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `arn:aws:iam::012646747332:role/tofu-apply` 또는 `arn:aws:iam::012646747332:role/tofu-state-admin` | `aws/shared-services/tofu/`, `aws/shared-services/state/tofu/` | SharedServices, state, CDN, apps, GitHub, K3s |
 | `TofuPlanForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-plan-for-security-tooling` | `arn:aws:iam::954066442429:role/tofu-plan` | `aws/security-tooling/tofu/` | SecurityTooling |
 | `TofuApplyForWorkloads` | SecurityTooling `954066442429` | `ghilbut-tofu-apply-for-security-tooling` | `arn:aws:iam::954066442429:role/tofu-apply` | `aws/security-tooling/tofu/` | SecurityTooling |
 | `TofuPlanForDomains` | Domains `869061964712` | `ghilbut-tofu-plan-for-domains` | `arn:aws:iam::869061964712:role/tofu-plan` | `domains/tofu/` | Domains |
@@ -136,10 +138,11 @@ SecurityTooling이다. Management는 Foundation 전용 account이며 Domains와 
 Workloads permission set과 `deployer`는 인증 후 execution role을 수임하는 source identity다.
 두 source identity는 workload resource를 직접 관리하지 않는다. 각 workload account의
 `tofu-plan`과 `tofu-apply`가 최종 인가를 제공한다. `tofu-plan`은 `ReadOnlyAccess`를 사용하고
-`tofu-apply`는 `PowerUserAccess`, `IAMFullAccess`와 중앙 관리 기능 거부 정책을 사용한다. 모든
-workload account에 같은 정책을 적용하며 account별 resource 정책을 추가하지 않는다.
-`tofu-plan`과 `tofu-apply`는 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체에 직접 접근하지
-못한다. `tofu-apply`는 두 state bucket의 객체를 만료시키는 lifecycle 설정도 적용하지 못한다.
+`tofu-apply`는 `PowerUserAccess`, `IAMFullAccess`와 중앙 관리·state 관리 거부 정책을 사용한다.
+모든 workload account에 같은 정책을 적용하며 account별 resource 정책을 추가하지 않는다.
+`tofu-plan`은 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체에 직접 접근하지 못한다.
+`tofu-apply`는 두 bucket의 bucket API와 object API를 직접 사용할 수 없고 `tofu-state-admin`을
+수임하거나 변경할 수 없다.
 
 SharedServices `deployer`는 Management, SharedServices, SecurityTooling과 Domains의
 `tofu-plan`·`tofu-apply`, `tofu-state-admin` 및 공용 state role을 수임한다. 현재 GitHub OIDC가 이
@@ -154,7 +157,7 @@ GitHub Actions의 `OpenTofu Plan` workflow는 SharedServices `deployer`로 로�
 access key, Apply provider override와 Apply backend override는 사용하지 않는다.
 
 `main` push는 변경된 CI 관리 root만 Plan한다. 삭제한 파일도 변경으로 처리한다. 비교 기준
-revision에 접근할 수 없으면 모든 CI 관리 root를 Plan한다. 수동 실행은 다음 여덟 root를 모두
+revision에 접근할 수 없으면 모든 CI 관리 root를 Plan한다. 수동 실행은 다음 아홉 root를 모두
 Plan한다.
 
 Plan과 CDN Apply는 S3 backend의 `.tflock`으로 동일한 state의 실행을 직렬화하고 잠금 해제를 최대
@@ -167,10 +170,11 @@ state를 사용하는 Plan은 GitHub concurrency group으로 제한하지 않는
 | 2 | `aws/foundation/accounts/tofu/` | Management |
 | 3 | `aws/foundation/identity/tofu/` | Management |
 | 4 | `aws/shared-services/tofu/` | SharedServices |
-| 5 | `aws/security-tooling/tofu/` | SecurityTooling |
-| 6 | `aws/cdn/tofu/` | SharedServices |
-| 7 | `domains/tofu/` | Domains |
-| 8 | `apps/tofu/` | SharedServices |
+| 5 | `aws/shared-services/state/tofu/` | SharedServices |
+| 6 | `aws/security-tooling/tofu/` | SecurityTooling |
+| 7 | `aws/cdn/tofu/` | SharedServices |
+| 8 | `domains/tofu/` | Domains |
+| 9 | `apps/tofu/` | SharedServices |
 
 CI 관리 root 목록은 `scripts/opentofu-plan-roots.txt`에서 관리한다. Root 내부 파일 변경은 해당
 root를 선택한다. `aws/cdn/` 변경은 `aws/cdn/tofu/`를 선택한다. 목록, 공용 Plan 스크립트 또는
@@ -200,10 +204,10 @@ Apply는 각각 대응하는 source profile 하나만 사용한다.
 사용자 role과 다른 Organization의 role은 수임할 수 없다.
 
 `tofu-state-admin`은 SharedServices의 `TofuApplyForWorkloads` source identity와 `deployer`만
-수임한다. Active bucket `ghilbut-tfstates`의 설정과 자신의 IAM role 설명, session duration, tag,
-inline policy를 관리한다. State object API의 직접 IAM 권한은 없지만 bucket policy를 관리하므로
-다른 principal의 object 접근 위임은 변경할 수 있다. `s3:DeleteBucket`은 명시적으로 거부한다.
-이 역할과 state bucket은 전용 state root가 구성될 때까지 `aws/shared-services/tofu/`에서 관리한다.
+수임한다. Active bucket `ghilbut-tfstates`의 설정과 자신의 IAM role trust policy, 설명, session
+duration, tag, inline policy를 관리한다. State object API의 직접 IAM 권한은 없지만 bucket policy를
+관리하므로 다른 principal의 object 접근 위임은 변경할 수 있다. `s3:DeleteBucket`은 명시적으로
+거부한다. 이 역할과 state bucket은 `aws/shared-services/state/tofu/`에서 관리한다.
 
 `aws_execution_role_arn = null`은 execution role이 아직 없는 새 account bootstrap에서만 source
 identity를 provider에 직접 연결한다. 기존 account에서는 `null`을 사용하지 않는다.
@@ -215,9 +219,9 @@ Permission set session duration과 account-local role의 configured maximum sess
 4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
 session은 최대 1시간이다.
 
-`aws/shared-services/tofu/`의 기본 provider와 `aws.shared_services` provider alias는 모두
-`aws_execution_role_arn`을 수임한다. UltaryDomains만 `AWS_PROFILE` source identity를 provider에서
-직접 사용한다.
+`aws/shared-services/state/tofu/`의 provider는 Plan에서 `tofu-plan`, Apply에서
+`tofu-state-admin`을 수임한다. UltaryDomains만 `AWS_PROFILE` source identity를 provider에서 직접
+사용한다.
 
 ## CDN
 

@@ -42,7 +42,7 @@ resource "aws_iam_role_policy" "deployer" {
         "arn:aws:iam::954066442429:role/tofu-plan",
         aws_iam_role.tofu_apply.arn,
         aws_iam_role.tofu_plan.arn,
-        aws_iam_role.tofu_state_admin.arn,
+        local.state_admin_role_arn,
         aws_iam_role.tofu_state_apply.arn,
         aws_iam_role.tofu_state_readonly.arn,
       ]

@@ -2,12 +2,8 @@ provider "aws" {
   allowed_account_ids = ["012646747332"]
   region              = "us-east-1"
 
-  dynamic "assume_role" {
-    for_each = var.aws_execution_role_arn == null ? [] : [var.aws_execution_role_arn]
-
-    content {
-      role_arn = assume_role.value
-    }
+  assume_role {
+    role_arn = var.aws_execution_role_arn
   }
 
   default_tags {
@@ -17,9 +13,9 @@ provider "aws" {
       org             = "ghilbut"
       project         = "platform"
       service         = "shared-services"
-      component       = "workload-access"
+      component       = "state"
       "opentofu/repo" = "https://github.com/ghilbut/platform"
-      "opentofu/path" = "aws/shared-services/tofu/"
+      "opentofu/path" = "aws/shared-services/state/tofu/"
     }
   }
 }

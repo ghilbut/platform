@@ -72,6 +72,7 @@ resource "aws_iam_role_policy" "tofu_state_admin" {
           "iam:PutRolePolicy",
           "iam:TagRole",
           "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy",
           "iam:UpdateRole",
           "iam:UpdateRoleDescription",
         ]

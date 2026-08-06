@@ -3,6 +3,7 @@ data "aws_caller_identity" "current" {}
 locals {
   security_tooling_account_id = data.aws_caller_identity.current.account_id
   deployer_role_arn           = "arn:aws:iam::012646747332:role/deployer"
+  state_admin_role_arn        = "arn:aws:iam::012646747332:role/tofu-state-admin"
   protected_state_bucket_arns = [
     "arn:aws:s3:::ghilbut-tfstates",
     "arn:aws:s3:::ghilbut-tfstates-v2",

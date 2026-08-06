@@ -1,10 +1,9 @@
 data "aws_caller_identity" "current" {}
 
 locals {
-  state_buckets = {
-    primary = "ghilbut-tfstates"
-  }
+  active_state_bucket_names  = ["ghilbut-tfstates"]
   shared_services_account_id = data.aws_caller_identity.current.account_id
+  state_admin_role_arn       = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-admin"
   protected_state_bucket_arns = [
     "arn:aws:s3:::ghilbut-tfstates",
     "arn:aws:s3:::ghilbut-tfstates-v2",
