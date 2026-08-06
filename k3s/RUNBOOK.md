@@ -12,6 +12,9 @@ K3s는 host, control plane, Cilium과 ServiceAccount OIDC 기반을 준비한다
 ## A. 공식 참고 문서
 
 - [K3s server CLI](https://docs.k3s.io/cli/server): server 설치 옵션, embedded etcd, networking, packaged component 비활성화
+- [K3s etcd snapshot](https://docs.k3s.io/cli/etcd-snapshot): 정기·수동 snapshot, S3 설정과 단일 server 복원
+- [K3s datastore backup과 restore](https://docs.k3s.io/datastore/backup-restore): datastore별 백업 범위와 server token 요구사항
+- [K3s configuration file](https://docs.k3s.io/installation/configuration#configuration-file): `config.yaml`과 `config.yaml.d/*.yaml` 적용 순서
 - [K3s 제거](https://docs.k3s.io/installation/uninstall): server와 agent 제거 script의 영향 범위
 - [Kubernetes ServiceAccount token projection과 issuer discovery](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/): issuer, discovery document, JWKS endpoint, public JWKS URI
 - [LVM physical volume](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-physical-volumes_configuring-and-managing-logical-volumes)과 [volume group](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-volume-groups_configuring-and-managing-logical-volumes): `pvcreate`, `vgcreate`, `pvs`, `vgs`
@@ -291,7 +294,30 @@ kubectl --context "$CLUSTER" wait --for=condition=Ready node \
   --all --timeout=10m
 ```
 
-## F. Optional: Agent
+## F. Embedded etcd snapshot과 복구
+
+Embedded etcd를 사용하는 cluster는 K3s native snapshot을 첫 번째 복구 수단으로 사용한다. 정기
+snapshot은 local filesystem과 S3에 함께 저장한다.
+
+Snapshot은 Kubernetes API object, K3s CA certificate와 private key를 포함한다. PersistentVolume
+내용, host filesystem, container image와 외부 애플리케이션 데이터는 포함하지 않는다.
+
+복구는 다음 순서로 실행한다.
+
+1. S3 snapshot을 CPA에 복원한다.
+2. Kubernetes API, node, Cilium, Argo CD와 Application 상태를 확인한다.
+3. 각 애플리케이션을 준비한 뒤 애플리케이션 데이터를 별도 S3 백업에서 복원한다.
+4. snapshot 복원이 실패하면 실패한 K3s 상태를 제거하고 cluster 기반을 다시 준비한다.
+5. Applications runbook을 `BOOTSTRAP`부터 순서대로 실행한다.
+
+정기 snapshot 자격 증명은 `kube-system`의 K3s S3 configuration Secret으로 제공한다. 이 Secret의
+복구 사본과 원래 `/var/lib/rancher/k3s/server/token`은 cluster 밖의 secret store에 보관한다.
+복원 절차는 Kubernetes Secret을 사용하지 않는다.
+
+실제 설정은 [[runbooks/CPA#E. etcd snapshot S3|CPA snapshot 설정]], 복원은
+[[runbooks/CPA-RESTORE|CPA K3s snapshot 복원]]을 따른다.
+
+## G. Optional: Agent
 
 Agent는 모든 클러스터에 설치하지 않는다. 추가 workload node가 필요한 클러스터만 이 절차를 실행한다. agent host는 server와 같은 Ubuntu 준비 절차를 수행한다. agent에는 `/var/lib/kubelet`, `/var/lib/rancher`, `/var/lib/rancher/k3s/agent/containerd` 파일시스템을 사용한다. embedded etcd 전용인 `/var/lib/rancher/k3s/server/db`는 agent에 만들지 않는다.
 
@@ -328,7 +354,7 @@ kubectl --context "$CLUSTER" get pods -n kube-system \
   -l k8s-app=cilium -o wide
 ```
 
-## G. 실행 Runbook
+## H. 실행 Runbook
 
 실행 전 `runbooks/<CLUSTER>.md`를 작성한다. 이 문서는 해당 클러스터의 실제 값, 순서대로 실행할 전체 shell command, 검증 결과를 포함한다.
 
