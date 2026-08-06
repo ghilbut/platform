@@ -22,9 +22,12 @@ locals {
   shared_services_account_id  = data.terraform_remote_state.accounts.outputs.shared_services_account_id
   state_apply_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-apply"
   state_readonly_role_arn     = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-readonly"
+  # Bucket and object ARNs denied to OpenTofu source identities.
   state_bucket_resources = [
     "arn:aws:s3:::ghilbut-tfstates",
     "arn:aws:s3:::ghilbut-tfstates/*",
+    "arn:aws:s3:::ghilbut-tfstates-v2",
+    "arn:aws:s3:::ghilbut-tfstates-v2/*",
   ]
   workload_accounts = {
     security_tooling = {

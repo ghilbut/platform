@@ -134,7 +134,8 @@ Workloads permission set과 `deployer`는 인증 후 execution role을 수임하
 `tofu-plan`과 `tofu-apply`가 최종 인가를 제공한다. `tofu-plan`은 `ReadOnlyAccess`를 사용하고
 `tofu-apply`는 `PowerUserAccess`, `IAMFullAccess`와 중앙 관리 기능 거부 정책을 사용한다. 모든
 workload account에 같은 정책을 적용하며 account별 resource 정책을 추가하지 않는다.
-`tofu-plan`은 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체 읽기가 명시적으로 거부된다.
+`tofu-plan`과 `tofu-apply`는 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체에 직접 접근하지
+못한다. `tofu-apply`는 두 state bucket의 객체를 만료시키는 lifecycle 설정도 적용하지 못한다.
 
 SharedServices `deployer`는 Management, SharedServices, SecurityTooling과 Domains의
 `tofu-plan`·`tofu-apply` 및 공용 state role을 수임한다. 현재 GitHub OIDC가 이 role에 로그인하며
@@ -151,7 +152,8 @@ Role-backed root의 `aws_execution_role_arn` 기본값은 account-local `tofu-pl
 전용 로컬 작업 공간은 git에서 제외한 `tofu-apply.auto.tfvars`로 account-local `tofu-apply` role을
 지정한다. Backend의 기본 `assume_role`은 `tofu-state-readonly`다. Apply 전용 로컬 작업 공간은
 git에서 제외한 `tofu-state-apply.tfbackend`로 `tofu-state-apply`를 지정한다. Remote state는 항상
-`tofu-state-readonly`를 수임한다. Plan과 Apply는 각각 대응하는 source profile 하나만 사용한다.
+`tofu-state-readonly`를 수임한다. State 객체 읽기와 쓰기는 backend role만 담당한다. Plan과
+Apply는 각각 대응하는 source profile 하나만 사용한다.
 
 공용 state role 두 개의 trust는 Organization `o-ncl6mypc8p` 소속이고 이름이 matching
 `TofuPlanFor*` 또는 `TofuApplyFor*`인 IAM Identity Center role과 SharedServices `deployer`만

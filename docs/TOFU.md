@@ -72,6 +72,9 @@
   Foundation과 DNS 전용 인가 정책을 사용한다.
 - Workload `tofu-plan`은 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체를 직접 읽지 못한다.
   Backend는 `tofu-state-readonly`를 별도로 수임한다.
+- Workload `tofu-apply`는 두 state bucket의 객체를 직접 읽거나 변경하지 못한다. Backend는
+  `tofu-state-apply`를 별도로 수임한다. State 객체를 만료시키는 bucket lifecycle 설정도 만들지
+  못한다.
 - Domains `tofu-apply`의 `iam:UpdateAssumeRolePolicy`는 자신의 trust policy에만 적용한다.
 - GitHub OIDC는 현재 `deployer`에 로그인한다. Tekton은 같은 role trust에 인증 방식을 추가한다.
 - CI target 집합을 바꾸면 같은 target으로 `tofu plan -refresh-only`를 실행한다. 추가 권한이
