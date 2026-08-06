@@ -22,7 +22,7 @@ aws configure sso-session
 | SSO region | `us-east-1` |
 | SSO registration scopes | `sso:account:access` |
 
-열두 개 source profile을 같은 session에 연결한다.
+열세 개 source profile을 같은 session에 연결한다.
 
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-foundation-management
@@ -34,6 +34,11 @@ aws configure set sso_session ghilbut --profile ghilbut-billing
 aws configure set sso_account_id 384959722788 --profile ghilbut-billing
 aws configure set sso_role_name Billing --profile ghilbut-billing
 aws configure set region us-east-1 --profile ghilbut-billing
+
+aws configure set sso_session ghilbut --profile ghilbut-backup-recovery
+aws configure set sso_account_id 012646747332 --profile ghilbut-backup-recovery
+aws configure set sso_role_name BackupRecovery --profile ghilbut-backup-recovery
+aws configure set region us-east-1 --profile ghilbut-backup-recovery
 
 aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-management
 aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-plan-for-management
@@ -90,55 +95,66 @@ aws configure set role_arn arn:aws:iam::384959722788:role/billing \
   --profile ghilbut-billing-role
 aws configure set role_session_name ghilbut-billing --profile ghilbut-billing-role
 aws configure set region us-east-1 --profile ghilbut-billing-role
+
+aws configure set source_profile ghilbut-backup-recovery \
+  --profile ghilbut-backup-recovery-role
+aws configure set role_arn arn:aws:iam::012646747332:role/backup-recovery \
+  --profile ghilbut-backup-recovery-role
+aws configure set role_session_name ghilbut-backup-recovery \
+  --profile ghilbut-backup-recovery-role
+aws configure set region us-east-1 --profile ghilbut-backup-recovery-role
 ```
 
-로그인하고 계정 ID를 확인한다.
+로그인하고 AWS identity를 확인한다.
 
 ```sh
 export AWS_SDK_LOAD_CONFIG=1
 
-aws sso login --profile ghilbut-foundation-management
-aws sso login --profile ghilbut-billing
-aws sso login --profile ghilbut-tofu-plan-for-management
-aws sso login --profile ghilbut-tofu-apply-for-management
-aws sso login --profile ghilbut-tofu-plan-for-workloads
-aws sso login --profile ghilbut-tofu-apply-for-workloads
-aws sso login --profile ghilbut-tofu-plan-for-security-tooling
-aws sso login --profile ghilbut-tofu-apply-for-security-tooling
-aws sso login --profile ghilbut-tofu-plan-for-domains
-aws sso login --profile ghilbut-tofu-apply-for-domains
-aws sso login --profile ghilbut-tofu-plan-for-ultary-domains
-aws sso login --profile ghilbut-tofu-apply-for-ultary-domains
+aws sso login --sso-session ghilbut
 
-aws sts get-caller-identity --profile ghilbut-foundation-management \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-billing \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-plan-for-management \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-apply-for-management \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-plan-for-workloads \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-apply-for-workloads \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-plan-for-security-tooling \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-apply-for-security-tooling \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-plan-for-domains \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-apply-for-domains \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-plan-for-ultary-domains \
-  --query Account --output text
-aws sts get-caller-identity --profile ghilbut-tofu-apply-for-ultary-domains \
-  --query Account --output text
+for aws_identity_profile in \
+  ghilbut-billing-role \
+  ghilbut-tofu-plan-for-management \
+  ghilbut-tofu-apply-for-management \
+  ghilbut-foundation-management \
+  ghilbut-backup-recovery-role \
+  ghilbut-tofu-plan-for-workloads \
+  ghilbut-tofu-apply-for-workloads \
+  ghilbut-tofu-plan-for-domains \
+  ghilbut-tofu-apply-for-domains \
+  ghilbut-tofu-plan-for-security-tooling \
+  ghilbut-tofu-apply-for-security-tooling \
+  ghilbut-tofu-plan-for-ultary-domains \
+  ghilbut-tofu-apply-for-ultary-domains
+do
+  printf '\n[%s]\n' "$aws_identity_profile"
+  aws sts get-caller-identity \
+    --profile "$aws_identity_profile" \
+    --query '{Account:Account,Arn:Arn}' \
+    --output table
+done
+unset aws_identity_profile
 ```
 
-FoundationManagement, Billing, Management Plan과 Management Apply 결과는 `384959722788`이다.
-Workloads Plan과 Apply는 `012646747332`, Domains Plan과 Apply는 `869061964712`, UltaryDomains
-Plan과 Apply는 `971119963968`이다. SecurityTooling Plan과 Apply는 `954066442429`이다.
+`Account`와 `Arn`의 role 이름이 다음 표와 일치해야 한다. IAM Identity Center role ARN의 suffix와
+session 이름은 실행마다 달라진다. 표는 [[README#Accounts|AWS account]] 순서를 따르고, 같은
+account에서는 전용 role, Plan, Apply, 관리 role 순서로 배치한다.
+
+| AWS account | Profile | ARN role |
+|---|---|---|
+| Management `384959722788` | `ghilbut-billing-role` | `billing` |
+| Management `384959722788` | `ghilbut-tofu-plan-for-management` | `AWSReservedSSO_TofuPlanForManagement_*` |
+| Management `384959722788` | `ghilbut-tofu-apply-for-management` | `AWSReservedSSO_TofuApplyForManagement_*` |
+| Management `384959722788` | `ghilbut-foundation-management` | `AWSReservedSSO_FoundationManagement_*` |
+| SharedServices `012646747332` | `ghilbut-backup-recovery-role` | `backup-recovery` |
+| SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `AWSReservedSSO_TofuPlanForWorkloads_*` |
+| SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `AWSReservedSSO_TofuApplyForWorkloads_*` |
+| Domains `869061964712` | `ghilbut-tofu-plan-for-domains` | `AWSReservedSSO_TofuPlanForDomains_*` |
+| Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `AWSReservedSSO_TofuApplyForDomains_*` |
+| SecurityTooling `954066442429` | `ghilbut-tofu-plan-for-security-tooling` | `AWSReservedSSO_TofuPlanForWorkloads_*` |
+| SecurityTooling `954066442429` | `ghilbut-tofu-apply-for-security-tooling` | `AWSReservedSSO_TofuApplyForWorkloads_*` |
+| UltaryDomains `971119963968` | `ghilbut-tofu-plan-for-ultary-domains` | `AWSReservedSSO_TofuPlanForUltaryDomains_*` |
+| UltaryDomains `971119963968` | `ghilbut-tofu-apply-for-ultary-domains` | `AWSReservedSSO_TofuApplyForUltaryDomains_*` |
 
 ## Execution order
 

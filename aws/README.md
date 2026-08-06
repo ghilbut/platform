@@ -61,7 +61,7 @@ Management account에 적용되지 않는다.
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
 | `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu Plan과 Apply execution role |
 | `shared-services/state/tofu/` | `ghilbut-tfstates`의 bucket 설정과 `tofu-state-admin` |
-| `shared-services/tofu/` | 중앙 state backend role, `deployer`, SharedServices workload execution role, GitHub Actions와 CPA IAM OIDC provider |
+| `shared-services/tofu/` | 중앙 state backend role, `deployer`, SharedServices workload execution role, GitHub Actions, CPA IAM OIDC provider와 platform backup 저장소 |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
 Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한다.
@@ -218,6 +218,23 @@ trust를 OpenTofu로 유지하기 위해 필요하며 다른 IAM role에는 적�
 Permission set session duration과 account-local role의 configured maximum session duration은
 4시간이다. SSO role이 account-local role을 수임하면 IAM role chaining에 따라 execution role
 session은 최대 1시간이다.
+
+## Platform backup
+
+SharedServices의 `ghilbut-backups` bucket은 platform 복구 데이터를 저장한다. CPA K3s etcd
+snapshot은 `k3s/cpa/` prefix를 사용한다. Bucket은 public 접근을 차단하고 TLS, 기본 암호화,
+versioning과 90일 noncurrent version 보존을 적용한다. K3s가 current snapshot 수를 관리한다.
+
+`k3s-cpa-snapshot` IAM user는 `k3s/cpa/`에서 snapshot을 생성하고 조회하고 정리한다. OpenTofu는
+이 user의 access key를 만들거나 출력하지 않는다. CPA에서 사용하는 access key의 복구 사본은
+Git 저장소 밖의 secret store에 보관한다.
+
+`BackupRecovery` permission set은 `backup-recovery` role만 수임한다. 이 role은 `k3s/cpa/`의
+current object와 noncurrent version을 읽고 bucket과 object를 변경하지 않는다.
+
+| Permission set | Assignment | Source profile | Account-local role | 책임 |
+|---|---|---|---|---|
+| `BackupRecovery` | SharedServices `012646747332` | `ghilbut-backup-recovery` | `arn:aws:iam::012646747332:role/backup-recovery` | platform backup 읽기 |
 
 `aws/shared-services/state/tofu/`의 provider는 Plan에서 `tofu-plan`, Apply에서
 `tofu-state-admin`을 수임한다. UltaryDomains만 `AWS_PROFILE` source identity를 provider에서 직접
