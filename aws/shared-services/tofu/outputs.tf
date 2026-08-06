@@ -3,6 +3,11 @@ output "shared_services_account_id" {
   value       = local.shared_services_account_id
 }
 
+output "deployer_role_arn" {
+  description = "CI/CD source role ARN for OpenTofu and workload deployment."
+  value       = aws_iam_role.deployer.arn
+}
+
 output "tofu_execution_role_arn" {
   description = "SharedServices workload OpenTofu execution role ARN."
   value       = aws_iam_role.tofu_apply.arn

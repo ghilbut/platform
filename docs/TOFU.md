@@ -22,6 +22,7 @@
   `tofu-apply` role ARN을 지정한다. `TF_VAR_aws_execution_role_arn`은 사용하지 않는다.
 - `aws_execution_role_arn = null`은 execution role을 생성하는 새 account bootstrap에서만
   source identity를 provider에 직접 사용한다. 기존 account에서는 `null`을 사용하지 않는다.
+- CDN 배포 workflow는 `deployment.tfvars`로 `tofu-apply`를 provider에서 수임한다.
 - Source identity와 execution role의 작업 종류를 일치시킨다. Plan source는 `tofu-plan`, Apply
   source는 `tofu-apply`를 사용한다.
 - Source profile이나 backend role을 바꾼 뒤에는 `tofu init -reconfigure`를 실행한다. Apply
@@ -33,11 +34,11 @@
 
 - 중앙 state role과 state bucket은 SharedServices 계정에 함께 둔다. State bucket을 다른 계정으로
   옮기면 중앙 state role도 함께 옮기거나 새 bucket policy에 중앙 state role을 허용한다.
-- `github/tofu`는 계정 공용 GitHub Actions OIDC provider만 관리한다.
-- 서비스별 GitHub Actions IAM 역할은 그 서비스 root가 관리한다. GitHub repository variable은
+- `aws/shared-services/tofu/`는 `deployer`와 GitHub Actions OIDC provider를 함께 관리한다.
+- SharedServices의 `deployer`가 CI/CD source identity를 제공한다. GitHub repository variable은
   실행 Runbook에서 `gh variable set`으로 관리한다.
-- 공용 OIDC provider ARN과 Foundation account ID처럼 root 사이에 필요한 식별자만
-  `terraform_remote_state` output으로 소비한다. 한 리소스를 두 state에서 선언하지 않는다.
+- Foundation account ID처럼 root 사이에 필요한 식별자만 `terraform_remote_state` output으로
+  소비한다. 한 리소스를 두 state에서 선언하지 않는다.
 - 하나의 backend key를 옮길 때는 `tofu init -migrate-state`로 state만 이전한다.
 - 여러 state를 하나로 합칠 때는 선언형 import로 새 state를 완성하고 원격 식별자를 비교한
   다음 기존 state 주소를 제거한다. 원격 리소스는 다시 만들지 않는다.
@@ -59,7 +60,19 @@
   수 없는 의존성만 `depends_on`으로 선언한다.
 - CDN CI는 `404.html`, `503.html`, `lambda.zip`, Lambda@Edge, CloudFront 배포판만
   대상으로 적용한다. IAM·DNS·ACM·CloudFront Function 변경은 로컬 apply의 책임이다.
-- CDN OIDC 역할은 위 대상의 읽기·쓰기만 허용한다. 자기 자신 또는 Lambda 실행 역할의
-  IAM 정책을 수정하는 권한을 부여하지 않는다.
-- CI target 집합을 바꾸면 같은 target으로 `tofu plan -refresh-only`를 실행하고, 그
-  호출에 필요한 읽기 권한만 정책에 추가한다.
+- CDN Lambda bundle은 git에서 관리한다. CI는 build 결과가 저장소와 일치하는지 확인한 뒤
+  Lambda bundle을 적용한다.
+- `deployer`는 Management, SharedServices, SecurityTooling과 Domains의 `tofu-plan`·`tofu-apply`
+  및 공용 state role만 수임한다. 실제 읽기·쓰기 권한은 수임한 role이 제공한다.
+- Workloads permission set과 `deployer`는 workload resource를 직접 관리하지 않는다. 두 source
+  identity는 동일한 account-local execution role을 수임하여 같은 인가를 사용한다.
+- 모든 workload account의 `tofu-plan`은 `ReadOnlyAccess`를 사용한다. 모든 workload account의
+  `tofu-apply`는 `PowerUserAccess`, `IAMFullAccess`와 중앙 관리 기능 거부 정책을 사용한다.
+- Workload account는 SharedServices와 SecurityTooling이다. Management와 Domains는 각각
+  Foundation과 DNS 전용 인가 정책을 사용한다.
+- Workload `tofu-plan`은 `ghilbut-tfstates`와 `ghilbut-tfstates-v2`의 객체를 직접 읽지 못한다.
+  Backend는 `tofu-state-readonly`를 별도로 수임한다.
+- Domains `tofu-apply`의 `iam:UpdateAssumeRolePolicy`는 자신의 trust policy에만 적용한다.
+- GitHub OIDC는 현재 `deployer`에 로그인한다. Tekton은 같은 role trust에 인증 방식을 추가한다.
+- CI target 집합을 바꾸면 같은 target으로 `tofu plan -refresh-only`를 실행한다. 추가 권한이
+  필요하면 모든 workload account의 execution role 정책을 함께 변경한다.

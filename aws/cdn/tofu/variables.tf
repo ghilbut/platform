@@ -10,7 +10,7 @@ variable "service" {
 
 variable "aws_execution_role_arn" {
   type        = string
-  description = "Account-local OpenTofu execution role assumed by the AWS provider. Set null only while bootstrapping the execution roles."
+  description = "Account-local OpenTofu execution role assumed by the AWS provider."
   default     = "arn:aws:iam::012646747332:role/tofu-plan"
   nullable    = true
 
@@ -21,18 +21,6 @@ variable "aws_execution_role_arn" {
     ], var.aws_execution_role_arn)
     error_message = "aws_execution_role_arn must be null or the SharedServices account tofu-plan or tofu-apply role ARN."
   }
-}
-
-variable "github_owner" {
-  type        = string
-  description = "GitHub organization or user that owns the repository"
-  default     = "ghilbut"
-}
-
-variable "github_repository" {
-  type        = string
-  description = "Repository trusted to assume the CDN deployment role"
-  default     = "platform"
 }
 
 variable "name" {

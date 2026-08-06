@@ -25,6 +25,7 @@ variable "ghilbut_cname_records_for_google" {
 
 variable "ghilbut_dkim_for_root_domain" {
   type      = string
+  default   = "v=DKIM1;k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCmu6k/9+YF2uIKN8n5nWD23v5Vci1vErg2Xqk6ReTLpzomtBJZ5+g315gvrgkj3KvS28R2GuqCmBmt+kmZhcTG6i0mUrrloQPjMxKHqdEMdmPxRtNdItn/8Jhb56jSr3i+Kg6YUq+yVYtz1IwFywAwzuRosU/Rct5CQQo03FePeQIDAQAB"
   sensitive = true
 }
 

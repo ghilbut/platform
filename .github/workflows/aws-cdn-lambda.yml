@@ -23,8 +23,6 @@ jobs:
   deploy:
     name: Test, build, and deploy
     runs-on: ubuntu-latest
-    env:
-      TF_VAR_aws_execution_role_arn: ""
 
     permissions:
       contents: read
@@ -37,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 24.11.1
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -62,11 +60,16 @@ jobs:
       - name: Build
         run: pnpm --filter @ghilbut/cdn-lambda build
 
+      - name: Verify committed Lambda bundle
+        run: |
+          git ls-files --error-unmatch aws/cdn/lambda/dist/index.mjs
+          git diff --exit-code -- aws/cdn/lambda/dist/index.mjs
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-region: us-east-1
-          role-to-assume: ${{ vars.AWS_IAM_ROLE_CDN_GITHUB_ACTIONS_ARN }}
+          role-to-assume: ${{ vars.AWS_IAM_ROLE_DEPLOYER_ARN }}
           disable-retry: true
 
       - name: Setup OpenTofu
@@ -76,12 +79,13 @@ jobs:
           tofu_version: 1.12.4
 
       - name: OpenTofu init
-        run: tofu init
+        run: tofu init -backend-config=tofu-state-deploy.tfbackend
         working-directory: aws/cdn/tofu
 
       - name: OpenTofu apply
         run: |
           tofu apply -auto-approve \
+            -var-file=deployment.tfvars \
             '-target=module.s3.aws_s3_object.error_page["404.html"]' \
             '-target=module.s3.aws_s3_object.error_page["503.html"]' \
             -target=module.edge.aws_s3_object.lambda_zip \
