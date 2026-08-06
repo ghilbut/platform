@@ -55,7 +55,7 @@ resource "aws_iam_role_policy" "tofu_plan" {
         Sid      = "DenyDirectStateObjectRead"
         Effect   = "Deny"
         Action   = "s3:GetObject*"
-        Resource = local.state_object_resources
+        Resource = local.protected_state_object_arns
       },
     ]
   })

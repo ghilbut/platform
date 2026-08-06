@@ -199,7 +199,7 @@ SecurityTooling root의 파일은 다음 값을 사용한다.
 aws_execution_role_arn = "arn:aws:iam::954066442429:role/tofu-apply"
 ```
 
-모든 열한 root의 Apply backend는 git에서 제외한 `tofu-state-apply.tfbackend`를 둔다.
+모든 열 root의 Apply backend는 git에서 제외한 `tofu-state-apply.tfbackend`를 둔다.
 
 ```hcl
 assume_role = {
@@ -721,8 +721,80 @@ simulate_state_role tofu-state-apply
 `ghilbut-tfstates-v2` 결과는 모두 `implicitDeny`다. Plan의 lock 생성과 제거는 기본 Plan
 backend로 OpenTofu plan을 실행하여 확인한다.
 
+Workload Apply provider role의 state 객체 권한 결정을 확인한다.
+
+```zsh
+simulate_workload_apply_state() {
+  source_profile="$1"
+  account_id="$2"
+  credentials="$(
+    AWS_PROFILE="$source_profile" AWS_SDK_LOAD_CONFIG=1 \
+      aws sts assume-role \
+      --role-arn "arn:aws:iam::$account_id:role/tofu-apply" \
+      --role-session-name verify-state-object-deny \
+      --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+      --output text
+  )"
+  read -r access_key secret_key session_token <<< "$credentials"
+
+  env -u AWS_PROFILE \
+    AWS_ACCESS_KEY_ID="$access_key" \
+    AWS_SECRET_ACCESS_KEY="$secret_key" \
+    AWS_SESSION_TOKEN="$session_token" \
+    AWS_SDK_LOAD_CONFIG=0 \
+    aws iam simulate-principal-policy \
+    --policy-source-arn "arn:aws:iam::$account_id:role/tofu-apply" \
+    --action-names \
+      s3:AbortMultipartUpload \
+      s3:DeleteObject \
+      s3:GetObject \
+      s3:ListMultipartUploadParts \
+      s3:PutObject \
+      s3:RestoreObject \
+    --resource-arns \
+      arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services.tfstate \
+      arn:aws:s3:::ghilbut-tfstates-v2/platform/aws/shared-services.tfstate \
+    --output json \
+  | jq -r '
+      .EvaluationResults[]
+      | .EvalActionName as $action
+      | .ResourceSpecificResults[]
+      | [$action, .EvalResourceName, .EvalResourceDecision]
+      | @tsv
+    '
+
+  env -u AWS_PROFILE \
+    AWS_ACCESS_KEY_ID="$access_key" \
+    AWS_SECRET_ACCESS_KEY="$secret_key" \
+    AWS_SESSION_TOKEN="$session_token" \
+    AWS_SDK_LOAD_CONFIG=0 \
+    aws iam simulate-principal-policy \
+    --policy-source-arn "arn:aws:iam::$account_id:role/tofu-apply" \
+    --action-names s3:PutLifecycleConfiguration \
+    --resource-arns \
+      arn:aws:s3:::ghilbut-tfstates \
+      arn:aws:s3:::ghilbut-tfstates-v2 \
+    --output json \
+  | jq -r '
+      .EvaluationResults[]
+      | .EvalActionName as $action
+      | .ResourceSpecificResults[]
+      | [$action, .EvalResourceName, .EvalResourceDecision]
+      | @tsv
+    '
+}
+
+simulate_workload_apply_state \
+  ghilbut-tofu-apply-for-workloads 012646747332
+simulate_workload_apply_state \
+  ghilbut-tofu-apply-for-security-tooling 954066442429
+```
+
+각 `simulate_workload_apply_state` 호출은 두 명령에서 열네 개 권한 결정을 출력한다. 두 호출에서
+출력하는 스물여덟 개 권한 결정은 모두 `explicitDeny`다.
+
 다음 명령은 `tofu-state-readonly`가 읽는 active state object만 출력한다. 결과는
-[[aws/README#State ownership|State ownership]] 표의 열한 개 key와 일치해야 한다.
+[[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \

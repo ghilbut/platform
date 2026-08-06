@@ -5,11 +5,11 @@ locals {
     primary = "ghilbut-tfstates"
   }
   shared_services_account_id = data.aws_caller_identity.current.account_id
-  state_bucket_resources = [
+  protected_state_bucket_arns = [
     "arn:aws:s3:::ghilbut-tfstates",
     "arn:aws:s3:::ghilbut-tfstates-v2",
   ]
-  state_object_resources = [for arn in local.state_bucket_resources : "${arn}/*"]
+  protected_state_object_arns = [for arn in local.protected_state_bucket_arns : "${arn}/*"]
 
   # Keep this list identical to foundation identity and SecurityTooling.
   central_administration_denied_actions = [

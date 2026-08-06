@@ -55,11 +55,32 @@ resource "aws_iam_role_policy" "tofu_apply" {
   role = aws_iam_role.tofu_apply.name
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid      = "DenyCentralAdministration"
-      Effect   = "Deny"
-      Action   = local.central_administration_denied_actions
-      Resource = "*"
-    }]
+    Statement = [
+      {
+        Sid      = "DenyCentralAdministration"
+        Effect   = "Deny"
+        Action   = local.central_administration_denied_actions
+        Resource = "*"
+      },
+      {
+        Sid    = "DenyDirectStateObjectAccess"
+        Effect = "Deny"
+        Action = [
+          "s3:AbortMultipartUpload",
+          "s3:DeleteObject*",
+          "s3:GetObject*",
+          "s3:ListMultipartUploadParts",
+          "s3:PutObject*",
+          "s3:RestoreObject",
+        ]
+        Resource = local.protected_state_object_arns
+      },
+      {
+        Sid      = "DenyStateObjectExpiration"
+        Effect   = "Deny"
+        Action   = "s3:PutLifecycleConfiguration"
+        Resource = local.protected_state_bucket_arns
+      },
+    ]
   })
 }
