@@ -147,6 +147,40 @@ role에 로그인하며 향후 Tekton도 같은 role을 사용한다. UltaryDoma
 포함하지 않는다.
 단일 source role의 범위는 각 target role 정책과 GitHub main branch OIDC 조건으로 제한한다.
 
+## OpenTofu Plan automation
+
+GitHub Actions의 `OpenTofu Plan` workflow는 SharedServices `deployer`로 로그인한다. Backend는
+기본 `tofu-state-readonly`, provider는 root별 기본 `tofu-plan`을 수임한다. AWS profile, 정적 AWS
+access key, Apply provider override와 Apply backend override는 사용하지 않는다.
+
+`main` push는 변경된 CI 관리 root만 Plan한다. 삭제한 파일도 변경으로 처리한다. 비교 기준
+revision에 접근할 수 없으면 모든 CI 관리 root를 Plan한다. 수동 실행은 다음 여덟 root를 모두
+Plan한다.
+
+Plan과 CDN Apply는 S3 backend의 `.tflock`으로 동일한 state의 실행을 직렬화하고 잠금 해제를 최대
+30분 기다린다. CDN Apply workflow의 concurrency group은 CDN Apply끼리만 직렬화한다. 서로 다른
+state를 사용하는 Plan은 GitHub concurrency group으로 제한하지 않는다.
+
+| 순서 | Root | Provider account |
+|---:|---|---|
+| 1 | `aws/foundation/organizations/tofu/` | Management |
+| 2 | `aws/foundation/accounts/tofu/` | Management |
+| 3 | `aws/foundation/identity/tofu/` | Management |
+| 4 | `aws/shared-services/tofu/` | SharedServices |
+| 5 | `aws/security-tooling/tofu/` | SecurityTooling |
+| 6 | `aws/cdn/tofu/` | SharedServices |
+| 7 | `domains/tofu/` | Domains |
+| 8 | `apps/tofu/` | SharedServices |
+
+CI 관리 root 목록은 `scripts/opentofu-plan-roots.txt`에서 관리한다. Root 내부 파일 변경은 해당
+root를 선택한다. `aws/cdn/` 변경은 `aws/cdn/tofu/`를 선택한다. 목록, 공용 Plan 스크립트 또는
+workflow 변경은 모든 CI 관리 root를 선택한다. 관리 대상과 일치하지 않는 변경은 빈 목록과 성공
+상태를 반환한다.
+
+`k3s/tofu/`는 `cpa` Kubernetes API와 로컬 `kubectl` context가 필요하므로 GitHub-hosted runner에서
+실행하지 않는다. `ultary/domains/tofu/`는 `deployer` 인가 범위 밖이며 필수 입력값을 별도로
+관리하므로 실행하지 않는다.
+
 Plan source identity는 `tofu-state-readonly`와 matching `tofu-plan`만 수임한다. Apply source
 identity는 `tofu-state-apply`, remote state 읽기용 `tofu-state-readonly`와 matching `tofu-apply`를
 수임한다. 모든 source identity는 `ghilbut-tfstates` 직접 접근이 거부된다. `tofu-plan` role은

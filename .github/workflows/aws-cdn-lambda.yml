@@ -84,7 +84,7 @@ jobs:
 
       - name: OpenTofu apply
         run: |
-          tofu apply -auto-approve \
+          tofu apply -auto-approve -lock-timeout=30m \
             -var-file=deployment.tfvars \
             '-target=module.s3.aws_s3_object.error_page["404.html"]' \
             '-target=module.s3.aws_s3_object.error_page["503.html"]' \
