@@ -4,9 +4,11 @@ area: apps
 cluster: cpa
 ---
 
-# CPA bootstrap
+# Bootstrap
 
 CPA Argo CD가 검증된 Application 집합을 관리하도록 만든다. 이 문서는 [[k3s/runbooks/CPA|CPA K3s 기반 준비]]가 끝난 뒤 실행한다.
+
+Bootstrap을 실행하는 동안 `https://github.com/ghilbut/platform.git` 저장소는 public 상태여야 한다. Bootstrap 단계의 Argo CD는 저장소 인증 정보를 사용하지 않는다.
 
 ## A. Bootstrap revision
 

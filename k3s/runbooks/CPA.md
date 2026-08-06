@@ -224,4 +224,4 @@ kubectl --context cpa wait --for=condition=Ready node/cpa --timeout=10m
 
 ## G. Applications
 
-CPA는 단일 control-plane cluster로 실행한다. Cilium node와 ServiceAccount OIDC issuer 검증을 마친 뒤 [[apps/runbooks/cpa-bootstrap|CPA bootstrap]]을 실행한다. CPA는 Argo CD를 설치하고, GPA는 CPA Argo CD의 관리 대상으로 등록한다.
+CPA는 단일 control-plane cluster로 실행한다. Cilium node와 ServiceAccount OIDC issuer 검증을 마친 뒤 [[apps/runbooks/BOOTSTRAP|Bootstrap]]을 실행한다. CPA는 Argo CD를 설치하고, GPA는 CPA Argo CD의 관리 대상으로 등록한다.

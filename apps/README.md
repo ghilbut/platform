@@ -5,7 +5,7 @@ area: apps
 
 # Applications
 
-`apps/`는 CPA Argo CD가 관리하는 Kubernetes workload의 진입점이다. CPA Argo CD bootstrap은 [[argo-apps/argo-apps|argo-apps Application]]에서 시작하며, 설치 절차는 [[runbooks/cpa-bootstrap|CPA bootstrap]]을 따른다.
+`apps/`는 CPA Argo CD가 관리하는 Kubernetes workload의 진입점이다. CPA Argo CD bootstrap은 [[argo-apps/argo-apps|argo-apps Application]]에서 시작하며, 설치 절차는 [[runbooks/BOOTSTRAP|Bootstrap]]을 따른다.
 
 ## Bootstrap
 
