@@ -358,6 +358,28 @@ apply_root ghilbut-tofu-apply-for-ultary-domains \
   ultary/domains/tofu /tmp/ultary-domains.tfplan
 ```
 
+### State administration bootstrap
+
+State bucket 전용 root를 구성하기 전에 Foundation identity와 SharedServices를 순서대로 적용한다.
+Foundation identity는 `TofuApplyForWorkloads`에 `tofu-state-admin` 수임 권한을 부여한다.
+SharedServices는 역할을 만들고 `deployer`의 수임 권한과 예약 backend key 접근을 추가한다.
+
+```sh
+apply_root \
+  ghilbut-tofu-apply-for-management \
+  aws/foundation/identity/tofu \
+  /tmp/foundation-identity-state-admin-bootstrap.tfplan
+
+apply_root \
+  ghilbut-tofu-apply-for-workloads \
+  aws/shared-services/tofu \
+  /tmp/shared-services-state-admin-bootstrap.tfplan
+```
+
+SharedServices plan에는 state bucket, bucket policy, public access block, 암호화와 versioning 변경이
+없어야 한다. 적용 후 Workloads IAM Identity Center session을 새로 시작하고 아래 State verification을
+실행한다.
+
 ## AWS Organizations verification
 
 `SERVICE_CONTROL_POLICY`를 비활성화하지 않는다. 비활성화하면 Root, OU와 account의 모든
@@ -700,6 +722,8 @@ simulate_state_role() {
     --resource-arns \
       arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services.tfstate \
       arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services.tfstate.tflock \
+      arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services/state.tfstate \
+      arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services/state.tfstate.tflock \
       arn:aws:s3:::ghilbut-tfstates/recovery/platform/aws/shared-services.tfstate \
       arn:aws:s3:::ghilbut-tfstates-v2/platform/aws/shared-services.tfstate \
     --output json \
@@ -716,10 +740,103 @@ simulate_state_role tofu-state-readonly
 simulate_state_role tofu-state-apply
 ```
 
-`tofu-state-readonly`는 `.tfstate`의 `GetObject`와 `.tflock`의 세 작업만 `allowed`다.
-`tofu-state-apply`는 active `.tfstate`와 `.tflock`의 세 작업이 모두 `allowed`다. Recovery key와
-`ghilbut-tfstates-v2` 결과는 모두 `implicitDeny`다. Plan의 lock 생성과 제거는 기본 Plan
-backend로 OpenTofu plan을 실행하여 확인한다.
+`tofu-state-readonly`는 기존 key와 예약 key의 `.tfstate`에 대한 `GetObject`, 두 `.tflock`에 대한
+세 작업만 `allowed`다. `tofu-state-apply`는 두 key의 `.tfstate`와 `.tflock`에 대한 세 작업이 모두
+`allowed`다. Recovery key와 `ghilbut-tfstates-v2` 결과는 모두 `implicitDeny`다. Plan의 lock 생성과
+제거는 기본 Plan backend로 OpenTofu plan을 실행하여 확인한다.
+
+State bucket 관리 역할의 trust와 권한을 확인한다.
+
+```zsh
+state_admin_role_arn='arn:aws:iam::012646747332:role/tofu-state-admin'
+
+AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  aws sts assume-role \
+    --role-arn "$state_admin_role_arn" \
+    --role-session-name verify-state-admin-apply-source \
+    --query 'AssumedRoleUser.Arn' \
+    --output text
+
+if AWS_PROFILE=ghilbut-tofu-plan-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+  aws sts assume-role \
+    --role-arn "$state_admin_role_arn" \
+    --role-session-name verify-state-admin-plan-source \
+    >/dev/null 2>&1; then
+  echo 'Plan source assumed tofu-state-admin.' >&2
+  exit 1
+fi
+
+simulation_credentials="$(
+  AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \
+    aws sts assume-role \
+      --role-arn arn:aws:iam::012646747332:role/tofu-apply \
+      --role-session-name verify-state-admin-policy \
+      --query 'Credentials.[AccessKeyId,SecretAccessKey,SessionToken]' \
+      --output text
+)"
+read -r access_key secret_key session_token <<< "$simulation_credentials"
+
+env -u AWS_PROFILE \
+  AWS_ACCESS_KEY_ID="$access_key" \
+  AWS_SECRET_ACCESS_KEY="$secret_key" \
+  AWS_SESSION_TOKEN="$session_token" \
+  AWS_SDK_LOAD_CONFIG=0 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn arn:aws:iam::012646747332:role/deployer \
+    --action-names sts:AssumeRole \
+    --resource-arns "$state_admin_role_arn" \
+    --query 'EvaluationResults[0].EvalDecision' \
+    --output text
+
+env -u AWS_PROFILE \
+  AWS_ACCESS_KEY_ID="$access_key" \
+  AWS_SECRET_ACCESS_KEY="$secret_key" \
+  AWS_SESSION_TOKEN="$session_token" \
+  AWS_SDK_LOAD_CONFIG=0 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn "$state_admin_role_arn" \
+    --action-names \
+      s3:GetBucketPolicy \
+      s3:PutBucketPolicy \
+      s3:PutLifecycleConfiguration \
+      s3:PutBucketVersioning \
+      s3:PutReplicationConfiguration \
+      s3:DeleteBucket \
+    --resource-arns arn:aws:s3:::ghilbut-tfstates \
+    --output json \
+  | jq -r '
+      .EvaluationResults[]
+      | .EvalActionName as $action
+      | .ResourceSpecificResults[]
+      | [$action, .EvalResourceName, .EvalResourceDecision]
+      | @tsv
+    '
+
+env -u AWS_PROFILE \
+  AWS_ACCESS_KEY_ID="$access_key" \
+  AWS_SECRET_ACCESS_KEY="$secret_key" \
+  AWS_SESSION_TOKEN="$session_token" \
+  AWS_SDK_LOAD_CONFIG=0 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn "$state_admin_role_arn" \
+    --action-names s3:GetObject s3:PutObject s3:DeleteObject \
+    --resource-arns \
+      arn:aws:s3:::ghilbut-tfstates/platform/aws/shared-services.tfstate \
+    --output json \
+  | jq -r '
+      .EvaluationResults[]
+      | .EvalActionName as $action
+      | .ResourceSpecificResults[]
+      | [$action, .EvalResourceName, .EvalResourceDecision]
+      | @tsv
+    '
+
+unset simulation_credentials access_key secret_key session_token
+```
+
+Apply source의 `AssumedRoleUser.Arn`이 출력되고 Plan source 수임은 실패해야 한다. `deployer`의
+`sts:AssumeRole` simulation은 `allowed`다. Lifecycle을 포함한 bucket 설정 작업은 `allowed`,
+`s3:DeleteBucket`은 `explicitDeny`, state object 세 작업은 `implicitDeny`다.
 
 Workload Apply provider role의 state 객체 권한 결정을 확인한다.
 
@@ -793,8 +910,9 @@ simulate_workload_apply_state \
 각 `simulate_workload_apply_state` 호출은 두 명령에서 열네 개 권한 결정을 출력한다. 두 호출에서
 출력하는 스물여덟 개 권한 결정은 모두 `explicitDeny`다.
 
-다음 명령은 `tofu-state-readonly`가 읽는 active state object만 출력한다. 결과는
-[[aws/README#State ownership|State ownership]] 표의 열 개 key와 일치해야 한다.
+다음 명령은 `tofu-state-readonly`가 읽는 state object를 출력한다. 결과는
+[[aws/README#State ownership|State ownership]] 표의 열 개 active key와 예약 key
+`platform/aws/shared-services/state.tfstate`를 포함한 열한 개다.
 
 ```sh
 AWS_PROFILE=ghilbut-tofu-apply-for-workloads AWS_SDK_LOAD_CONFIG=1 \

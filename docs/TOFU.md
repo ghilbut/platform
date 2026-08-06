@@ -34,6 +34,12 @@
 
 - 중앙 state role과 state bucket은 SharedServices 계정에 함께 둔다. State bucket을 다른 계정으로
   옮기면 중앙 state role도 함께 옮기거나 새 bucket policy에 중앙 state role을 허용한다.
+- `tofu-state-admin`은 state bucket 설정과 자신의 IAM role 설명, session duration, tag, inline
+  policy를 관리한다. State object API의 직접 IAM 권한은 없지만 bucket policy를 통한 다른
+  principal의 object 접근 위임은 변경할 수 있다. State object는 backend의
+  `tofu-state-readonly`와 `tofu-state-apply`가 사용한다.
+- `platform/aws/shared-services/state.tfstate`는 state bucket 전용 root의 예약 backend key다. 전용
+  root가 구성될 때까지 state bucket과 `tofu-state-admin`은 `aws/shared-services/tofu/`에서 관리한다.
 - `aws/shared-services/tofu/`는 `deployer`와 GitHub Actions OIDC provider를 함께 관리한다.
 - SharedServices의 `deployer`가 CI/CD source identity를 제공한다. GitHub repository variable은
   실행 Runbook에서 `gh variable set`으로 관리한다.

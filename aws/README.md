@@ -60,7 +60,7 @@ Management account에 적용되지 않는다.
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
 | `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu Plan과 Apply execution role |
-| `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, `deployer`, SharedServices execution role, GitHub Actions와 CPA IAM OIDC provider |
+| `shared-services/tofu/` | `ghilbut-tfstates`, 중앙 state role, `tofu-state-admin`, `deployer`, SharedServices execution role, GitHub Actions와 CPA IAM OIDC provider |
 
 Foundation에는 accounts, identity와 organizations 책임만 둔다. `organizations/tofu/`는 AWS
 Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한다.
@@ -74,6 +74,10 @@ Organization, Infrastructure OU, Security OU, SCP와 trusted access를 관리한
 읽고 대응하는 `.tflock`을 읽고 쓰고 삭제한다. Apply backend는 로컬 `.tfbackend` 설정으로
 SharedServices `tofu-state-apply`를 수임한다. 이 역할은 active `.tfstate`와 `.tflock`을 읽고 쓰고
 삭제한다. 두 역할은 recovery state와 `ghilbut-tfstates-v2`에 접근하지 않는다.
+
+`platform/aws/shared-services/state.tfstate`는 state bucket 전용 root에 사용할 예약 key다. 중앙
+state role은 이 key와 대응하는 lock key에 접근할 수 있다. State bucket 리소스는 아직
+`aws/shared-services/tofu/`의 `platform/aws/shared-services.tfstate`가 소유한다.
 
 | Root | State key | Account | Plan source profile | Apply source profile |
 |---|---|---|---|---|
@@ -138,8 +142,9 @@ workload account에 같은 정책을 적용하며 account별 resource 정책을 
 못한다. `tofu-apply`는 두 state bucket의 객체를 만료시키는 lifecycle 설정도 적용하지 못한다.
 
 SharedServices `deployer`는 Management, SharedServices, SecurityTooling과 Domains의
-`tofu-plan`·`tofu-apply` 및 공용 state role을 수임한다. 현재 GitHub OIDC가 이 role에 로그인하며
-향후 Tekton도 같은 role을 사용한다. UltaryDomains는 별도 운영 계정이므로 포함하지 않는다.
+`tofu-plan`·`tofu-apply`, `tofu-state-admin` 및 공용 state role을 수임한다. 현재 GitHub OIDC가 이
+role에 로그인하며 향후 Tekton도 같은 role을 사용한다. UltaryDomains는 별도 운영 계정이므로
+포함하지 않는다.
 단일 source role의 범위는 각 target role 정책과 GitHub main branch OIDC 조건으로 제한한다.
 
 Plan source identity는 `tofu-state-readonly`와 matching `tofu-plan`만 수임한다. Apply source
@@ -159,6 +164,12 @@ Apply는 각각 대응하는 source profile 하나만 사용한다.
 `TofuPlanFor*` 또는 `TofuApplyFor*`인 IAM Identity Center role과 SharedServices `deployer`만
 허용한다. Account wildcard는 앞으로 추가할 workload account의 같은 permission set을 포함한다.
 사용자 role과 다른 Organization의 role은 수임할 수 없다.
+
+`tofu-state-admin`은 SharedServices의 `TofuApplyForWorkloads` source identity와 `deployer`만
+수임한다. Active bucket `ghilbut-tfstates`의 설정과 자신의 IAM role 설명, session duration, tag,
+inline policy를 관리한다. State object API의 직접 IAM 권한은 없지만 bucket policy를 관리하므로
+다른 principal의 object 접근 위임은 변경할 수 있다. `s3:DeleteBucket`은 명시적으로 거부한다.
+이 역할과 state bucket은 전용 state root가 구성될 때까지 `aws/shared-services/tofu/`에서 관리한다.
 
 `aws_execution_role_arn = null`은 execution role이 아직 없는 새 account bootstrap에서만 source
 identity를 provider에 직접 연결한다. 기존 account에서는 `null`을 사용하지 않는다.
