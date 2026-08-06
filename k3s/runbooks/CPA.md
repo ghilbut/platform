@@ -4,7 +4,7 @@ area: k3s
 cluster: cpa
 ---
 
-# CPA K3s 설치
+# CPA K3s 기반 준비
 
 CPA는 단일 control-plane K3s 클러스터다. 인증 정보와 token은 기록하지 않는다.
 
@@ -222,115 +222,6 @@ kubectl --context cpa get pods -A \
 kubectl --context cpa wait --for=condition=Ready node/cpa --timeout=10m
 ```
 
-## G. Optional: Argo CD
+## G. Applications
 
-> [!info] 공통 절차
-> ![[k3s/RUNBOOK#F. Optional: Argo CD 최소 구성]]
-
-CPA는 GitOps 관리에 Argo CD를 사용하므로 이 optional 절차를 실행한다.
-
-```shell
-# administrator computer
-kubectl --context cpa create namespace argo
-kubectl --context cpa apply -f - <<'YAML'
-apiVersion: v1
-kind: Secret
-metadata:
-  name: argocd-secret
-  namespace: argo
-type: Opaque
-YAML
-
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-helm upgrade --kube-context cpa --install cd argo/argo-cd \
-  --version 9.5.13 \
-  --namespace argo \
-  --wait \
-  --timeout 10m \
-  --values /dev/stdin <<'YAML'
-fullnameOverride: cd
-global:
-  logging:
-    level: warn
-configs:
-  cm:
-    admin.enabled: true
-    application.resourceTrackingMethod: annotation+label
-    users.anonymous.enabled: true
-  params:
-    server.insecure: true
-    server.basehref: /cd
-    server.rootpath: /cd
-  rbac:
-    policy.default: role:admin
-  secret:
-    createSecret: false
-dex:
-  enabled: false
-notifications:
-  enabled: false
-YAML
-```
-
-익명 사용자는 `role:admin` 권한을 사용한다. [Argo CD RBAC configuration](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/)을 참고한다.
-
-### 1. Admin password
-
-1. Initial password로 로그인한다.
-
-```shell
-argocd login \
-  --name cpa \
-  --password "$(argocd admin initial-password --context cpa -n argo | sed -n '1p')" \
-  --username admin \
-  --grpc-web-root-path /cd \
-  --insecure \
-  --kube-context cpa \
-  --plaintext \
-  --port-forward \
-  --port-forward-namespace argo
-```
-
-2. Admin password를 변경한다.
-
-```shell
-argocd account update-password \
-  --argocd-context cpa \
-  --kube-context cpa \
-  --port-forward \
-  --port-forward-namespace argo
-```
-
-3. Initial password Secret을 삭제한다.
-
-```shell
-kubectl --context cpa -n argo delete secret argocd-initial-admin-secret
-```
-
-4. Argo CD CLI context에서 로그아웃한다.
-
-```shell
-argocd logout cpa
-```
-
-### 2. Local UI
-
-```shell
-kubectl --context cpa -n argo port-forward service/cd-server 8080:80
-```
-
-별도 terminal에서 `http://localhost:8080/cd`의 HTTP 응답을 확인한다.
-
-```shell
-curl --fail --silent --show-error --output /dev/null \
-  --write-out '%{http_code} %{redirect_url}\n' \
-  http://localhost:8080/cd
-```
-
-## H. Optional: Agent
-
-> [!info] 공통 절차
-> ![[k3s/RUNBOOK#G. Optional: Agent]]
-
-CPA는 단일 control-plane cluster로 실행하므로 agent를 설치하지 않는다.
+CPA는 단일 control-plane cluster로 실행한다. Cilium node와 ServiceAccount OIDC issuer 검증을 마친 뒤 [[apps/runbooks/cpa-bootstrap|CPA bootstrap]]을 실행한다. CPA는 Argo CD를 설치하고, GPA는 CPA Argo CD의 관리 대상으로 등록한다.
