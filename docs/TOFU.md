@@ -7,11 +7,11 @@
 | 기록할 내용 | source of truth | 기록 방식 |
 | --- | --- | --- |
 | 모든 root에 공통인 작성, 인증, state, CI 기준 | 이 문서 | 공통 규칙만 기록한다. |
-| account, role ARN, state key, root 소유자 | [[aws/README|AWS architecture]] | 표와 책임 설명으로 기록한다. |
+| account, role ARN, state key, root 소유자 | [AWS architecture](../aws/README.md) | 표와 책임 설명으로 기록한다. |
 | root의 backend, provider, variable, output | 해당 root의 `versions.tf`, `providers.tf`, `variables.tf`, `outputs.tf` | 실제 값을 선언한다. |
 | root의 리소스 조합 | 해당 root의 `main.tf`와 module | resource와 의존성을 선언한다. |
 | 실행 순서, source profile, 로컬 Apply file | 해당 영역의 `RUNBOOK.md` | 실행 명령과 검증을 기록한다. |
-| CDN의 이름, tag와 CI 적용 범위 | [[aws/cdn/README|AWS CDN]] | CDN 전용 기준을 기록한다. |
+| CDN의 이름, tag와 CI 적용 범위 | [AWS CDN](../aws/cdn/README.md) | CDN 전용 기준을 기록한다. |
 
 실행 값과 shell command는 root 가까이 있는 실행 Runbook에 기록한다. token, private key, kubeconfig 인증서와 git 제외 Apply file의 값은 저장소에 기록하지 않는다.
 
