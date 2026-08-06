@@ -34,9 +34,13 @@ K3s는 workload를 설치하지 않는다. CPA Argo CD와 모든 Kubernetes work
 - child Application은 명시적으로 선택 sync한다.
 - `argo` Application은 전체 sync하지 않는다. Argo route는 `routes.yml` VirtualService만 sync한다.
 
-## 실행
+## 실행 문서
 
-[[runbooks/cpa-bootstrap|CPA bootstrap]]이 CPA Argo CD 설치, immutable bootstrap revision 적용, 기반 Application sync와 `main` handoff를 수행한다.
+| 단계 | 상태 | 실행 문서 | Archive SHA |
+| --- | --- | --- | --- |
+| BOOTSTRAP | Current | [[runbooks/BOOTSTRAP|Bootstrap]] |  |
+
+`BOOTSTRAP`은 CPA Argo CD 설치, immutable bootstrap revision 적용, 기반 Application sync와 `main` handoff를 수행한다.
 
 ## Pod Security Standards
 
