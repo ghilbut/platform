@@ -310,9 +310,9 @@ Snapshot은 Kubernetes API object, K3s CA certificate와 private key를 포함�
 4. snapshot 복원이 실패하면 실패한 K3s 상태를 제거하고 cluster 기반을 다시 준비한다.
 5. Applications runbook을 `BOOTSTRAP`부터 순서대로 실행한다.
 
-정기 snapshot 자격 증명은 `kube-system`의 K3s S3 configuration Secret으로 제공한다. 이 Secret의
-복구 사본과 원래 `/var/lib/rancher/k3s/server/token`은 cluster 밖의 secret store에 보관한다.
-복원 절차는 Kubernetes Secret을 사용하지 않는다.
+`k3s/tofu`는 정기 snapshot access key와 `kube-system`의 K3s S3 configuration Secret을 함께
+관리한다. 원래 K3s server token과 access key는 `k3s.tfstate`에 민감한 값으로 저장한다. 복원
+절차는 Kubernetes Secret을 사용하지 않고 state의 server token을 사용한다.
 
 실제 설정은 [[runbooks/CPA#E. etcd snapshot S3|CPA snapshot 설정]], 복원은
 [[runbooks/CPA-RESTORE|CPA K3s snapshot 복원]]을 따른다.
