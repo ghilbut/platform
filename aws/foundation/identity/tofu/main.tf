@@ -23,6 +23,7 @@ locals {
   state_admin_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-admin"
   state_apply_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-apply"
   state_readonly_role_arn     = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-readonly"
+  backup_recovery_role_arn    = "arn:aws:iam::${local.shared_services_account_id}:role/backup-recovery"
   # Bucket and object ARNs denied to OpenTofu source identities.
   state_bucket_resources = [
     "arn:aws:s3:::ghilbut-tfstates",
@@ -134,6 +135,30 @@ module "billing" {
   account_assignments = {
     management = {
       account_id     = "384959722788"
+      principal_id   = aws_identitystore_group.devops.group_id
+      principal_type = "GROUP"
+    }
+  }
+}
+
+module "backup_recovery" {
+  source = "./modules/permission-set"
+
+  instance_arn = local.instance_arn
+  name         = "BackupRecovery"
+  description  = "Assume the read-only platform backup recovery role."
+  inline_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "AssumeBackupRecoveryRole"
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = local.backup_recovery_role_arn
+    }]
+  })
+  account_assignments = {
+    shared_services = {
+      account_id     = local.shared_services_account_id
       principal_id   = aws_identitystore_group.devops.group_id
       principal_type = "GROUP"
     }
