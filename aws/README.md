@@ -227,7 +227,8 @@ versioning과 90일 noncurrent version 보존을 적용한다. K3s가 current sn
 
 `k3s-cpa-snapshot` IAM user는 `k3s/cpa/`에서 snapshot을 생성하고 조회하고 정리한다.
 `k3s/tofu`는 이 user의 access key를 생성하고 CPA의 K3s S3 configuration Secret에 직접 적용한다.
-Access key는 `k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
+Access key ID는 AWS resource 식별자로 Plan과 Apply 진행 로그에 표시된다. Secret access key는
+`k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
 
 `BackupRecovery` permission set은 `backup-recovery` role만 수임한다. 이 role은 `k3s/cpa/`의
 current object와 noncurrent version을 읽고 bucket과 object를 변경하지 않는다.
