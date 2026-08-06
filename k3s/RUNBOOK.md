@@ -3,7 +3,9 @@ type: runbook
 area: k3s
 ---
 
-# K3s 설치 RUNBOOK
+# K3s 기반 RUNBOOK
+
+K3s는 host, control plane, Cilium과 ServiceAccount OIDC 기반을 준비한다. CPA Argo CD와 Kubernetes workload bootstrap은 [[apps/RUNBOOK|Applications RUNBOOK]]이 담당한다.
 
 실행별 값과 실제 명령은 `runbooks/`에 기록한다.
 
@@ -15,8 +17,6 @@ area: k3s
 - [LVM physical volume](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-physical-volumes_configuring-and-managing-logical-volumes)과 [volume group](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-volume-groups_configuring-and-managing-logical-volumes): `pvcreate`, `vgcreate`, `pvs`, `vgs`
 - [OpenEBS LVM 설치](https://openebs.io/docs/4.0.x/user-guides/local-storage-user-guide/local-pv-lvm/lvm-installation): `lvm2`, `dm_snapshot` kernel module, LVM volume group
 - [Cilium Helm 설치](https://docs.cilium.io/en/stable/installation/k8s-install-helm/): Helm chart 설치와 node taint
-- [Argo CD 설치](https://argo-cd.readthedocs.io/en/stable/operator-manual/installation/#helm): Helm chart 설치
-- [Argo CD 초기 로그인](https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli): initial admin password와 password 변경
 - [AWS IAM OIDC provider 생성](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html): issuer URL과 audience 설정
 
 ## B. 설치 값
@@ -35,7 +35,7 @@ area: k3s
 | `OPENEBSD_DEVICE` | OpenEBS LVM physical volume으로 초기화할 미마운트 block device |
 | `OPENEBSD_VG` | OpenEBS LVM volume group 이름 |
 
-Argo CD를 설치하는 클러스터는 `ARGO_CD_VERSION`도 확정한다. token, kubeconfig 인증서, private key는 실행 문서와 저장소에 기록하지 않는다.
+token, kubeconfig 인증서, private key는 실행 문서와 저장소에 기록하지 않는다.
 
 ## C. Server
 
@@ -291,113 +291,7 @@ kubectl --context "$CLUSTER" wait --for=condition=Ready node \
   --all --timeout=10m
 ```
 
-## F. Optional: Argo CD 최소 구성
-
-Argo CD는 모든 클러스터에 설치하지 않는다. GitOps 관리가 필요한 클러스터만 이 절차를 실행한다. 이 구성은 Dex와 notifications를 사용하지 않는다.
-
-```shell
-export CLUSTER='<CLUSTER>'
-export ARGO_CD_VERSION='<ARGO_CD_VERSION>'
-
-kubectl --context "$CLUSTER" create namespace argo
-kubectl --context "$CLUSTER" apply -f - <<'YAML'
-apiVersion: v1
-kind: Secret
-metadata:
-  name: argocd-secret
-  namespace: argo
-type: Opaque
-YAML
-
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-helm upgrade --kube-context "$CLUSTER" --install cd argo/argo-cd \
-  --version "$ARGO_CD_VERSION" \
-  --namespace argo \
-  --wait \
-  --timeout 10m \
-  --values /dev/stdin <<'YAML'
-fullnameOverride: cd
-global:
-  logging:
-    level: warn
-configs:
-  cm:
-    admin.enabled: true
-    application.resourceTrackingMethod: annotation+label
-    users.anonymous.enabled: true
-  params:
-    server.insecure: true
-    server.basehref: /cd
-    server.rootpath: /cd
-  rbac:
-    policy.default: role:admin
-  secret:
-    createSecret: false
-dex:
-  enabled: false
-notifications:
-  enabled: false
-YAML
-kubectl --context "$CLUSTER" get pods -n argo
-```
-
-익명 사용자는 `role:admin` 권한을 사용한다. [Argo CD RBAC configuration](https://argo-cd.readthedocs.io/en/stable/operator-manual/rbac/)을 참고한다.
-
-### 1. Admin password
-
-1. Initial password로 로그인한다.
-
-```shell
-argocd login \
-  --name "$CLUSTER" \
-  --password "$(argocd admin initial-password --context "$CLUSTER" -n argo | sed -n '1p')" \
-  --username admin \
-  --grpc-web-root-path /cd \
-  --insecure \
-  --kube-context "$CLUSTER" \
-  --plaintext \
-  --port-forward \
-  --port-forward-namespace argo
-```
-
-2. Admin password를 변경한다.
-
-```shell
-argocd account update-password \
-  --argocd-context "$CLUSTER" \
-  --kube-context "$CLUSTER" \
-  --port-forward \
-  --port-forward-namespace argo
-```
-
-3. Initial password Secret을 삭제한다.
-
-```shell
-kubectl --context "$CLUSTER" -n argo delete secret argocd-initial-admin-secret
-```
-
-4. Argo CD CLI context에서 로그아웃한다.
-
-```shell
-argocd logout "$CLUSTER"
-```
-
-### 2. Local UI
-
-```shell
-kubectl --context "$CLUSTER" -n argo port-forward service/cd-server 8080:80
-```
-
-`http://localhost:8080/cd`는 `http://localhost:8080/cd/`로 redirect한다. 별도 terminal에서 다음 명령으로 응답을 확인한다.
-
-```shell
-curl --fail --silent --show-error --output /dev/null \
-  --write-out '%{http_code} %{redirect_url}\n' \
-  http://localhost:8080/cd
-```
-
-## G. Optional: Agent
+## F. Optional: Agent
 
 Agent는 모든 클러스터에 설치하지 않는다. 추가 workload node가 필요한 클러스터만 이 절차를 실행한다. agent host는 server와 같은 Ubuntu 준비 절차를 수행한다. agent에는 `/var/lib/kubelet`, `/var/lib/rancher`, `/var/lib/rancher/k3s/agent/containerd` 파일시스템을 사용한다. embedded etcd 전용인 `/var/lib/rancher/k3s/server/db`는 agent에 만들지 않는다.
 
@@ -434,7 +328,7 @@ kubectl --context "$CLUSTER" get pods -n kube-system \
   -l k8s-app=cilium -o wide
 ```
 
-## H. 실행 Runbook
+## G. 실행 Runbook
 
 실행 전 `runbooks/<CLUSTER>.md`를 작성한다. 이 문서는 해당 클러스터의 실제 값, 순서대로 실행할 전체 shell command, 검증 결과를 포함한다.
 
