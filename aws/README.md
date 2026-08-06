@@ -225,9 +225,9 @@ SharedServices의 `ghilbut-backups` bucket은 platform 복구 데이터를 저�
 snapshot은 `k3s/cpa/` prefix를 사용한다. Bucket은 public 접근을 차단하고 TLS, 기본 암호화,
 versioning과 90일 noncurrent version 보존을 적용한다. K3s가 current snapshot 수를 관리한다.
 
-`k3s-cpa-snapshot` IAM user는 `k3s/cpa/`에서 snapshot을 생성하고 조회하고 정리한다. OpenTofu는
-이 user의 access key를 만들거나 출력하지 않는다. CPA에서 사용하는 access key의 복구 사본은
-Git 저장소 밖의 secret store에 보관한다.
+`k3s-cpa-snapshot` IAM user는 `k3s/cpa/`에서 snapshot을 생성하고 조회하고 정리한다.
+`k3s/tofu`는 이 user의 access key를 생성하고 CPA의 K3s S3 configuration Secret에 직접 적용한다.
+Access key는 `k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
 
 `BackupRecovery` permission set은 `backup-recovery` role만 수임한다. 이 role은 `k3s/cpa/`의
 current object와 noncurrent version을 읽고 bucket과 object를 변경하지 않는다.

@@ -23,3 +23,8 @@ provider "aws" {
     }
   }
 }
+
+provider "kubernetes" {
+  config_context = "cpa"
+  config_path    = pathexpand(var.kubeconfig_path)
+}

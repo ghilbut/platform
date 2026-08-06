@@ -18,3 +18,9 @@ variable "cdn_bucket" {
   description = "S3 bucket used as the CloudFront origin"
   default     = "ghilbut-cdn-platform"
 }
+
+variable "kubeconfig_path" {
+  type        = string
+  description = "Kubeconfig file used to manage CPA resources."
+  default     = "~/.kube/config"
+}

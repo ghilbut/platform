@@ -20,8 +20,7 @@ snapshot 생성 시점으로 되돌린다.
 다음 조건을 모두 충족한 뒤 복원을 시작한다.
 
 - `ghilbut-backup-recovery-role` AWS profile을 [[aws/RUNBOOK#Source profiles|AWS operations]]에 따라 준비했다.
-- 원래 `/var/lib/rancher/k3s/server/token`을 CPA 밖의 secret store에서 가져올 수 있다.
-- 현재 `k3s-cpa-snapshot` IAM access key를 CPA 밖의 secret store에서 가져올 수 있다.
+- `k3s.tfstate`의 `cpa_server_token` output을 읽을 수 있다.
 - 복원 대상 CPA에 [[CPA#C. K3s server|CPA K3s server]]와 동일한 server 설정이 있다.
 - 복원 중인 CPA에서 Applications bootstrap과 애플리케이션 데이터 복원을 실행하지 않는다.
 
@@ -114,32 +113,47 @@ unset SNAPSHOT_DOWNLOAD_DIR
 
 ## D. 단일 server 복원
 
-CPA에서 원래 server token을 화면에 표시하지 않고 입력한다. K3s S3 설정이 server config에 있으므로
-로컬 파일 복원에는 `--etcd-s3=false`를 지정한다.
+관리자 컴퓨터에서 state의 server token을 CPA K3s configuration file에 다시 저장한다. Token은
+화면에 출력하지 않는다.
+
+```shell
+# administrator computer
+export AWS_SDK_LOAD_CONFIG=1
+export AWS_PROFILE='ghilbut-tofu-plan-for-workloads'
+
+tofu -chdir=k3s/tofu init -reconfigure
+CPA_SERVER_TOKEN="$(tofu -chdir=k3s/tofu output -raw cpa_server_token)"
+test -n "$CPA_SERVER_TOKEN"
+
+{
+  printf 'token: "'
+  printf '%s' "$CPA_SERVER_TOKEN"
+  printf '"\n'
+} | ssh cpa \
+  'sudo install -D -m 600 /dev/stdin /etc/rancher/k3s/config.yaml.d/10-server-token.yaml'
+
+unset CPA_SERVER_TOKEN
+```
+
+K3s S3 설정이 server config에 있으므로 로컬 파일 복원에는 `--etcd-s3=false`를 지정한다.
 
 ```shell
 # cpa
 export SNAPSHOT_NAME='<SNAPSHOT_NAME>'
 export SNAPSHOT_PATH="/var/lib/rancher/k3s/server/db/snapshots/$SNAPSHOT_NAME"
 
-printf 'Original CPA K3s server token: '
-read -r -s K3S_SERVER_TOKEN
-printf '\n'
-
 test -s "$SNAPSHOT_PATH"
-test -n "$K3S_SERVER_TOKEN"
+sudo test -s /etc/rancher/k3s/config.yaml.d/10-server-token.yaml
 sudo systemctl stop k3s
 
-if ! sudo env K3S_TOKEN="$K3S_SERVER_TOKEN" k3s server \
+if ! sudo k3s server \
   --cluster-reset \
   --cluster-reset-restore-path="$SNAPSHOT_PATH" \
   --etcd-s3=false; then
-  unset K3S_SERVER_TOKEN
   printf 'CPA snapshot restore failed.\n' >&2
   exit 1
 fi
 
-unset K3S_SERVER_TOKEN
 sudo systemctl start k3s
 sudo systemctl is-active k3s
 ```
@@ -168,9 +182,22 @@ kubectl --context cpa -n argo get applications -o name \
   | grep -q '^application.argoproj.io/'
 ```
 
-위 명령이 모두 성공하면 [[CPA#E. etcd snapshot S3|CPA snapshot 설정]]의 S3 configuration
-Secret을 현재 access key로 다시 적용하고 수동 snapshot을 확인한다. 각 애플리케이션을 준비한 뒤
-애플리케이션 데이터를 별도 S3 백업에서 복원한다.
+위 명령이 모두 성공하면 `k3s/tofu`를 다음과 같이 적용하여 snapshot에 포함된 S3 configuration
+Secret을 현재 state의 access key로 교체한다.
+
+```shell
+# administrator computer
+export AWS_SDK_LOAD_CONFIG=1
+export AWS_PROFILE='ghilbut-tofu-apply-for-workloads'
+
+tofu -chdir=k3s/tofu init -reconfigure \
+  -backend-config=tofu-state-apply.tfbackend
+tofu -chdir=k3s/tofu apply \
+  -replace=kubernetes_secret_v1.cpa_snapshot_s3
+```
+
+[[CPA#G. Snapshot 확인|CPA snapshot 확인]]을 완료한 뒤 각 애플리케이션을 준비하고 애플리케이션
+데이터를 별도 S3 백업에서 복원한다.
 
 ## F. 복원 실패
 
