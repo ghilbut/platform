@@ -1,0 +1,190 @@
+name: OpenTofu Plan Changed
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/tofu-plan-all.yml"
+      - ".github/workflows/tofu-plan-changed.yml"
+      - "apps/tofu/**"
+      - "aws/cdn/tofu/**"
+      - "aws/foundation/accounts/tofu/**"
+      - "aws/foundation/identity/tofu/**"
+      - "aws/foundation/organizations/tofu/**"
+      - "aws/security-tooling/tofu/**"
+      - "aws/shared-services/state/tofu/**"
+      - "aws/shared-services/tofu/**"
+      - "domains/tofu/**"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CI_MANAGED_TOFU_ROOTS: |-
+    aws/foundation/organizations/tofu
+    aws/foundation/accounts/tofu
+    aws/foundation/identity/tofu
+    aws/shared-services/tofu
+    aws/shared-services/state/tofu
+    aws/security-tooling/tofu
+    aws/cdn/tofu
+    domains/tofu
+    apps/tofu
+
+jobs:
+  plan:
+    name: Plan changed roots
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Select changed OpenTofu roots
+        id: roots
+        env:
+          BEFORE_REVISION: ${{ github.event.before }}
+          HEAD_REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          roots_file="$RUNNER_TEMP/tofu-plan-roots"
+          mapfile -t managed_roots <<< "$CI_MANAGED_TOFU_ROOTS"
+
+          if [[ "$BEFORE_REVISION" =~ ^0+$ ]] ||
+            ! git cat-file -e "${BEFORE_REVISION}^{commit}" 2>/dev/null; then
+            printf '%s\n' "${managed_roots[@]}" > "$roots_file"
+          else
+            git cat-file -e "${HEAD_REVISION}^{commit}"
+            changed_paths=()
+            mapfile -t changed_paths < <(
+              git diff --name-only "$BEFORE_REVISION" "$HEAD_REVISION" --
+            )
+
+            workflow_changed=false
+            for changed_path in "${changed_paths[@]-}"; do
+              case "$changed_path" in
+                .github/workflows/tofu-plan-all.yml | .github/workflows/tofu-plan-changed.yml)
+                  workflow_changed=true
+                  break
+                  ;;
+              esac
+            done
+
+            if [[ "$workflow_changed" == true ]]; then
+              printf '%s\n' "${managed_roots[@]}" > "$roots_file"
+            else
+              : > "$roots_file"
+
+              for root_path in "${managed_roots[@]}"; do
+                for changed_path in "${changed_paths[@]-}"; do
+                  if [[ "$changed_path" == "$root_path" ||
+                    "$changed_path" == "$root_path/"* ]]; then
+                    printf '%s\n' "$root_path" >> "$roots_file"
+                    break
+                  fi
+                done
+              done
+            fi
+          fi
+
+          root_count="$(awk 'NF { count++ } END { print count + 0 }' "$roots_file")"
+          echo "count=$root_count" >> "$GITHUB_OUTPUT"
+
+          if [[ "$root_count" -eq 0 ]]; then
+            echo 'No CI-managed OpenTofu root changed.'
+          else
+            echo 'Selected OpenTofu roots:'
+            sed 's/^/  /' "$roots_file"
+          fi
+
+      - name: Configure AWS credentials
+        if: steps.roots.outputs.count != '0'
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_IAM_ROLE_DEPLOYER_ARN }}
+          disable-retry: true
+
+      - name: Setup OpenTofu
+        if: steps.roots.outputs.count != '0'
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+          tofu_version: 1.12.4
+
+      - name: Run OpenTofu Plans
+        if: steps.roots.outputs.count != '0'
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${TF_VAR_aws_execution_role_arn:-}" ]]; then
+            echo 'TF_VAR_aws_execution_role_arn is not allowed in OpenTofu Plan.' >&2
+            exit 1
+          fi
+
+          for cli_args_variable in TF_CLI_ARGS TF_CLI_ARGS_init TF_CLI_ARGS_plan; do
+            if [[ -n "${!cli_args_variable:-}" ]]; then
+              echo "$cli_args_variable is not allowed in OpenTofu Plan." >&2
+              exit 1
+            fi
+          done
+
+          mapfile -t roots < "$RUNNER_TEMP/tofu-plan-roots"
+          failed_roots=()
+
+          for root_path in "${roots[@]}"; do
+            echo "OpenTofu Plan: $root_path"
+
+            apply_override_exists=false
+            for apply_override in \
+              "$root_path/tofu-apply.auto.tfvars" \
+              "$root_path/tofu-state-apply.tfbackend"; do
+              if [[ -f "$apply_override" ]]; then
+                echo "Apply override exists: $apply_override" >&2
+                apply_override_exists=true
+              fi
+            done
+
+            if [[ "$apply_override_exists" == true ]]; then
+              failed_roots+=("$root_path")
+              continue
+            fi
+
+            if [[ ! -f "$root_path/versions.tf" ]]; then
+              echo "OpenTofu root has no versions.tf: $root_path" >&2
+              failed_roots+=("$root_path")
+              continue
+            fi
+
+            if ! tofu -chdir="$root_path" init \
+              -input=false \
+              -lockfile=readonly \
+              -no-color \
+              -reconfigure; then
+              failed_roots+=("$root_path")
+              continue
+            fi
+
+            if tofu -chdir="$root_path" plan \
+              -input=false \
+              -lock-timeout=30m \
+              -no-color; then
+              echo "OpenTofu Plan succeeded: $root_path"
+            else
+              echo "OpenTofu Plan failed: $root_path" >&2
+              failed_roots+=("$root_path")
+            fi
+          done
+
+          if [[ "${#failed_roots[@]}" -gt 0 ]]; then
+            echo 'Failed OpenTofu roots:' >&2
+            printf '  %s\n' "${failed_roots[@]}" >&2
+            exit 1
+          fi
+
+          echo 'All requested OpenTofu Plans succeeded.'

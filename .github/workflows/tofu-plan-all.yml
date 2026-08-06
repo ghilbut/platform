@@ -1,0 +1,119 @@
+name: OpenTofu Plan All
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CI_MANAGED_TOFU_ROOTS: |-
+    aws/foundation/organizations/tofu
+    aws/foundation/accounts/tofu
+    aws/foundation/identity/tofu
+    aws/shared-services/tofu
+    aws/shared-services/state/tofu
+    aws/security-tooling/tofu
+    aws/cdn/tofu
+    domains/tofu
+    apps/tofu
+
+jobs:
+  plan:
+    name: Plan all roots
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require main branch
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo 'OpenTofu Plan only runs from the main branch.' >&2
+          exit 1
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.AWS_IAM_ROLE_DEPLOYER_ARN }}
+          disable-retry: true
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+          tofu_version: 1.12.4
+
+      - name: Run OpenTofu Plans
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${TF_VAR_aws_execution_role_arn:-}" ]]; then
+            echo 'TF_VAR_aws_execution_role_arn is not allowed in OpenTofu Plan.' >&2
+            exit 1
+          fi
+
+          for cli_args_variable in TF_CLI_ARGS TF_CLI_ARGS_init TF_CLI_ARGS_plan; do
+            if [[ -n "${!cli_args_variable:-}" ]]; then
+              echo "$cli_args_variable is not allowed in OpenTofu Plan." >&2
+              exit 1
+            fi
+          done
+
+          mapfile -t roots <<< "$CI_MANAGED_TOFU_ROOTS"
+          failed_roots=()
+
+          for root_path in "${roots[@]}"; do
+            echo "OpenTofu Plan: $root_path"
+
+            apply_override_exists=false
+            for apply_override in \
+              "$root_path/tofu-apply.auto.tfvars" \
+              "$root_path/tofu-state-apply.tfbackend"; do
+              if [[ -f "$apply_override" ]]; then
+                echo "Apply override exists: $apply_override" >&2
+                apply_override_exists=true
+              fi
+            done
+
+            if [[ "$apply_override_exists" == true ]]; then
+              failed_roots+=("$root_path")
+              continue
+            fi
+
+            if [[ ! -f "$root_path/versions.tf" ]]; then
+              echo "OpenTofu root has no versions.tf: $root_path" >&2
+              failed_roots+=("$root_path")
+              continue
+            fi
+
+            if ! tofu -chdir="$root_path" init \
+              -input=false \
+              -lockfile=readonly \
+              -no-color \
+              -reconfigure; then
+              failed_roots+=("$root_path")
+              continue
+            fi
+
+            if tofu -chdir="$root_path" plan \
+              -input=false \
+              -lock-timeout=30m \
+              -no-color; then
+              echo "OpenTofu Plan succeeded: $root_path"
+            else
+              echo "OpenTofu Plan failed: $root_path" >&2
+              failed_roots+=("$root_path")
+            fi
+          done
+
+          if [[ "${#failed_roots[@]}" -gt 0 ]]; then
+            echo 'Failed OpenTofu roots:' >&2
+            printf '  %s\n' "${failed_roots[@]}" >&2
+            exit 1
+          fi
+
+          echo 'All requested OpenTofu Plans succeeded.'

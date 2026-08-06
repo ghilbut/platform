@@ -145,20 +145,20 @@ Workloads permission set과 `deployer`는 인증 후 execution role을 수임하
 수임하거나 변경할 수 없다.
 
 SharedServices `deployer`는 Management, SharedServices, SecurityTooling과 Domains의
-`tofu-plan`·`tofu-apply`, `tofu-state-admin` 및 공용 state role을 수임한다. 현재 GitHub OIDC가 이
-role에 로그인하며 향후 Tekton도 같은 role을 사용한다. UltaryDomains는 별도 운영 계정이므로
-포함하지 않는다.
+`tofu-plan`·`tofu-apply`, `tofu-state-admin` 및 공용 state role을 수임한다. GitHub Actions는
+OIDC로 이 role에 로그인한다. UltaryDomains는 별도 운영 계정이므로 포함하지 않는다.
 단일 source role의 범위는 각 target role 정책과 GitHub main branch OIDC 조건으로 제한한다.
 
 ## OpenTofu Plan automation
 
-GitHub Actions의 `OpenTofu Plan` workflow는 SharedServices `deployer`로 로그인한다. Backend는
-기본 `tofu-state-readonly`, provider는 root별 기본 `tofu-plan`을 수임한다. AWS profile, 정적 AWS
-access key, Apply provider override와 Apply backend override는 사용하지 않는다.
+GitHub Actions의 `tofu-plan-changed.yml`과 `tofu-plan-all.yml`은 SharedServices `deployer`로
+로그인한다. Backend는 기본 `tofu-state-readonly`, provider는 root별 기본 `tofu-plan`을 수임한다.
+AWS profile, 정적 AWS access key, Apply provider override와 Apply backend override는 사용하지
+않는다.
 
-`main` push는 변경된 CI 관리 root만 Plan한다. 삭제한 파일도 변경으로 처리한다. 비교 기준
-revision에 접근할 수 없으면 모든 CI 관리 root를 Plan한다. 수동 실행은 다음 아홉 root를 모두
-Plan한다.
+`tofu-plan-changed.yml`은 `main` push에서 변경된 CI 관리 root만 Plan한다. 삭제한 파일도 변경으로
+처리한다. 비교 기준 revision에 접근할 수 없거나 workflow 파일이 변경되면 모든 CI 관리 root를
+Plan한다. `tofu-plan-all.yml`의 수동 실행은 다음 아홉 root를 모두 Plan한다.
 
 Plan과 CDN Apply는 S3 backend의 `.tflock`으로 동일한 state의 실행을 직렬화하고 잠금 해제를 최대
 30분 기다린다. CDN Apply workflow의 concurrency group은 CDN Apply끼리만 직렬화한다. 서로 다른
@@ -176,10 +176,10 @@ state를 사용하는 Plan은 GitHub concurrency group으로 제한하지 않는
 | 8 | `domains/tofu/` | Domains |
 | 9 | `apps/tofu/` | SharedServices |
 
-CI 관리 root 목록은 `scripts/opentofu-plan-roots.txt`에서 관리한다. Root 내부 파일 변경은 해당
-root를 선택한다. `aws/cdn/` 변경은 `aws/cdn/tofu/`를 선택한다. 목록, 공용 Plan 스크립트 또는
-workflow 변경은 모든 CI 관리 root를 선택한다. 관리 대상과 일치하지 않는 변경은 빈 목록과 성공
-상태를 반환한다.
+CI 관리 root 목록과 실행 순서는 두 Plan workflow의 `CI_MANAGED_TOFU_ROOTS`에 명시한다.
+`tofu-plan-changed.yml`의 `push.paths`에는 같은 root의 `tofu/**` 경로를 명시한다. Root 내부 파일
+변경은 해당 root를 선택한다. 두 Plan workflow 중 하나의 변경은 모든 CI 관리 root를 선택한다.
+`aws/cdn/tofu/` 밖의 CDN 변경은 `aws-cdn-lambda.yml`만 처리한다.
 
 `k3s/tofu/`는 `cpa` Kubernetes API와 로컬 `kubectl` context가 필요하므로 GitHub-hosted runner에서
 실행하지 않는다. `ultary/domains/tofu/`는 `deployer` 인가 범위 밖이며 필수 입력값을 별도로
@@ -238,10 +238,9 @@ GitHub Actions는 오류 페이지, Lambda bundle, Lambda@Edge와 CloudFront 배
 S3 bucket, ACM certificate, CloudFront Function, IAM role과 Route 53 변경은 로컬 OpenTofu가
 관리한다. Lambda bundle은 git에서 관리하므로 clone 직후에도 Plan이 성공한다.
 
-CDN 배포 workflow는 AWS profile을 사용하지 않는다. 현재 GitHub OIDC가 SharedServices
+CDN 배포 workflow는 AWS profile을 사용하지 않는다. GitHub Actions는 OIDC로 SharedServices
 `deployer`를 사용한다. Backend는 `tofu-state-apply`를 수임하고 provider는 `tofu-apply`를
-수임한다. 같은 `deployer`가 향후 OpenTofu Plan·Apply와 CDN 배포를 포함한 CI/CD를 담당한다.
-Tekton은 `deployer` trust에 인증 방식을 추가하여 같은 역할을 사용한다. 개발자의 기본 backend와
+수임한다. 같은 `deployer`가 OpenTofu Plan과 CDN 배포를 담당한다. 개발자의 기본 backend와
 provider는 각각 `tofu-state-readonly`와 `tofu-plan`을 수임한다.
 
 ## AWS-managed resources
