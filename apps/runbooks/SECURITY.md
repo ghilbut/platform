@@ -106,7 +106,7 @@ Vault service는 HTTP listener를 사용한다. MESH 단계는 내부 통신에 
 argocd app sync ebs istio-gateways
 argocd app wait ebs istio-gateways --sync --health --timeout 600
 kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
-argocd app sync vault
+argocd app sync vault --prune
 argocd app wait vault --sync --health --timeout 600
 
 kubectl --context cpa -n istio-gateways wait \
