@@ -18,7 +18,7 @@ K3s는 host, control plane, Cilium과 ServiceAccount OIDC 기반을 준비한다
 - [K3s 제거](https://docs.k3s.io/installation/uninstall): server와 agent 제거 script의 영향 범위
 - [Kubernetes ServiceAccount token projection과 issuer discovery](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/): issuer, discovery document, JWKS endpoint, public JWKS URI
 - [LVM physical volume](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-physical-volumes_configuring-and-managing-logical-volumes)과 [volume group](https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/8/html/configuring_and_managing_logical_volumes/managing-lvm-volume-groups_configuring-and-managing-logical-volumes): `pvcreate`, `vgcreate`, `pvs`, `vgs`
-- [OpenEBS LVM 설치](https://openebs.io/docs/4.0.x/user-guides/local-storage-user-guide/local-pv-lvm/lvm-installation): `lvm2`, `dm_snapshot` kernel module, LVM volume group
+- [OpenEBS LVM 설치](https://openebs.io/docs/4.0.x/user-guides/local-storage-user-guide/local-pv-lvm/lvm-installation): `lvm2`, `dm_snapshot`과 `dm_thin_pool` kernel module, LVM volume group
 - [Cilium Helm 설치](https://docs.cilium.io/en/stable/installation/k8s-install-helm/): Helm chart 설치와 node taint
 - [AWS IAM OIDC provider 생성](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html): issuer URL과 audience 설정
 
@@ -44,7 +44,7 @@ token, kubeconfig 인증서, private key는 실행 문서와 저장소에 기록
 
 ### 1. host 준비
 
-K3s 데이터와 OpenEBS LVM physical volume은 서로 다른 block device 또는 파티션을 사용한다. `OPENEBSD_DEVICE`에는 파일시스템, mount, physical volume, volume group이 없어야 한다. OpenEBS LVM을 사용하는 node는 `lvm2`와 `dm_snapshot` kernel module을 사용한다.
+K3s 데이터와 OpenEBS LVM physical volume은 서로 다른 block device 또는 파티션을 사용한다. `OPENEBSD_DEVICE`에는 파일시스템, mount, physical volume, volume group이 없어야 한다. OpenEBS LVM을 사용하는 node는 `lvm2`, thick snapshot용 `dm_snapshot`과 thin volume용 `dm_thin_pool` kernel module을 사용한다.
 
 ```shell
 export CLUSTER='<CLUSTER>'

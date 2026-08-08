@@ -154,8 +154,23 @@ kubectl --context cpa -n argo wait \
 
 ### 2. OpenEBS LVM과 CoreDNS
 
+`dm_snapshot`은 [[k3s/runbooks/CPA#B. host와 OpenEBS LVM|CPA host 준비]]에서 로드한다. `BOOTSTRAP`은 host를 변경하지 않고 module과 device mapper target을 확인한다. OpenEBS chart는 VolumeSnapshot CRD와 controller를 설치한다.
+
 ```shell
+ssh cpa 'lsmod | grep "^dm_snapshot "'
+ssh cpa 'sudo dmsetup targets | grep "^snapshot"'
+
 sync_and_wait ebs
+kubectl --context cpa wait \
+  --for=condition=Established \
+  --timeout=10m \
+  crd/volumesnapshotclasses.snapshot.storage.k8s.io \
+  crd/volumesnapshotcontents.snapshot.storage.k8s.io \
+  crd/volumesnapshots.snapshot.storage.k8s.io
+kubectl --context cpa -n ebs wait \
+  --for=condition=Available \
+  deployment/ebs-lvm-localpv-controller \
+  --timeout=10m
 kubectl --context cpa get storageclass openebs-lvm \
   -o jsonpath='{.provisioner}{"\t"}{.parameters.volgroup}{"\n"}'
 
