@@ -151,30 +151,22 @@ module "backup_recovery" {
         Resource = "arn:aws:s3:::ghilbut-backups"
       },
       {
-        Sid    = "ListCpaSnapshots"
+        Sid    = "ListBackups"
         Effect = "Allow"
         Action = [
           "s3:ListBucket",
           "s3:ListBucketVersions",
         ]
         Resource = "arn:aws:s3:::ghilbut-backups"
-        Condition = {
-          StringLike = {
-            "s3:prefix" = [
-              "k3s/cpa",
-              "k3s/cpa/*",
-            ]
-          }
-        }
       },
       {
-        Sid    = "ReadCpaSnapshots"
+        Sid    = "ReadBackups"
         Effect = "Allow"
         Action = [
           "s3:GetObject",
           "s3:GetObjectVersion",
         ]
-        Resource = "arn:aws:s3:::ghilbut-backups/k3s/cpa/*"
+        Resource = "arn:aws:s3:::ghilbut-backups/*"
       },
     ]
   })

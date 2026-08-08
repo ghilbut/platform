@@ -902,7 +902,7 @@ AWS_PROFILE=ghilbut-developers-for-shared-services AWS_SDK_LOAD_CONFIG=1 \
       s3:GetObject \
       s3:GetObjectVersion \
       s3:GetObjectLegalHold \
-    --resource-arns arn:aws:s3:::ghilbut-backups/k3s/cpa/example \
+    --resource-arns arn:aws:s3:::ghilbut-backups/example \
     --query 'EvaluationResults[].{Action:EvalActionName,Resource:EvalResourceName,Decision:EvalDecision}' \
     --output table
 

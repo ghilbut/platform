@@ -245,8 +245,8 @@ versioning과 90일 noncurrent version 보존을 적용한다. K3s가 current sn
 Access key ID는 AWS resource 식별자로 Plan과 Apply 진행 로그에 표시된다. Secret access key는
 `k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
 
-`BackupRecovery` Permission Set은 `k3s/cpa/`의 current object와 noncurrent version을 직접 읽고
-bucket과 object를 변경하지 않는다. Session duration은 4시간이다.
+`BackupRecovery` Permission Set은 `ghilbut-backups`의 current object와 noncurrent version을
+직접 읽고 bucket과 object를 변경하지 않는다. Session duration은 4시간이다.
 
 | Permission set | Assignment | Profile | IAM Identity Center role | 책임 |
 |---|---|---|---|---|
