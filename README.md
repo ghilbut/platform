@@ -20,7 +20,11 @@
 | `pki/`                                      | Root CA 인증서와 Intermediate 인증서의 작업 공간. 인증서는 git과 동기화하지 않는다. |
 | `ultary/`                                   | `Ultary, Inc.`가 준비될 때까지 일부 관리를 대신해 준다.                             |
 
-## C. Programming
+## C. Security
+
+모든 플랫폼 영역의 관측 접근은 [[knowledge/rulebooks/SECURITY|보안 기준]]을 따른다.
+
+## D. Programming
 
 ### OpenTofu
 

@@ -7,6 +7,9 @@ area: tofu
 
 이 문서는 모든 OpenTofu root가 공유하는 작성, 인증, state, CI 기준을 정의한다. root별 account, role ARN, state key와 실행 순서는 [[aws/README|AWS architecture]]와 해당 영역의 `RUNBOOK.md`가 관리한다.
 
+OpenTofu의 관측 접근은 [[knowledge/rulebooks/SECURITY|보안 기준]]을 따른다. `state`의 `bucket`과
+`object` 인벤토리는 허용하고 본문은 거부한다.
+
 ## 문서와 코드의 책임
 
 | 기록할 내용 | source of truth | 기록 방식 |
@@ -54,7 +57,10 @@ Source profile, provider role 또는 backend role을 바꾸면 `tofu init -recon
 
 ## State와 root 간 의존성
 
-중앙 state bucket과 state role은 SharedServices가 소유한다. state object는 backend의 `tofu-state-readonly`와 `tofu-state-apply`만 사용한다. state bucket과 `tofu-state-admin`의 정확한 소유 root, state key와 role 경계는 [[aws/README#State ownership|AWS State ownership]]에서 관리한다.
+중앙 state bucket과 state role은 SharedServices가 소유한다. state 본문은 backend의
+`tofu-state-readonly`와 `tofu-state-apply`만 사용한다. state bucket과 object 인벤토리는 관측 접근에
+허용한다. state bucket과 `tofu-state-admin`의 정확한 소유 root, state key와 role 경계는
+[[aws/README#State ownership|AWS State ownership]]에서 관리한다.
 
 - `terraform_remote_state`는 `tofu-state-readonly`를 사용한다.
 - root 사이에는 필요한 식별자만 `terraform_remote_state` output으로 전달한다.

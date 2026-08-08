@@ -5,6 +5,10 @@ area: k8s
 
 # Kubernetes Security
 
+Kubernetes의 관측 접근은 [[knowledge/rulebooks/SECURITY|보안 기준]]을 따른다. 리소스 이름,
+상태, `event`, `metric`과 `Secret` 값이 제거된 `manifest`와 `log`는 허용한다. `Secret` 값과
+workload 데이터는 거부한다.
+
 ## Pod Security Standards
 
 [Kubernetes Pod Security Admission](https://kubernetes.io/docs/concepts/security/pod-security-admission/)은 Namespace별 `enforce`, `audit`, `warn` label로 [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)를 적용한다.
