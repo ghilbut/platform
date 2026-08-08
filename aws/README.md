@@ -59,7 +59,7 @@ Management account에 적용되지 않는다.
 | `foundation/identity/tofu/` | IAM Identity Center permission set, DevOps·Developers group, account assignment와 Management execution role |
 | `foundation/identity/tofu/modules/permission-set/` | permission set, 정책 연결과 account assignment 조합 |
 | `foundation/organizations/tofu/` | AWS Organization, OU, SCP와 delegated administrator |
-| `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu Plan과 Apply execution role |
+| `security-tooling/tofu/` | SecurityTooling 계정의 OpenTofu execution role, CPA IAM OIDC provider와 Vault auto-unseal KMS key |
 | `shared-services/state/tofu/` | `ghilbut-tfstates`의 bucket 설정과 `tofu-state-admin` |
 | `shared-services/tofu/` | 중앙 state backend role, `deployer`, SharedServices workload execution role, GitHub Actions, CPA IAM OIDC provider와 platform backup 저장소 |
 
@@ -245,6 +245,10 @@ snapshot 수를 관리한다.
 `k3s/tofu`는 이 user의 access key를 생성하고 CPA의 K3s S3 configuration Secret에 직접 적용한다.
 Access key ID는 AWS resource 식별자로 Plan과 Apply 진행 로그에 표시된다. Secret access key는
 `k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
+
+CPA의 `vault-backup` ServiceAccount는 SharedServices의 `vault-cpa-backup` role을 수임한다. 이 role은
+`vault/cpa/raft/` object를 생성하고 읽고 정리한다. CPA의 `vault` ServiceAccount는 SecurityTooling의
+`vault-cpa-unseal` role을 수임하며 `alias/vault-cpa-unseal` KMS key의 seal 작업만 수행한다.
 
 `BackupRecovery` Permission Set은 `ghilbut-backups`의 current object와 noncurrent version을
 직접 읽고 bucket과 object를 변경하지 않는다. Session duration은 4시간이다.

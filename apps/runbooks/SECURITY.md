@@ -78,6 +78,25 @@ unset BOOTSTRAP_TAG BOOTSTRAP_REVISION
 
 #231과 #232는 #230 완료 뒤 함께 진행할 수 있다. #238과 #239는 #237 완료 뒤 함께 진행할 수 있다. 실제 명령과 검증 결과는 해당 Issue의 PR에서 이 문서에 추가한다.
 
+### SECURITY-11: Vault AWS 권한
+
+[[aws/RUNBOOK#Plan and apply|AWS Plan과 Apply]] 절차로 다음 root를 순서대로 적용한다.
+
+1. `aws/shared-services/tofu`: CPA OIDC issuer output과 `vault/cpa/raft/` backup role
+2. `aws/security-tooling/tofu`: CPA OIDC provider, Vault auto-unseal role과 KMS key
+
+SharedServices state는 CPA OIDC issuer와 TLS thumbprint의 원본이다. SecurityTooling state가 이
+output을 읽는다. 다음 output은 Vault 설치와 backup 작업에서 사용한다.
+
+| Root | Output |
+| --- | --- |
+| `aws/shared-services/tofu` | `vault_backup_prefix`, `vault_backup_role_arn` |
+| `aws/security-tooling/tofu` | `vault_unseal_kms_key_arn`, `vault_unseal_role_arn` |
+
+`vault` namespace의 `vault` ServiceAccount만 KMS role을 수임한다. 같은 namespace의
+`vault-backup` ServiceAccount만 backup role을 수임한다. `BackupRecovery` identity는 Vault backup을
+읽으며 S3 bucket과 object를 변경하지 않는다.
+
 ## C. 복구 진입점
 
 CPA 복구는 다음 순서를 사용한다.
