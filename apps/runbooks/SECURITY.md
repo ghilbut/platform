@@ -107,6 +107,7 @@ argocd app sync ebs istio-gateways
 argocd app wait ebs istio-gateways --sync --health --timeout 600
 kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
 argocd app sync vault --prune
+kubectl --context cpa -n vault delete secret vault-server-tls --ignore-not-found
 argocd app wait vault --sync --health --timeout 600
 
 kubectl --context cpa -n istio-gateways wait \

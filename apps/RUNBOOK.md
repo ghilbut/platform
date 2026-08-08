@@ -88,21 +88,26 @@ K3s host는 `dm_snapshot`과 `dm_thin_pool` kernel module을 부팅할 때 로�
 
 Stateful Application은 `openebs-lvm-thin` StorageClass를 사용한다. OpenEBS LocalPV LVM의 snapshot restore는 thin volume을 사용한다. PVC와 PV는 Application 제거 뒤에도 보존한다. Velero가 S3 data movement를 마치면 임시 OpenEBS snapshot을 제거한다.
 
-### 제품 선택
+### 제품과 version
 
-| 책임 | 제품 |
-| --- | --- |
-| Local volume과 snapshot | OpenEBS LVM LocalPV |
-| Snapshot S3 data movement | Velero CSI Snapshot Data Movement와 Kopia |
-| Secret store | Vault Integrated Raft |
-| Secret delivery | Vault Secrets Operator |
-| PostgreSQL 운영 | CloudNativePG |
-| PostgreSQL physical backup | Barman Cloud Plugin |
-| Identity provider | Keycloak Operator |
+Application은 다음 version을 사용한다. Version 변경은 별도 Issue와 PR에서 backup과 restore를 다시 검증한다.
+
+| 책임 | 제품 | 고정 version |
+| --- | --- | --- |
+| Local volume | [OpenEBS LVM LocalPV](https://openebs.io/docs/main/user-guides/local-storage-user-guide/local-pv-lvm/lvm-overview) | Helm `1.9.1` |
+| Snapshot API | [Kubernetes external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter) | OpenEBS chart bundle `v7.0.0` |
+| Snapshot S3 data movement | [Velero CSI Snapshot Data Movement](https://velero.io/docs/main/csi-snapshot-data-movement/) | Helm `12.1.0`, image `1.18.2` |
+| Velero S3 client | [Velero plugin for AWS](https://github.com/veleroio/velero-plugin-for-aws) | `v1.14.2` |
+| Secret store | [Vault Helm](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/helm) | Helm `0.34.0`, Vault `2.0.3` |
+| Secret delivery | [Vault Secrets Operator](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/vso) | Helm `1.5.0` |
+| PostgreSQL operator | [CloudNativePG](https://cloudnative-pg.io/docs/1.30/) | Helm `0.29.0`, operator `1.30.0` |
+| PostgreSQL | [PostgreSQL](https://www.postgresql.org/docs/18/) | `18.4` |
+| PostgreSQL physical backup | [Barman Cloud Plugin](https://cloudnative-pg.io/plugin-barman-cloud/) | `0.7.1` |
+| Identity provider | [Keycloak Operator](https://www.keycloak.org/operator/installation) | Kustomize와 Keycloak `26.7.1` |
 
 OpenEBS chart가 snapshot-controller와 csi-snapshotter를 함께 배포한다. 별도 external-snapshotter controller를 설치하지 않는다.
 
-`keycloak` Application은 Keycloak Operator와 Keycloak CR을 관리한다. 외부 Keycloak을 가리키는 route는 CPA Keycloak route로 교체한다.
+`keycloak` Application은 Keycloak Operator와 Keycloak CR을 관리한다. 외부 Keycloak을 가리키는 ServiceEntry, DestinationRule과 VirtualService는 CPA Keycloak route로 교체한다.
 
 ### 통신 보안
 
@@ -114,7 +119,7 @@ JWT는 bearer JWT를 보내는 요청에만 요구한다. Vault token과 Kuberne
 
 ### Backup 구조
 
-OpenEBS volume snapshot backup은 현재 K3s와 OpenEBS runtime의 crash-consistent 복구 지점이다. Vault Raft, PostgreSQL Barman과 database dump는 새 런타임에도 복원하는 application data backup이다.
+OpenEBS volume snapshot backup은 현재 K3s와 OpenEBS runtime의 crash-consistent 복구 지점이다. Privileged `fsfreeze` hook은 사용하지 않는다. Vault Raft, PostgreSQL Barman과 database dump는 새 런타임에도 복원하는 application data backup이다.
 
 ```text
 OpenEBS thin PVC
@@ -132,9 +137,9 @@ CloudNativePG
   └─ pg_dump custom format   → s3://ghilbut-backups/data/postgresql/dump/
 ```
 
-Velero data mover는 OpenEBS snapshot에서 임시 thin volume을 만들고 S3 repository로 data를 이동한다. 복원할 때 `DataDownload`가 새 thin PVC를 만들고 repository data를 기록한다.
+Velero는 built-in Kopia data mover를 사용한다. Data mover는 OpenEBS snapshot에서 임시 thin volume을 만들고 S3 repository로 data를 이동한다. 복원할 때 `DataDownload`가 새 thin PVC를 만들고 repository data를 기록한다.
 
-`ghilbut-backups`는 public 접근을 차단하고 TLS와 기본 SSE-S3 암호화를 적용한다. Backup job은 자신의 prefix만 변경한다.
+`ghilbut-backups`는 public 접근을 차단하고 TLS와 기본 SSE-S3 암호화를 적용하며 versioning을 `Suspended`로 유지한다. Backup job은 자신의 prefix만 변경한다.
 
 | Principal | 변경 가능 prefix |
 | --- | --- |
@@ -158,14 +163,15 @@ Velero Schedule은 5-field cron을 사용한다. CloudNativePG ScheduledBackup�
 ### Credential 경계
 
 - Vault KMS key와 application data backup prefix는 플랫폼 공통 자산이다.
-- 현재 런타임의 ServiceAccount만 해당 런타임용 IAM role을 수임한다.
+- Vault server는 현재 런타임의 ServiceAccount token으로 SecurityTooling KMS role을 수임한다.
+- Velero와 application backup job은 workload별 ServiceAccount token으로 SharedServices S3 writer role을 수임한다.
 - Vault server, Velero와 application backup job은 static AWS access key를 사용하지 않는다.
-- Velero Kopia repository password는 Vault 없이 복구할 수 있어야 한다.
+- Velero Kopia repository password는 Vault 없이 복구할 수 있어야 한다. `apps/tofu`가 password를 만들고 `apps.tfstate`와 write-only Kubernetes Secret으로 관리한다.
 - Vault recovery key는 SecurityTooling AWS Secrets Manager에 KMS 암호화하여 저장한다.
 - Initial root token은 초기 설정을 마친 뒤 revoke하고 저장하지 않는다.
-- Vault Secrets Operator는 Application별 Kubernetes auth role을 사용한다.
-- Keycloak Operator는 Vault Secrets Operator가 만든 PostgreSQL Secret을 참조한다.
-- OIDC 장애 복구는 K3s administrator certificate와 Argo CD port-forward를 사용한다.
+- Vault Secrets Operator는 Application별 Kubernetes auth role을 사용한다. Destination Secret은 해당 Application ServiceAccount만 읽는다.
+- Keycloak Operator는 Vault Secrets Operator가 만든 PostgreSQL Secret을 참조하고 credential rotation 때 rolling restart한다.
+- OIDC 장애 복구는 K3s administrator certificate, Vault recovery key와 Argo CD port-forward를 사용한다.
 
 ### 복구 순서
 
