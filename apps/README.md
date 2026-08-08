@@ -12,3 +12,7 @@ area: apps
 CPA K3s 기반 준비는 [[k3s/runbooks/CPA|CPA K3s RUNBOOK]]을 따르고, 그 뒤 Application bootstrap을 실행한다. Application 구성은 `argo-apps/`의 YAML로 관리한다.
 
 Kubernetes workload 보안 기준은 [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)를 따른다.
+
+## Security
+
+Vault, PostgreSQL, Keycloak, backup과 운영자 인증의 공통 설계는 [[RUNBOOK#SECURITY 설계|SECURITY 설계]]를 따른다. 실제 설치와 복구 명령은 `SECURITY`가 Current가 된 뒤 `runbooks/SECURITY.md`에서 관리한다.
