@@ -22,7 +22,7 @@ aws configure sso-session
 | SSO region | `us-east-1` |
 | SSO registration scopes | `sso:account:access` |
 
-열세 개 source profile을 같은 session에 연결한다.
+열여섯 개 IAM Identity Center 프로필을 같은 session에 연결한다.
 
 ```sh
 aws configure set sso_session ghilbut --profile ghilbut-foundation-management
@@ -39,6 +39,21 @@ aws configure set sso_session ghilbut --profile ghilbut-backup-recovery
 aws configure set sso_account_id 012646747332 --profile ghilbut-backup-recovery
 aws configure set sso_role_name BackupRecovery --profile ghilbut-backup-recovery
 aws configure set region us-east-1 --profile ghilbut-backup-recovery
+
+aws configure set sso_session ghilbut --profile ghilbut-developers-for-shared-services
+aws configure set sso_account_id 012646747332 --profile ghilbut-developers-for-shared-services
+aws configure set sso_role_name Developers --profile ghilbut-developers-for-shared-services
+aws configure set region us-east-1 --profile ghilbut-developers-for-shared-services
+
+aws configure set sso_session ghilbut --profile ghilbut-developers-for-security-tooling
+aws configure set sso_account_id 954066442429 --profile ghilbut-developers-for-security-tooling
+aws configure set sso_role_name Developers --profile ghilbut-developers-for-security-tooling
+aws configure set region us-east-1 --profile ghilbut-developers-for-security-tooling
+
+aws configure set sso_session ghilbut --profile ghilbut-developers-for-domains
+aws configure set sso_account_id 869061964712 --profile ghilbut-developers-for-domains
+aws configure set sso_role_name Developers --profile ghilbut-developers-for-domains
+aws configure set region us-east-1 --profile ghilbut-developers-for-domains
 
 aws configure set sso_session ghilbut --profile ghilbut-tofu-plan-for-management
 aws configure set sso_account_id 384959722788 --profile ghilbut-tofu-plan-for-management
@@ -103,7 +118,12 @@ aws configure set role_arn arn:aws:iam::012646747332:role/backup-recovery \
 aws configure set role_session_name ghilbut-backup-recovery \
   --profile ghilbut-backup-recovery-role
 aws configure set region us-east-1 --profile ghilbut-backup-recovery-role
+
 ```
+
+`Developers` 프로필은 IAM Identity Center 자격 증명으로 AWS 리소스를 직접 읽는다. `Billing`과
+`BackupRecovery`는 이름이 `role`로 끝나는 프로필을 사용한다. OpenTofu 프로필은 provider와 backend가
+대상 역할을 수임하는 source identity다.
 
 로그인하고 AWS identity를 확인한다.
 
@@ -118,10 +138,13 @@ for aws_identity_profile in \
   ghilbut-tofu-apply-for-management \
   ghilbut-foundation-management \
   ghilbut-backup-recovery-role \
+  ghilbut-developers-for-shared-services \
   ghilbut-tofu-plan-for-workloads \
   ghilbut-tofu-apply-for-workloads \
+  ghilbut-developers-for-domains \
   ghilbut-tofu-plan-for-domains \
   ghilbut-tofu-apply-for-domains \
+  ghilbut-developers-for-security-tooling \
   ghilbut-tofu-plan-for-security-tooling \
   ghilbut-tofu-apply-for-security-tooling \
   ghilbut-tofu-plan-for-ultary-domains \
@@ -147,10 +170,13 @@ account에서는 전용 role, Plan, Apply, 관리 role 순서로 배치한다.
 | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `AWSReservedSSO_TofuApplyForManagement_*` |
 | Management `384959722788` | `ghilbut-foundation-management` | `AWSReservedSSO_FoundationManagement_*` |
 | SharedServices `012646747332` | `ghilbut-backup-recovery-role` | `backup-recovery` |
+| SharedServices `012646747332` | `ghilbut-developers-for-shared-services` | `AWSReservedSSO_Developers_*` |
 | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `AWSReservedSSO_TofuPlanForWorkloads_*` |
 | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `AWSReservedSSO_TofuApplyForWorkloads_*` |
+| Domains `869061964712` | `ghilbut-developers-for-domains` | `AWSReservedSSO_Developers_*` |
 | Domains `869061964712` | `ghilbut-tofu-plan-for-domains` | `AWSReservedSSO_TofuPlanForDomains_*` |
 | Domains `869061964712` | `ghilbut-tofu-apply-for-domains` | `AWSReservedSSO_TofuApplyForDomains_*` |
+| SecurityTooling `954066442429` | `ghilbut-developers-for-security-tooling` | `AWSReservedSSO_Developers_*` |
 | SecurityTooling `954066442429` | `ghilbut-tofu-plan-for-security-tooling` | `AWSReservedSSO_TofuPlanForWorkloads_*` |
 | SecurityTooling `954066442429` | `ghilbut-tofu-apply-for-security-tooling` | `AWSReservedSSO_TofuApplyForWorkloads_*` |
 | UltaryDomains `971119963968` | `ghilbut-tofu-plan-for-ultary-domains` | `AWSReservedSSO_TofuPlanForUltaryDomains_*` |
@@ -772,6 +798,127 @@ diff -u \
   <(sed -n '/central_administration_denied_actions = \[/,/^  \]$/p' \
     aws/security-tooling/tofu/main.tf)
 ```
+
+## Developer access verification
+
+Identity root를 Apply한 후 세 프로필이 IAM Identity Center `Developers` role을 반환하는지 확인한다.
+
+```sh
+for developers_profile in \
+  ghilbut-developers-for-shared-services \
+  ghilbut-developers-for-security-tooling \
+  ghilbut-developers-for-domains
+do
+  aws sts get-caller-identity \
+    --profile "$developers_profile" \
+    --query '{Account:Account,Arn:Arn}' \
+    --output table
+done
+unset developers_profile
+```
+
+각 account에서 IAM Identity Center가 생성한 `Developers` role 정책을 평가한다.
+
+```sh
+verify_developers_policy() {
+  profile_name="$1"
+  developers_role_arn=$(AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
+    aws iam list-roles \
+      --query 'Roles[?starts_with(RoleName, `AWSReservedSSO_Developers_`)] | [0].Arn' \
+      --output text)
+
+  AWS_PROFILE="$profile_name" AWS_SDK_LOAD_CONFIG=1 \
+    aws iam simulate-principal-policy \
+      --policy-source-arn "$developers_role_arn" \
+      --action-names \
+        ec2:DescribeInstances \
+        iam:GetRole \
+        logs:FilterLogEvents \
+        securityhub:GetFindings \
+        secretsmanager:ListSecrets \
+        secretsmanager:DescribeSecret \
+        sts:GetCallerIdentity \
+        backup:ListLegalHolds \
+        lex:GetUtterancesView \
+        sns:GetEndpointAttributes \
+        synthetics:GetCanary \
+        secretsmanager:GetSecretValue \
+        ssm:GetParameter \
+        dynamodb:GetItem \
+        ecr:GetAuthorizationToken \
+        lambda:GetFunction \
+        organizations:ListAccounts \
+        observabilityadmin:ListTelemetryRulesForOrganization \
+        ce:GetCostAndUsage \
+        support:DescribeCases \
+        cloudtrail:LookupEvents \
+        sts:AssumeRole \
+      --query 'EvaluationResults[].{Action:EvalActionName,Decision:EvalDecision}' \
+      --output table
+}
+
+verify_developers_policy ghilbut-developers-for-shared-services
+verify_developers_policy ghilbut-developers-for-security-tooling
+verify_developers_policy ghilbut-developers-for-domains
+
+unset -f verify_developers_policy
+unset profile_name developers_role_arn
+```
+
+앞의 일곱 action은 `allowed`다. 나머지 action은 `explicitDeny`다. Secret과 parameter 목록 및
+metadata는 허용하고 값은 거부한다. 법률상 제한 정보, 개인정보, 비공개 코드, 중앙 거버넌스와
+감사 증적 조회도 거부한다.
+
+Domains 전용 범위와 보호 bucket을 별도로 확인한다.
+
+```sh
+domains_developers_role_arn=$( \
+  AWS_PROFILE=ghilbut-developers-for-domains AWS_SDK_LOAD_CONFIG=1 \
+    aws iam list-roles \
+      --query 'Roles[?starts_with(RoleName, `AWSReservedSSO_Developers_`)] | [0].Arn' \
+      --output text
+)
+
+AWS_PROFILE=ghilbut-developers-for-domains AWS_SDK_LOAD_CONFIG=1 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn "$domains_developers_role_arn" \
+    --action-names \
+      route53domains:ListDomains \
+      route53domains:ListOperations \
+      route53domains:GetDomainDetail \
+      route53domains:RetrieveDomainAuthCode \
+    --query 'EvaluationResults[].{Action:EvalActionName,Decision:EvalDecision}' \
+    --output table
+
+shared_services_developers_role_arn=$( \
+  AWS_PROFILE=ghilbut-developers-for-shared-services AWS_SDK_LOAD_CONFIG=1 \
+    aws iam list-roles \
+      --query 'Roles[?starts_with(RoleName, `AWSReservedSSO_Developers_`)] | [0].Arn' \
+      --output text
+)
+
+AWS_PROFILE=ghilbut-developers-for-shared-services AWS_SDK_LOAD_CONFIG=1 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn "$shared_services_developers_role_arn" \
+    --action-names s3:ListBucket \
+    --resource-arns arn:aws:s3:::ghilbut-tfstates \
+    --query 'EvaluationResults[].{Action:EvalActionName,Resource:EvalResourceName,Decision:EvalDecision}' \
+    --output table
+
+AWS_PROFILE=ghilbut-developers-for-shared-services AWS_SDK_LOAD_CONFIG=1 \
+  aws iam simulate-principal-policy \
+    --policy-source-arn "$shared_services_developers_role_arn" \
+    --action-names s3:GetObject \
+    --resource-arns arn:aws:s3:::ghilbut-tfstates/example.tfstate \
+    --query 'EvaluationResults[].{Action:EvalActionName,Resource:EvalResourceName,Decision:EvalDecision}' \
+    --output table
+
+unset domains_developers_role_arn shared_services_developers_role_arn
+```
+
+Domains 결과에서 `ListDomains`와 `ListOperations`는 `allowed`이며 연락처와 auth code 조회는
+`explicitDeny`다. 보호 bucket의 목록과 object 조회는 `explicitDeny`다. 세부 정보 분류는
+[[knowledge/rulebooks/aws/DEVELOPER-ACCESS|AWS 개발자 접근 기준]]을 따른다.
 
 ## Billing activation and verification
 
