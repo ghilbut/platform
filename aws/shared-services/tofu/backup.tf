@@ -122,7 +122,7 @@ data "aws_iam_policy_document" "cpa_snapshot" {
     resources = [aws_s3_bucket.backups.arn]
 
     condition {
-      test     = "StringLikeIfExists"
+      test     = "StringLike"
       variable = "s3:prefix"
       values = [
         local.cpa_snapshot_prefix,
@@ -149,81 +149,4 @@ resource "aws_iam_user_policy" "cpa_snapshot" {
   name   = "k3s-cpa-snapshot"
   user   = aws_iam_user.cpa_snapshot.name
   policy = data.aws_iam_policy_document.cpa_snapshot.json
-}
-
-data "aws_iam_policy_document" "backup_recovery_assume" {
-  statement {
-    sid     = "AllowBackupRecoveryPermissionSet"
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${local.shared_services_account_id}:root"]
-    }
-
-    condition {
-      test     = "ArnLike"
-      variable = "aws:PrincipalArn"
-      values   = ["arn:aws:iam::${local.shared_services_account_id}:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_BackupRecovery_*"]
-    }
-  }
-}
-
-resource "aws_iam_role" "backup_recovery" {
-  name                 = "backup-recovery"
-  description          = "Read-only access to platform recovery backups."
-  max_session_duration = 3600
-  assume_role_policy   = data.aws_iam_policy_document.backup_recovery_assume.json
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-data "aws_iam_policy_document" "backup_recovery" {
-  statement {
-    sid    = "ReadBackupBucketConfiguration"
-    effect = "Allow"
-    actions = [
-      "s3:GetBucketLocation",
-      "s3:GetBucketVersioning",
-    ]
-    resources = [aws_s3_bucket.backups.arn]
-  }
-
-  statement {
-    sid    = "ListCpaSnapshots"
-    effect = "Allow"
-    actions = [
-      "s3:ListBucket",
-      "s3:ListBucketVersions",
-    ]
-    resources = [aws_s3_bucket.backups.arn]
-
-    condition {
-      test     = "StringLikeIfExists"
-      variable = "s3:prefix"
-      values = [
-        local.cpa_snapshot_prefix,
-        "${local.cpa_snapshot_prefix}/*",
-      ]
-    }
-  }
-
-  statement {
-    sid    = "ReadCpaSnapshots"
-    effect = "Allow"
-    actions = [
-      "s3:GetObject",
-      "s3:GetObjectVersion",
-    ]
-    resources = ["${aws_s3_bucket.backups.arn}/${local.cpa_snapshot_prefix}/*"]
-  }
-}
-
-resource "aws_iam_role_policy" "backup_recovery" {
-  name   = "read-platform-backups"
-  role   = aws_iam_role.backup_recovery.name
-  policy = data.aws_iam_policy_document.backup_recovery.json
 }
