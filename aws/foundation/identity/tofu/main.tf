@@ -135,10 +135,9 @@ module "billing" {
 module "backup_recovery" {
   source = "./modules/permission-set"
 
-  instance_arn     = local.instance_arn
-  name             = "BackupRecovery"
-  description      = "Read-only access to platform recovery backups."
-  session_duration = "PT1H"
+  instance_arn = local.instance_arn
+  name         = "BackupRecovery"
+  description  = "Read-only access to platform recovery backups."
   inline_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
