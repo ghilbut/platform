@@ -73,6 +73,8 @@ Archive SHA로 임시 override한다. 단계 복구를 마치면 revision을 `ma
 
 CPA는 단일 K3s server와 단일 OpenEBS LVM volume group을 사용한다. Vault, PostgreSQL과 Keycloak은 각각 replica 한 개로 시작한다. 이 구성은 node 장애를 견디는 고가용성을 제공하지 않는다. K3s snapshot과 S3 application backup이 node 장애 복구를 담당한다.
 
+K3s host는 `dm_snapshot`과 `dm_thin_pool` kernel module을 부팅할 때 로드한다. [[k3s/RUNBOOK#1. host 준비|K3s host 준비]]에서 두 module과 device mapper target을 확인한 뒤 OpenEBS thin volume을 사용한다.
+
 기존 `openebs-lvm` StorageClass는 thick volume을 만든다. OpenEBS LocalPV LVM은 thick volume의 snapshot을 만들 수 있지만 [snapshot에서 volume을 복원하는 기능](https://openebs.io/docs/main/user-guides/local-storage-user-guide/local-pv-lvm/advanced-operations/lvm-volume-restore)은 thin volume만 지원한다. `SECURITY`의 stateful Application은 다음 `openebs-lvm-thin` StorageClass와 `openebs-lvm-snapshot` VolumeSnapshotClass를 사용한다.
 
 ```yaml
@@ -106,7 +108,7 @@ deletionPolicy: Delete
 | 책임 | 제품 | 고정 version |
 | --- | --- | --- |
 | Local volume | [OpenEBS LVM LocalPV](https://openebs.io/docs/main/user-guides/local-storage-user-guide/local-pv-lvm/lvm-overview) | Helm `1.9.1` |
-| Snapshot API | [Kubernetes external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter) | `v8.6.0` |
+| Snapshot API | [Kubernetes external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter) | OpenEBS chart bundle `v7.0.0` |
 | Snapshot S3 data movement | [Velero CSI Snapshot Data Movement](https://velero.io/docs/main/csi-snapshot-data-movement/) | Helm `12.1.0`, image `1.18.2` |
 | Velero S3 client | [Velero plugin for AWS](https://github.com/velero-io/velero-plugin-for-aws) | `v1.14.2` |
 | Secret store | [Vault Helm](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/helm) | Helm `0.34.0`, Vault `2.0.3` |
@@ -117,6 +119,8 @@ deletionPolicy: Delete
 | Identity provider | [Keycloak Operator](https://www.keycloak.org/operator/installation) | Kustomize와 Keycloak `26.7.1` |
 
 CloudNativePG와 Vault는 단일 replica로 시작한다. Replica 수를 늘리려면 K3s server와 OpenEBS volume이 서로 다른 node에 있어야 한다.
+
+OpenEBS chart가 snapshot-controller와 csi-snapshotter를 함께 배포한다. 별도 external-snapshotter controller를 설치하지 않는다.
 
 `keycloak` Application은 CPA의 Keycloak Operator와 Keycloak CR을 관리한다. 외부 Keycloak을 가리키는 ServiceEntry, DestinationRule과 VirtualService는 CPA Keycloak route로 교체한다.
 

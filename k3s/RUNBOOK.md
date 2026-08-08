@@ -88,9 +88,11 @@ ip route show default
 sudo apt update -y
 sudo apt full-upgrade -y
 sudo apt install -y lvm2 qemu-guest-agent
-printf '%s\n' dm_snapshot | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
+printf '%s\n' dm_snapshot dm_thin_pool | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
 sudo modprobe dm_snapshot
-lsmod | grep '^dm_snapshot '
+sudo modprobe dm_thin_pool
+lsmod | grep -E '^dm_(snapshot|thin_pool) '
+sudo dmsetup targets | grep -E '^(snapshot|thin)'
 sudo systemctl enable --now qemu-guest-agent
 sudo systemctl is-active qemu-guest-agent
 lsblk -o NAME,FSTYPE,SIZE,TYPE,MOUNTPOINTS
