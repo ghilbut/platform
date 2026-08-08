@@ -238,7 +238,8 @@ session은 최대 1시간이다.
 
 SharedServices의 `ghilbut-backups` bucket은 platform 복구 데이터를 저장한다. CPA K3s etcd
 snapshot은 `k3s/cpa/` prefix를 사용한다. Bucket은 public 접근을 차단하고 TLS, 기본 암호화,
-versioning과 90일 noncurrent version 보존을 적용한다. K3s가 current snapshot 수를 관리한다.
+`Suspended` versioning을 적용한다. 기존 noncurrent version은 90일 동안 보존한다. K3s가 current
+snapshot 수를 관리한다.
 
 `k3s-cpa-snapshot` IAM user는 `k3s/cpa/`에서 snapshot을 생성하고 조회하고 정리한다.
 `k3s/tofu`는 이 user의 access key를 생성하고 CPA의 K3s S3 configuration Secret에 직접 적용한다.

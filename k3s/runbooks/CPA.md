@@ -32,7 +32,8 @@ CPA는 단일 control-plane K3s 클러스터다. 인증 정보와 token은 문�
 | S3 bucket | `ghilbut-backups` |
 | S3 folder | `k3s/cpa` |
 | S3 snapshot retention | `28` |
-| S3 noncurrent version retention | 90일 |
+| S3 Versioning | `Suspended` |
+| 기존 S3 noncurrent version retention | 90일 |
 
 ## B. host와 OpenEBS LVM
 
@@ -188,8 +189,7 @@ kubectl get nodes -o wide
 ## E. etcd snapshot S3
 
 정기 snapshot은 6시간마다 생성한다. Local filesystem에는 8개를 유지하고 S3에는 28개를
-유지한다. K3s가 S3 current snapshot을 정리하면 bucket versioning이 삭제 전 version을 90일간
-유지한다.
+유지한다. Versioning 중단 전에 생성된 noncurrent version은 90일 동안 유지한다.
 
 정기 snapshot은 `k3s-cpa-snapshot` IAM user의 access key를 사용한다. `k3s/tofu`는 access key와
 `kube-system/k3s-etcd-snapshot-s3-config` Secret을 함께 관리한다. Access key와 server token은

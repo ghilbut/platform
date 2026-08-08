@@ -42,7 +42,7 @@ resource "aws_s3_bucket_versioning" "backups" {
   bucket = aws_s3_bucket.backups.id
 
   versioning_configuration {
-    status = "Enabled"
+    status = "Suspended"
   }
 }
 

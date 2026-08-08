@@ -45,7 +45,8 @@ aws s3api list-objects-v2 \
   --output table
 ```
 
-K3s retention으로 current object에서 삭제된 snapshot은 S3 noncurrent version에서 찾는다.
+Versioning 중단 전에 current object에서 삭제된 snapshot은 수명 주기 만료 전까지 S3 noncurrent
+version에서 찾는다.
 
 ```shell
 # administrator computer
