@@ -1,16 +1,14 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: ingress-https
+  name: vault-server
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   dnsNames:
-    - id.ghilbut.com
-    - argo.ghilbut.com
     - vault.ghilbut.com
   issuerRef:
     group: cert-manager.io
     kind: ClusterIssuer
     name: aws-route53
-  secretName: ingress-https-tls
+  secretName: vault-server-tls

@@ -1,0 +1,149 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vault
+  namespace: argo
+spec:
+  project: default
+  sources:
+    - chart: vault
+      repoURL: https://helm.releases.hashicorp.com
+      targetRevision: 0.34.0
+      helm:
+        releaseName: vault
+        values: |
+          global:
+            tlsDisable: false
+          injector:
+            enabled: false
+          server:
+            image:
+              repository: hashicorp/vault
+              tag: 2.0.3
+              pullPolicy: IfNotPresent
+            serviceAccount:
+              create: false
+              name: vault
+            authDelegator:
+              enabled: true
+            statefulSet:
+              annotations:
+                argocd.argoproj.io/sync-wave: "2"
+              securityContext:
+                pod:
+                  runAsNonRoot: true
+                  runAsGroup: 1000
+                  runAsUser: 100
+                  fsGroup: 1000
+                  seccompProfile:
+                    type: RuntimeDefault
+                container:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                      - ALL
+            ha:
+              enabled: true
+              replicas: 1
+              apiAddr: https://vault.ghilbut.com
+              raft:
+                enabled: true
+                setNodeId: true
+                config: |
+                  ui = true
+                  disable_mlock = true
+
+                  listener "tcp" {
+                    tls_disable = 0
+                    address = "[::]:8200"
+                    cluster_address = "[::]:8201"
+                    tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
+                    tls_key_file = "/vault/userconfig/vault-server-tls/tls.key"
+                  }
+
+                  seal "awskms" {
+                    region = "us-east-1"
+                    kms_key_id = "alias/vault-cpa-unseal"
+                  }
+
+                  storage "raft" {
+                    path = "/vault/data"
+                  }
+
+                  service_registration "kubernetes" {}
+            dataStorage:
+              enabled: true
+              size: 10Gi
+              storageClass: openebs-lvm-thin
+              accessMode: ReadWriteOnce
+            persistentVolumeClaimRetentionPolicy:
+              whenDeleted: Retain
+              whenScaled: Retain
+            readinessProbe:
+              enabled: true
+              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+            livenessProbe:
+              enabled: true
+              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+              initialDelaySeconds: 60
+            extraEnvironmentVars:
+              AWS_EC2_METADATA_DISABLED: "true"
+              AWS_REGION: us-east-1
+              AWS_ROLE_ARN: arn:aws:iam::954066442429:role/vault-cpa-unseal
+              AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/aws-iam-token/token
+              VAULT_CACERT: /vault/userconfig/vault-server-tls/tls.crt
+              VAULT_TLS_SERVER_NAME: vault.ghilbut.com
+            volumes:
+              - name: aws-iam-token
+                projected:
+                  defaultMode: 420
+                  sources:
+                    - serviceAccountToken:
+                        audience: sts.amazonaws.com
+                        expirationSeconds: 3600
+                        path: token
+              - name: kubernetes-api-access
+                projected:
+                  defaultMode: 420
+                  sources:
+                    - serviceAccountToken:
+                        expirationSeconds: 3600
+                        path: token
+                    - configMap:
+                        name: kube-root-ca.crt
+                        items:
+                          - key: ca.crt
+                            path: ca.crt
+                    - downwardAPI:
+                        items:
+                          - path: namespace
+                            fieldRef:
+                              fieldPath: metadata.namespace
+              - name: vault-server-tls
+                secret:
+                  defaultMode: 420
+                  secretName: vault-server-tls
+            volumeMounts:
+              - mountPath: /var/run/secrets/aws-iam-token
+                name: aws-iam-token
+                readOnly: true
+              - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+                name: kubernetes-api-access
+                readOnly: true
+              - mountPath: /vault/userconfig/vault-server-tls
+                name: vault-server-tls
+                readOnly: true
+    - path: apps/argo-apps/vault
+      repoURL: https://github.com/ghilbut/platform.git
+      targetRevision: main
+      directory:
+        recurse: true
+  destination:
+    name: in-cluster
+    namespace: vault
+  syncPolicy:
+    syncOptions:
+      - ApplyOutOfSyncOnly=true
+      - PruneLast=true
+      - ServerSideApply=true
+      - Validate=true

@@ -10,3 +10,27 @@ parameters:
   storage: lvm
   volgroup: openebs
 reclaimPolicy: Delete
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: openebs-lvm-thin
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+provisioner: local.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  storage: lvm
+  volgroup: openebs
+  thinProvision: "yes"
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: openebs-lvm-snapshot
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+driver: local.csi.openebs.io
+deletionPolicy: Delete

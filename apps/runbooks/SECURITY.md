@@ -97,6 +97,57 @@ output을 읽는다. 다음 output은 Vault 설치와 backup 작업에서 사용
 `vault-backup` ServiceAccount만 backup role을 수임한다. `BackupRecovery` identity는 Vault backup을
 읽으며 S3 bucket과 object를 변경하지 않는다.
 
+### SECURITY-12: Vault 설치
+
+`ebs` Application은 `openebs-lvm-thin` StorageClass와 `openebs-lvm-snapshot`
+VolumeSnapshotClass를 만든다. Vault는 10 GiB thin volume, integrated Raft, AWS KMS auto-unseal과
+TLS를 사용한다. `vault` ServiceAccount는 `sts.amazonaws.com` audience의 projected token으로
+`vault-cpa-unseal` role을 수임한다.
+
+다음 순서로 적용한다.
+
+1. `ebs`를 동기화하고 두 storage class를 확인한다.
+2. `istio-gateways`를 동기화하고 `vault.ghilbut.com` 인증서가 Ready인지 확인한다.
+3. `apps/argo-apps/vault.yaml`을 Argo CD에 적용하고 `vault`를 동기화한다.
+4. `vault-server` 인증서, `vault` StatefulSet과 `data-vault-0` PVC를 확인한다.
+
+```shell
+argocd app sync ebs istio-gateways
+argocd app wait ebs istio-gateways --sync --health --timeout 600
+kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
+argocd app sync vault
+argocd app wait vault --sync --health --timeout 600
+
+kubectl --context cpa -n vault wait \
+  --for=condition=Ready \
+  certificate/vault-server \
+  --timeout=10m
+kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
+kubectl --context cpa -n vault get statefulset,pod,pvc
+
+set +e
+VAULT_STATUS=$(kubectl --context cpa -n vault exec vault-0 -- \
+  vault status -format=json)
+VAULT_STATUS_CODE=$?
+set -e
+test "$VAULT_STATUS_CODE" -eq 2
+printf '%s' "$VAULT_STATUS" | jq -e '
+  .type == "awskms"
+  and .storage_type == "raft"
+  and .initialized == false
+  and .sealed == true
+'
+unset VAULT_STATUS VAULT_STATUS_CODE
+```
+
+초기화 전 `vault status -format=json`은 seal type `awskms`, storage type `raft`,
+`initialized=false`, `sealed=true`를 반환한다. exit code `2`는 sealed 상태를 뜻한다. 초기화와 recovery
+key 저장은 #227에서 수행한다.
+
+Vault Application 제거는 server, Service, route와 인증서를 제거한다. Namespace는 보존한다.
+StatefulSet의 retention policy가 PVC를 보존하고 `openebs-lvm-thin`의 `Retain` policy가 PV를 보존한다.
+PVC, PV, KMS key, IAM role과 공용 storage class는 제거 범위에 포함하지 않는다.
+
 ## C. 복구 진입점
 
 CPA 복구는 다음 순서를 사용한다.

@@ -13,6 +13,7 @@ spec:
     - hosts:
         - id.ghilbut.com
         - argo.ghilbut.com
+        - vault.ghilbut.com
       port:
         name: http
         number: 80
@@ -22,6 +23,7 @@ spec:
     - hosts:
         - id.ghilbut.com
         - argo.ghilbut.com
+        - vault.ghilbut.com
       port:
         name: https
         number: 443
