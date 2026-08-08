@@ -1,28 +1,13 @@
-data "terraform_remote_state" "shared_services" {
-  backend = "s3"
-
-  config = {
-    bucket  = "ghilbut-tfstates"
-    encrypt = true
-    key     = "platform/aws/shared-services.tfstate"
-    region  = "us-east-1"
-    assume_role = {
-      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
-    }
-  }
-}
-
 locals {
-  cpa_oidc_issuer               = data.terraform_remote_state.shared_services.outputs.cpa_oidc_issuer
+  cpa_oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
   cpa_oidc_provider_path        = trimprefix(local.cpa_oidc_issuer, "https://")
-  cpa_oidc_thumbprint           = data.terraform_remote_state.shared_services.outputs.cpa_oidc_thumbprint
   vault_service_account_subject = "system:serviceaccount:vault:vault"
 }
 
 resource "aws_iam_openid_connect_provider" "cpa" {
   url             = local.cpa_oidc_issuer
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [local.cpa_oidc_thumbprint]
+  thumbprint_list = [var.cpa_oidc_thumbprint]
 }
 
 data "aws_iam_policy_document" "vault_unseal_assume" {

@@ -69,7 +69,7 @@ unset BOOTSTRAP_TAG BOOTSTRAP_REVISION
 
 | 순서 | 범위 | 실행 Issue | 완료 결과 |
 | --- | --- | --- | --- |
-| 1 | Vault | #225 → #226 → #227 → #228 → #229 | auto-unseal, 접근 정책, S3 backup과 restore |
+| 1 | Vault | #225 → #226 → #251 → #227 → #228 → #229 | auto-unseal, 접근 정책, S3 backup과 restore |
 | 2 | PostgreSQL | #230 → (#231, #232) → #233 | database, Vault credential, S3 backup과 restore |
 | 3 | Keycloak과 운영자 인증 | #234 → #235 → #236 → #237 → (#238, #239) | Keycloak, Vault·K3s·Argo CD OIDC와 비상 접근 |
 | 4 | Workload 보안 | #240 → #241 → #242 → #243 | Pod 보안, Cilium policy, Istio mTLS와 authorization |
@@ -80,18 +80,14 @@ unset BOOTSTRAP_TAG BOOTSTRAP_REVISION
 
 ### SECURITY-11: Vault AWS 권한
 
-[[aws/RUNBOOK#Plan and apply|AWS Plan과 Apply]] 절차로 다음 root를 순서대로 적용한다.
+[[aws/RUNBOOK#Plan and apply|AWS Plan과 Apply]] 절차로 두 root를 각각 Plan하고 Apply한다. 두 root는 서로의
+state를 참조하지 않는다. CPA OIDC issuer는 각 root에 명시하고 TLS thumbprint는 각 root의
+`cpa_oidc_thumbprint` 입력으로 검증한다.
 
-1. `aws/shared-services/tofu`: CPA OIDC issuer output과 `vault/cpa/raft/` backup role
-2. `aws/security-tooling/tofu`: CPA OIDC provider, Vault auto-unseal role과 KMS key
-
-SharedServices state는 CPA OIDC issuer와 TLS thumbprint의 원본이다. SecurityTooling state가 이
-output을 읽는다. 다음 output은 Vault 설치와 backup 작업에서 사용한다.
-
-| Root | Output |
-| --- | --- |
-| `aws/shared-services/tofu` | `vault_backup_prefix`, `vault_backup_role_arn` |
-| `aws/security-tooling/tofu` | `vault_unseal_kms_key_arn`, `vault_unseal_role_arn` |
+| Root | 관리 대상 | Vault 작업에 사용하는 output |
+| --- | --- | --- |
+| `aws/shared-services/tofu` | `vault/cpa/raft/` backup role | `vault_backup_prefix`, `vault_backup_role_arn` |
+| `aws/security-tooling/tofu` | CPA OIDC provider, Vault auto-unseal role과 KMS key | `vault_unseal_kms_key_arn`, `vault_unseal_role_arn` |
 
 `vault` namespace의 `vault` ServiceAccount만 KMS role을 수임한다. 같은 namespace의
 `vault-backup` ServiceAccount만 backup role을 수임한다. `BackupRecovery` identity는 Vault backup을
@@ -103,6 +99,9 @@ output을 읽는다. 다음 output은 Vault 설치와 backup 작업에서 사용
 VolumeSnapshotClass를 만든다. Vault는 10 GiB thin volume, integrated Raft, AWS KMS auto-unseal과
 TLS를 사용한다. `vault` ServiceAccount는 `sts.amazonaws.com` audience의 projected token으로
 `vault-cpa-unseal` role을 수임한다.
+
+Readiness probe는 초기화 전과 unsealed 상태를 Ready로 판정하고 초기화 후 sealed 상태를
+NotReady로 판정한다. Liveness probe는 sealed 상태에서 container를 재시작하지 않는다.
 
 다음 순서로 적용한다.
 
