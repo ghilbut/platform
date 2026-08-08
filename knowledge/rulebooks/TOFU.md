@@ -54,7 +54,11 @@ Source profile, provider role 또는 backend role을 바꾸면 `tofu init -recon
 
 ## State와 root 간 의존성
 
-중앙 state bucket과 state role은 SharedServices가 소유한다. state object는 backend의 `tofu-state-readonly`와 `tofu-state-apply`만 사용한다. state bucket과 `tofu-state-admin`의 정확한 소유 root, state key와 role 경계는 [[aws/README#State ownership|AWS State ownership]]에서 관리한다.
+중앙 state bucket과 state role은 SharedServices가 소유한다. state 본문은 backend의
+`tofu-state-readonly`와 `tofu-state-apply`만 사용한다. [[knowledge/rulebooks/SECURITY|보안 기준]]에
+따라 state bucket과 object 인벤토리는 관측 접근에 허용한다. state bucket과 `tofu-state-admin`의
+정확한 소유 root, state key와 role 경계는 [[aws/README#State ownership|AWS State ownership]]에서
+관리한다.
 
 - `terraform_remote_state`는 `tofu-state-readonly`를 사용한다.
 - root 사이에는 필요한 식별자만 `terraform_remote_state` output으로 전달한다.
