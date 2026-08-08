@@ -19,7 +19,7 @@ snapshot 생성 시점으로 되돌린다.
 
 다음 조건을 모두 충족한 뒤 복원을 시작한다.
 
-- `ghilbut-backup-recovery-role` AWS profile을 [[aws/RUNBOOK#Source profiles|AWS operations]]에 따라 준비했다.
+- `ghilbut-backup-recovery` AWS profile을 [[aws/RUNBOOK#Source profiles|AWS operations]]에 따라 준비했다.
 - `k3s.tfstate`의 `cpa_server_token` output을 읽을 수 있다.
 - 복원 대상 CPA에 [[CPA#C. K3s server|CPA K3s server]]와 동일한 server 설정이 있다.
 - 복원 중인 CPA에서 Applications bootstrap과 애플리케이션 데이터 복원을 실행하지 않는다.
@@ -32,7 +32,7 @@ snapshot 생성 시점으로 되돌린다.
 ```shell
 # administrator computer
 export AWS_SDK_LOAD_CONFIG=1
-export AWS_PROFILE='ghilbut-backup-recovery-role'
+export AWS_PROFILE='ghilbut-backup-recovery'
 
 aws sso login --sso-session ghilbut
 aws sts get-caller-identity \

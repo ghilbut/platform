@@ -37,8 +37,3 @@ output "cpa_snapshot_writer_arn" {
   description = "CPA K3s snapshot writer IAM user ARN."
   value       = aws_iam_user.cpa_snapshot.arn
 }
-
-output "backup_recovery_role_arn" {
-  description = "Read-only platform backup recovery role ARN."
-  value       = aws_iam_role.backup_recovery.arn
-}

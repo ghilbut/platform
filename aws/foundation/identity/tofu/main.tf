@@ -23,7 +23,6 @@ locals {
   state_admin_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-admin"
   state_apply_role_arn        = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-apply"
   state_readonly_role_arn     = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-readonly"
-  backup_recovery_role_arn    = "arn:aws:iam::${local.shared_services_account_id}:role/backup-recovery"
   # Bucket and object ARNs denied to OpenTofu source identities.
   state_bucket_resources = [
     "arn:aws:s3:::ghilbut-tfstates",
@@ -117,20 +116,12 @@ module "billing" {
   ])
   inline_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid      = "ViewCostExplorerReports"
-        Effect   = "Allow"
-        Action   = "ce:DescribeReport"
-        Resource = "*"
-      },
-      {
-        Sid      = "AssumeBillingRole"
-        Effect   = "Allow"
-        Action   = "sts:AssumeRole"
-        Resource = "arn:aws:iam::384959722788:role/billing"
-      },
-    ]
+    Statement = [{
+      Sid      = "ViewCostExplorerReports"
+      Effect   = "Allow"
+      Action   = "ce:DescribeReport"
+      Resource = "*"
+    }]
   })
   account_assignments = {
     management = {
@@ -144,17 +135,49 @@ module "billing" {
 module "backup_recovery" {
   source = "./modules/permission-set"
 
-  instance_arn = local.instance_arn
-  name         = "BackupRecovery"
-  description  = "Assume the read-only platform backup recovery role."
+  instance_arn     = local.instance_arn
+  name             = "BackupRecovery"
+  description      = "Read-only access to platform recovery backups."
+  session_duration = "PT1H"
   inline_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid      = "AssumeBackupRecoveryRole"
-      Effect   = "Allow"
-      Action   = "sts:AssumeRole"
-      Resource = local.backup_recovery_role_arn
-    }]
+    Statement = [
+      {
+        Sid    = "ReadBackupBucketConfiguration"
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketLocation",
+          "s3:GetBucketVersioning",
+        ]
+        Resource = "arn:aws:s3:::ghilbut-backups"
+      },
+      {
+        Sid    = "ListCpaSnapshots"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:ListBucketVersions",
+        ]
+        Resource = "arn:aws:s3:::ghilbut-backups"
+        Condition = {
+          StringLikeIfExists = {
+            "s3:prefix" = [
+              "k3s/cpa",
+              "k3s/cpa/*",
+            ]
+          }
+        }
+      },
+      {
+        Sid    = "ReadCpaSnapshots"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:GetObjectVersion",
+        ]
+        Resource = "arn:aws:s3:::ghilbut-backups/k3s/cpa/*"
+      },
+    ]
   })
   account_assignments = {
     shared_services = {

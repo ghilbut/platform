@@ -98,10 +98,10 @@ lock key에 접근한다.
 
 Management console 책임과 Billing 책임은 서로 다른 permission set으로 관리한다.
 
-| Permission set | Assignment | Source profile | Account-local role | 책임 |
+| Permission set | Assignment | Profile | IAM Identity Center role | 책임 |
 |---|---|---|---|---|
-| `FoundationManagement` | Management `384959722788` | `ghilbut-foundation-management` | 없음 | AWS Organizations, account와 IAM Identity Center 관리 |
-| `Billing` | Management `384959722788` | `ghilbut-billing` | `arn:aws:iam::384959722788:role/billing` | Billing과 비용 관리 |
+| `FoundationManagement` | Management `384959722788` | `ghilbut-foundation-management` | `AWSReservedSSO_FoundationManagement_*` | AWS Organizations, account와 IAM Identity Center 관리 |
+| `Billing` | Management `384959722788` | `ghilbut-billing` | `AWSReservedSSO_Billing_*` | Billing과 비용 관리 |
 
 Management root user는 Billing account 설정에서 `Activate IAM access`를 한 번 활성화한다. 이
 account 설정과 `Billing` permission set이 모두 적용되어야 IAM Identity Center 사용자가 Billing
@@ -248,12 +248,12 @@ versioning과 90일 noncurrent version 보존을 적용한다. K3s가 current sn
 Access key ID는 AWS resource 식별자로 Plan과 Apply 진행 로그에 표시된다. Secret access key는
 `k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
 
-`BackupRecovery` permission set은 `backup-recovery` role만 수임한다. 이 role은 `k3s/cpa/`의
-current object와 noncurrent version을 읽고 bucket과 object를 변경하지 않는다.
+`BackupRecovery` Permission Set은 `k3s/cpa/`의 current object와 noncurrent version을 직접 읽고
+bucket과 object를 변경하지 않는다. Session duration은 1시간이다.
 
-| Permission set | Assignment | Source profile | Account-local role | 책임 |
+| Permission set | Assignment | Profile | IAM Identity Center role | 책임 |
 |---|---|---|---|---|
-| `BackupRecovery` | SharedServices `012646747332` | `ghilbut-backup-recovery` | `arn:aws:iam::012646747332:role/backup-recovery` | platform backup 읽기 |
+| `BackupRecovery` | SharedServices `012646747332` | `ghilbut-backup-recovery` | `AWSReservedSSO_BackupRecovery_*` | platform backup 읽기 |
 
 `aws/shared-services/state/tofu/`의 provider는 Plan에서 `tofu-plan`, Apply에서
 `tofu-state-admin`을 수임한다. UltaryDomains만 `AWS_PROFILE` source identity를 provider에서 직접

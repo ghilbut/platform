@@ -104,26 +104,10 @@ aws configure set sso_session ghilbut --profile ghilbut-tofu-apply-for-ultary-do
 aws configure set sso_account_id 971119963968 --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set sso_role_name TofuApplyForUltaryDomains --profile ghilbut-tofu-apply-for-ultary-domains
 aws configure set region us-east-1 --profile ghilbut-tofu-apply-for-ultary-domains
-
-aws configure set source_profile ghilbut-billing --profile ghilbut-billing-role
-aws configure set role_arn arn:aws:iam::384959722788:role/billing \
-  --profile ghilbut-billing-role
-aws configure set role_session_name ghilbut-billing --profile ghilbut-billing-role
-aws configure set region us-east-1 --profile ghilbut-billing-role
-
-aws configure set source_profile ghilbut-backup-recovery \
-  --profile ghilbut-backup-recovery-role
-aws configure set role_arn arn:aws:iam::012646747332:role/backup-recovery \
-  --profile ghilbut-backup-recovery-role
-aws configure set role_session_name ghilbut-backup-recovery \
-  --profile ghilbut-backup-recovery-role
-aws configure set region us-east-1 --profile ghilbut-backup-recovery-role
-
 ```
 
-`Developers` 프로필은 IAM Identity Center 자격 증명으로 AWS 리소스를 직접 읽는다. `Billing`과
-`BackupRecovery`는 이름이 `role`로 끝나는 프로필을 사용한다. OpenTofu 프로필은 provider와 backend가
-대상 역할을 수임하는 source identity다.
+`Developers`, `Billing`과 `BackupRecovery` 프로필은 IAM Identity Center 자격 증명으로 AWS
+리소스를 직접 읽는다. OpenTofu 프로필은 provider와 backend가 대상 역할을 수임하는 source identity다.
 
 로그인하고 AWS identity를 확인한다.
 
@@ -133,11 +117,11 @@ export AWS_SDK_LOAD_CONFIG=1
 aws sso login --sso-session ghilbut
 
 for aws_identity_profile in \
-  ghilbut-billing-role \
+  ghilbut-billing \
   ghilbut-tofu-plan-for-management \
   ghilbut-tofu-apply-for-management \
   ghilbut-foundation-management \
-  ghilbut-backup-recovery-role \
+  ghilbut-backup-recovery \
   ghilbut-developers-for-shared-services \
   ghilbut-tofu-plan-for-workloads \
   ghilbut-tofu-apply-for-workloads \
@@ -165,11 +149,11 @@ account에서는 전용 role, Plan, Apply, 관리 role 순서로 배치한다.
 
 | AWS account | Profile | ARN role |
 |---|---|---|
-| Management `384959722788` | `ghilbut-billing-role` | `billing` |
+| Management `384959722788` | `ghilbut-billing` | `AWSReservedSSO_Billing_*` |
 | Management `384959722788` | `ghilbut-tofu-plan-for-management` | `AWSReservedSSO_TofuPlanForManagement_*` |
 | Management `384959722788` | `ghilbut-tofu-apply-for-management` | `AWSReservedSSO_TofuApplyForManagement_*` |
 | Management `384959722788` | `ghilbut-foundation-management` | `AWSReservedSSO_FoundationManagement_*` |
-| SharedServices `012646747332` | `ghilbut-backup-recovery-role` | `backup-recovery` |
+| SharedServices `012646747332` | `ghilbut-backup-recovery` | `AWSReservedSSO_BackupRecovery_*` |
 | SharedServices `012646747332` | `ghilbut-developers-for-shared-services` | `AWSReservedSSO_Developers_*` |
 | SharedServices `012646747332` | `ghilbut-tofu-plan-for-workloads` | `AWSReservedSSO_TofuPlanForWorkloads_*` |
 | SharedServices `012646747332` | `ghilbut-tofu-apply-for-workloads` | `AWSReservedSSO_TofuApplyForWorkloads_*` |
@@ -671,12 +655,6 @@ Identity apply가 생성한 모든 request의 `Status`는 `SUCCEEDED`여야 한�
 
 ```sh
 aws sts assume-role \
-  --profile ghilbut-billing \
-  --role-arn arn:aws:iam::384959722788:role/billing \
-  --role-session-name verify-management-billing \
-  --query 'AssumedRoleUser.Arn' --output text
-
-aws sts assume-role \
   --profile ghilbut-tofu-plan-for-management \
   --role-arn arn:aws:iam::384959722788:role/tofu-plan \
   --role-session-name verify-management-tofu-plan \
@@ -942,21 +920,13 @@ aws ce get-cost-and-usage \
   --granularity MONTHLY \
   --metrics UnblendedCost \
   --query 'length(ResultsByTime)' --output text
-
-aws ce get-cost-and-usage \
-  --profile ghilbut-billing-role \
-  --region us-east-1 \
-  --time-period Start=2026-08-01,End=2026-09-01 \
-  --granularity MONTHLY \
-  --metrics UnblendedCost \
-  --query 'length(ResultsByTime)' --output text
 ```
 
-두 결과는 모두 `1`이다.
+결과는 `1`이다.
 
 `ce:DescribeReport`는 Cost Explorer 보고서 화면을 표시하는 읽기 권한이다. AWS 관리형
-`job-function/Billing` policy와 별도로 `Billing` permission set과 `billing` role에 부여한다.
-두 principal의 권한 결정을 확인한다.
+`job-function/Billing` policy와 별도로 `Billing` Permission Set에 부여한다. IAM Identity Center가
+생성한 role의 권한 결정을 확인한다.
 
 ```sh
 billing_sso_role_arn="$(
@@ -972,16 +942,9 @@ aws iam simulate-principal-policy \
   --action-names ce:DescribeReport \
   --query 'EvaluationResults[0].EvalDecision' \
   --output text
-
-aws iam simulate-principal-policy \
-  --profile ghilbut-foundation-management \
-  --policy-source-arn arn:aws:iam::384959722788:role/billing \
-  --action-names ce:DescribeReport \
-  --query 'EvaluationResults[0].EvalDecision' \
-  --output text
 ```
 
-두 결과는 모두 `allowed`이다.
+결과는 `allowed`이다.
 
 Billing Console 접근을 별도로 검증한다.
 
@@ -990,8 +953,7 @@ Billing Console 접근을 별도로 검증한다.
 3. Billing Home, Bills와 Cost Explorer를 각각 열고 내용이 표시되는지 확인한다.
 4. Cost Explorer에 `ce:DescribeReport` 권한 오류가 표시되지 않는지 확인한다.
 
-`Billing` permission set의 session duration은 4시간이다. `ghilbut-billing-role`은 IAM role
-chaining을 사용하므로 `billing` role session은 최대 1시간이다.
+`Billing` Permission Set의 session duration은 4시간이다.
 
 ## State verification
 
