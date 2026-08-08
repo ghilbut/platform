@@ -48,7 +48,7 @@ data "terraform_remote_state" "cdn" {
 resource "aws_iam_openid_connect_provider" "cpa" {
   url             = "https://oidc.k3s.ghilbut.com/cpa"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [var.cpa_oidc_thumbprint]
+  thumbprint_list = ["e7b8b5a6743ce1b2f17b041de59558a41472d70c"]
 
   tags = {
     component       = "oidc"

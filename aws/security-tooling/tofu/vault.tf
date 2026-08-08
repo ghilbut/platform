@@ -7,7 +7,7 @@ locals {
 resource "aws_iam_openid_connect_provider" "cpa" {
   url             = local.cpa_oidc_issuer
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [var.cpa_oidc_thumbprint]
+  thumbprint_list = ["e7b8b5a6743ce1b2f17b041de59558a41472d70c"]
 }
 
 data "aws_iam_policy_document" "vault_unseal_assume" {
@@ -116,7 +116,7 @@ data "aws_iam_policy_document" "vault_unseal_key" {
 }
 
 resource "aws_kms_key" "vault_unseal" {
-  description             = "CPA Vault auto-unseal key"
+  description             = "Platform Vault auto-unseal key"
   deletion_window_in_days = 30
   enable_key_rotation     = true
   policy                  = data.aws_iam_policy_document.vault_unseal_key.json
@@ -127,8 +127,12 @@ resource "aws_kms_key" "vault_unseal" {
 }
 
 resource "aws_kms_alias" "vault_unseal" {
-  name          = "alias/vault-cpa-unseal"
+  name          = "alias/vault-unseal"
   target_key_id = aws_kms_key.vault_unseal.key_id
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 data "aws_iam_policy_document" "vault_unseal" {

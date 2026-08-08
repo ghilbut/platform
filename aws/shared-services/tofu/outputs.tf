@@ -37,13 +37,3 @@ output "cpa_snapshot_writer_arn" {
   description = "CPA K3s snapshot writer IAM user ARN."
   value       = aws_iam_user.cpa_snapshot.arn
 }
-
-output "vault_backup_prefix" {
-  description = "S3 object prefix managed by the CPA Vault backup ServiceAccount."
-  value       = local.vault_backup_prefix
-}
-
-output "vault_backup_role_arn" {
-  description = "SharedServices IAM role assumed by the CPA Vault backup ServiceAccount."
-  value       = aws_iam_role.vault_backup.arn
-}

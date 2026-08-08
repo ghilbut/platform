@@ -220,8 +220,8 @@ AWS 계정은 cluster issuer당 IAM OIDC provider를 하나 사용한다. IAM ro
 2. audience `sts.amazonaws.com`
 3. 정확한 `system:serviceaccount:<namespace>:<serviceaccount>` subject
 
-Domains, SharedServices와 SecurityTooling root는 CPA OIDC issuer를 각각 명시하고 자신의
-`cpa_oidc_thumbprint` 입력을 검증한다. Root state 간에 issuer와 thumbprint를 전달하지 않는다.
+Domains, SharedServices와 SecurityTooling root는 CPA OIDC issuer와 TLS thumbprint를 각각 명시한다.
+Root state 간에 issuer와 thumbprint를 전달하지 않는다.
 
 ### 3. 확인
 

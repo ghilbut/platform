@@ -1,6 +1,6 @@
 locals {
   cpa_snapshot_prefix                  = "k3s/cpa"
-  vault_backup_prefix                  = "vault/cpa/raft"
+  vault_backup_prefix                  = "data/vault/raft"
   vault_backup_service_account_subject = "system:serviceaccount:vault:vault-backup"
 }
 
@@ -180,7 +180,7 @@ data "aws_iam_policy_document" "vault_backup_assume" {
 
 resource "aws_iam_role" "vault_backup" {
   name                 = "vault-cpa-backup"
-  description          = "CPA Vault Raft snapshot writer for the platform backup bucket."
+  description          = "CPA runtime writer for platform Vault Raft data backups."
   max_session_duration = 3600
   assume_role_policy   = data.aws_iam_policy_document.vault_backup_assume.json
 

@@ -68,217 +68,75 @@ Archive SHA로 임시 override한다. 단계 복구를 마치면 revision을 `ma
 
 ## SECURITY 설계
 
-이 절은 `SECURITY` 실행 단계가 공유하는 제품, storage, backup, credential과 복구 기준을 정의한다. 실제 설치와 복구 절차는 [[runbooks/SECURITY|Security]]를 따른다.
+이 절은 `SECURITY` 실행 단계의 재현 기준을 정의한다. 실제 명령은 [[runbooks/SECURITY|Security]]와 각 Application manifest에 둔다.
 
-### 실행 환경
+### 플랫폼 서비스와 런타임
 
-CPA는 단일 K3s server와 단일 OpenEBS LVM volume group을 사용한다. Vault, PostgreSQL과 Keycloak은 각각 replica 한 개로 시작한다. 이 구성은 node 장애를 견디는 고가용성을 제공하지 않는다. K3s snapshot과 S3 application backup이 node 장애 복구를 담당한다.
+Vault, PostgreSQL과 Keycloak은 전체 플랫폼이 공유하는 논리 서비스다. 서비스의 논리 데이터와 data backup은 특정 Kubernetes 클러스터에 종속하지 않는다. CPA는 현재 런타임이다.
 
-K3s host는 `dm_snapshot`과 `dm_thin_pool` kernel module을 부팅할 때 로드한다. [[k3s/RUNBOOK#1. host 준비|K3s host 준비]]에서 두 module과 device mapper target을 확인한 뒤 OpenEBS thin volume을 사용한다.
+Kubernetes workload, ServiceAccount OIDC trust, storage와 network route는 런타임 자산이다. 런타임을 변경할 때 새 런타임 자산을 만들고 공통 KMS key와 application data backup으로 서비스를 복원한다.
 
-기존 `openebs-lvm` StorageClass는 thick volume을 만든다. OpenEBS LocalPV LVM은 thick volume의 snapshot을 만들 수 있지만 [snapshot에서 volume을 복원하는 기능](https://openebs.io/docs/main/user-guides/local-storage-user-guide/local-pv-lvm/advanced-operations/lvm-volume-restore)은 thin volume만 지원한다. `SECURITY`의 stateful Application은 다음 `openebs-lvm-thin` StorageClass와 `openebs-lvm-snapshot` VolumeSnapshotClass를 사용한다.
+Vault는 Integrated Raft member 한 개로 시작한다. Helm의 HA mode는 Integrated Raft topology와 active service를 선택한다. `replicas: 1`은 node 장애를 견디지 못한다. 한 member에서는 PodDisruptionBudget을 사용하지 않는다. Member를 늘릴 때 서로 다른 node와 storage failure domain을 사용한다.
 
-```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: openebs-lvm-thin
-provisioner: local.csi.openebs.io
-allowVolumeExpansion: true
-parameters:
-  storage: lvm
-  volgroup: openebs
-  thinProvision: "yes"
-reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
----
-apiVersion: snapshot.storage.k8s.io/v1
-kind: VolumeSnapshotClass
-metadata:
-  name: openebs-lvm-snapshot
-driver: local.csi.openebs.io
-deletionPolicy: Delete
-```
+Application은 Helm chart 또는 배포 artifact version을 고정한다. Chart의 기본 image가 chart `appVersion`과 같으면 기본 image를 사용한다. 별도 image는 호환성과 복구를 검증한 경우에만 지정한다.
 
-`Retain`은 Application 삭제가 PVC와 data volume 삭제로 이어지는 것을 막는다. SnapshotClass의 `Delete`는 Velero가 S3 data movement를 마친 뒤 임시 OpenEBS snapshot을 정리하게 한다.
+### 통신 보안
 
-### 제품과 version
+외부 요청은 Istio gateway에서 HTTPS로 수신한다.
 
-다음 version은 2026-08-08 기준 구현 version이다. Application은 Helm chart version, Kustomize tag와 container image tag를 함께 고정한다. Version 변경은 별도 Issue와 PR에서 backup과 restore를 다시 검증한다.
+Vault workload에 Istio mTLS가 적용되기 전에는 gateway와 Vault 사이에서도 Vault TLS를 사용한다. 다음 조건을 모두 확인한 뒤 Vault listener를 HTTP로 바꾸고 `tlsDisable: true`를 사용한다.
 
-| 책임 | 제품 | 고정 version |
+1. Vault workload가 mesh data plane에 포함된다.
+2. Vault namespace에 STRICT mTLS가 적용된다.
+3. 필요한 source와 port만 허용하는 Istio AuthorizationPolicy가 적용된다.
+4. 외부 HTTPS와 내부 mTLS 경로의 접근 및 복구 검증이 성공한다.
+
+JWT는 bearer JWT를 보내는 요청에만 요구한다. 내부 workload 통신은 Cilium network policy, Istio workload identity 기반 mTLS와 AuthorizationPolicy, Vault 인증을 함께 사용한다.
+
+### Storage와 backup
+
+Stateful Application은 `openebs-lvm-thin`을 사용한다. PVC와 PV는 Application 제거 뒤에도 보존한다.
+
+| 종류 | 목적 | 런타임 종속성 | S3 prefix |
+| --- | --- | --- | --- |
+| Vault Raft data backup | Vault 논리 데이터 복원 | 없음 | `data/vault/raft/` |
+| PostgreSQL physical data backup | base backup과 point-in-time recovery | 없음 | `data/postgresql/barman/` |
+| PostgreSQL logical data backup | 새 PostgreSQL에 database 복원 | 없음 | `data/postgresql/dump/` |
+| OpenEBS volume snapshot backup | 현재 volume의 빠른 복원 | K3s와 OpenEBS | `snapshots/k3s/cpa/volumes/` |
+
+K3s etcd snapshot은 Kubernetes 런타임 전체를 복원한다. 설정과 절차는 [[k3s/RUNBOOK|K3s 기반 RUNBOOK]]에서 관리한다.
+
+OpenEBS snapshot은 crash-consistent 복구 지점이다. Velero는 snapshot data를 S3로 이동한다. Vault Raft backup과 PostgreSQL backup은 application-consistent 복구 지점이다.
+
+| Backup | 주기 | 보존 |
 | --- | --- | --- |
-| Local volume | [OpenEBS LVM LocalPV](https://openebs.io/docs/main/user-guides/local-storage-user-guide/local-pv-lvm/lvm-overview) | Helm `1.9.1` |
-| Snapshot API | [Kubernetes external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter) | OpenEBS chart bundle `v7.0.0` |
-| Snapshot S3 data movement | [Velero CSI Snapshot Data Movement](https://velero.io/docs/main/csi-snapshot-data-movement/) | Helm `12.1.0`, image `1.18.2` |
-| Velero S3 client | [Velero plugin for AWS](https://github.com/velero-io/velero-plugin-for-aws) | `v1.14.2` |
-| Secret store | [Vault Helm](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/helm) | Helm `0.34.0`, Vault `2.0.3` |
-| Secret delivery | [Vault Secrets Operator](https://developer.hashicorp.com/vault/docs/deploy/kubernetes/vso) | Helm `1.5.0` |
-| PostgreSQL operator | [CloudNativePG](https://cloudnative-pg.io/docs/1.30/) | Helm `0.29.0`, operator `1.30.0` |
-| PostgreSQL | [PostgreSQL](https://www.postgresql.org/docs/18/) | `18.4` |
-| PostgreSQL physical backup | [Barman Cloud Plugin](https://cloudnative-pg.io/plugin-barman-cloud/) | `0.7.1` |
-| Identity provider | [Keycloak Operator](https://www.keycloak.org/operator/installation) | Kustomize와 Keycloak `26.7.1` |
+| Vault OpenEBS snapshot | 6시간 | 7일, 최대 28개 |
+| Vault Raft data backup | 6시간 | 7일, 최대 28개 |
+| PostgreSQL OpenEBS snapshot | 6시간 | 7일, 최대 28개 |
+| PostgreSQL logical data backup | 6시간 | 7일, 최대 28개 |
+| PostgreSQL Barman base backup | 매일 | 7일 |
+| PostgreSQL WAL archive | 연속 | 7일 |
 
-CloudNativePG와 Vault는 단일 replica로 시작한다. Replica 수를 늘리려면 K3s server와 OpenEBS volume이 서로 다른 node에 있어야 한다.
-
-OpenEBS chart가 snapshot-controller와 csi-snapshotter를 함께 배포한다. 별도 external-snapshotter controller를 설치하지 않는다.
-
-`keycloak` Application은 CPA의 Keycloak Operator와 Keycloak CR을 관리한다. 외부 Keycloak을 가리키는 ServiceEntry, DestinationRule과 VirtualService는 CPA Keycloak route로 교체한다.
-
-### Backup 구조
-
-OpenEBS snapshot은 volume의 crash-consistent 복구 지점이다. Privileged `fsfreeze` hook은 사용하지 않는다. Vault Raft snapshot, PostgreSQL Barman backup과 database dump가 application-consistent 복구 지점을 제공한다.
-
-```text
-OpenEBS thin PVC
-  → VolumeSnapshot
-  → Velero CSI Snapshot Data Movement
-  → Kopia repository
-  → s3://ghilbut-backups/velero/cpa/
-
-Vault integrated Raft
-  → vault operator raft snapshot save
-  → s3://ghilbut-backups/vault/cpa/raft/
-
-CloudNativePG
-  ├─ Barman base backup와 WAL → s3://ghilbut-backups/postgresql/cpa/barman/
-  └─ pg_dump custom format   → s3://ghilbut-backups/postgresql/cpa/dump/
-```
-
-Velero는 built-in Kopia data mover를 사용한다. Data mover는 OpenEBS snapshot에서 임시 thin volume을 만들고 S3 repository로 data를 이동한다. 복원할 때 `DataDownload`가 새 thin PVC를 만들고 repository data를 기록한다.
-
-`ghilbut-backups`는 TLS와 기본 SSE-S3 암호화를 적용하고 versioning을 `Suspended`로 유지한다. Backup job은 다음 prefix만 변경할 수 있다.
-
-| Principal | 변경 가능 prefix |
-| --- | --- |
-| Velero ServiceAccount | `velero/cpa/` |
-| Vault backup ServiceAccount | `vault/cpa/raft/` |
-| PostgreSQL backup ServiceAccount | `postgresql/cpa/barman/`, `postgresql/cpa/dump/` |
-
-Backup은 UTC 기준으로 서로 겹치지 않게 실행한다.
-
-| Backup | 주기 | 보존 수 | 최대 보존 기간 | 복구 성격 |
-| --- | --- | --- | --- | --- |
-| Vault OpenEBS snapshot | `10 */6 * * *` | 28 | 7일 | crash-consistent |
-| Vault Raft snapshot | `0 */6 * * *` | 28 | 7일 | application-consistent |
-| PostgreSQL OpenEBS snapshot | `50 */6 * * *` | 28 | 7일 | crash-consistent |
-| PostgreSQL logical dump | `30 */6 * * *` | 28 | 7일 | application-consistent |
-| PostgreSQL Barman base backup | `0 0 2 * * *` | 기간 기준 | 7일 | application-consistent |
-| PostgreSQL WAL archive | 연속 | Barman backup과 함께 만료 | 7일 | point-in-time recovery |
-
-Velero Schedule은 5-field cron을 사용한다. CloudNativePG ScheduledBackup은 seconds를 포함한 6-field cron을 사용한다. Velero Schedule은 TTL `168h`를 사용하고 완료된 backup을 28개까지만 유지한다. Kopia repository maintenance가 삭제한 backup의 orphan data를 정리해야 backup 삭제가 완료된다. Vault와 PostgreSQL backup job도 28개를 초과한 object를 삭제한다.
+Backup 작업은 서로 겹치지 않게 실행한다. Backup 삭제 권한은 각 작업의 prefix로 제한한다.
 
 ### Credential 경계
 
-- Vault server는 CPA ServiceAccount token으로 SecurityTooling의 AWS KMS role을 수임한다. Static AWS access key를 사용하지 않는다.
-- Velero와 backup job은 workload별 CPA ServiceAccount token으로 SharedServices S3 writer role을 수임한다.
-- Velero Kopia repository password는 Vault 복원 전에 필요하다. `apps/tofu`가 password를 만들고 `apps.tfstate`와 write-only Kubernetes Secret으로 관리한다.
-- Vault recovery key는 SecurityTooling AWS Secrets Manager에 KMS 암호화하여 저장한다. Initial root token은 초기 설정을 마친 뒤 revoke하고 저장하지 않는다.
-- Vault Secrets Operator는 Application별 Kubernetes auth role을 사용한다. Destination Secret은 해당 Application ServiceAccount만 읽는다.
-- Keycloak Operator는 PostgreSQL username과 password를 Kubernetes Secret reference로 읽는다. Vault Secrets Operator가 이 Secret을 만들고 rotation 때 Keycloak을 rolling restart한다.
-- Keycloak 장애에서는 K3s administrator certificate, Vault recovery key와 Argo CD port-forward 절차를 사용한다. OIDC를 비상 복구의 선행 조건으로 사용하지 않는다.
+- Vault KMS key와 application data backup prefix는 플랫폼 공통 자산이다.
+- 현재 런타임의 ServiceAccount만 해당 런타임용 IAM role을 수임한다.
+- Application workload는 static AWS access key를 사용하지 않는다.
+- Vault recovery key는 SecurityTooling AWS Secrets Manager에 KMS 암호화하여 저장한다.
+- Initial root token은 초기 설정을 마친 뒤 revoke하고 저장하지 않는다.
+- Backup repository를 여는 credential은 Vault 없이 복구할 수 있어야 한다.
+- OIDC 장애 복구는 K3s administrator certificate와 Argo CD port-forward를 사용한다.
 
 ### 복구 순서
 
-CPA 복구는 다음 순서를 사용한다.
-
-1. [[k3s/runbooks/CPA-RESTORE|K3s snapshot 복원]]을 먼저 실행한다.
-2. K3s snapshot 복원이 실패하면 [[runbooks/BOOTSTRAP|Bootstrap]]부터 Current runbook까지 실행한다.
-3. Velero와 Kopia repository password를 준비한다.
-4. Vault OpenEBS snapshot을 복원한다. 실패하면 새 Vault와 동일한 AWS KMS seal을 준비하고 Raft snapshot을 `-force`로 복원한다.
-5. Vault policy, Kubernetes auth와 대표 secret을 확인한다.
-6. PostgreSQL OpenEBS snapshot을 복원한다. 실패하면 Barman point-in-time recovery를 실행하고, Barman 복원도 실패하면 logical dump를 새 cluster에 복원한다.
-7. Vault database credential을 PostgreSQL에 다시 연결한다.
-8. Keycloak, Vault OIDC, K3s OIDC와 Argo CD OIDC를 순서대로 확인한다.
-9. Cilium policy와 Istio authorization을 적용한다.
-10. 복구에 사용한 Application source revision을 `main`으로 되돌린다.
-
-OpenEBS와 Velero의 backup·restore 동작은 다음 명령으로 검증한다.
-
-```shell
-kubectl --context cpa api-resources \
-  --api-group=snapshot.storage.k8s.io
-kubectl --context cpa get storageclass \
-  openebs-lvm-thin \
-  -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,THIN:.parameters.thinProvision,VG:.parameters.volgroup
-kubectl --context cpa get volumesnapshotclass \
-  openebs-lvm-snapshot \
-  -o custom-columns=NAME:.metadata.name,DRIVER:.driver,POLICY:.deletionPolicy
-
-export BACKUP_NAME='<BACKUP_NAME>'
-export BACKUP_NAMESPACE='<NAMESPACE>'
-velero --kubecontext cpa backup create "$BACKUP_NAME" \
-  --include-namespaces "$BACKUP_NAMESPACE" \
-  --snapshot-move-data \
-  --ttl 168h
-kubectl --context cpa -n velero get datauploads \
-  -l "velero.io/backup-name=$BACKUP_NAME" \
-  -o wide
-velero --kubecontext cpa backup describe "$BACKUP_NAME"
-unset BACKUP_NAME BACKUP_NAMESPACE
-```
-
-복원 검증은 운영 namespace와 다른 임시 namespace에서 실행한다.
-
-```shell
-export BACKUP_NAME='<BACKUP_NAME>'
-export RESTORE_NAME='<RESTORE_NAME>'
-export SOURCE_NAMESPACE='<SOURCE_NAMESPACE>'
-export RESTORE_NAMESPACE='<RESTORE_NAMESPACE>'
-velero --kubecontext cpa restore create "$RESTORE_NAME" \
-  --from-backup "$BACKUP_NAME" \
-  --namespace-mappings "$SOURCE_NAMESPACE:$RESTORE_NAMESPACE"
-kubectl --context cpa -n velero get datadownloads \
-  -l "velero.io/restore-name=$RESTORE_NAME" \
-  -o wide
-velero --kubecontext cpa restore describe "$RESTORE_NAME"
-kubectl --context cpa -n "$RESTORE_NAMESPACE" get pvc,pod
-unset BACKUP_NAME RESTORE_NAME SOURCE_NAMESPACE RESTORE_NAMESPACE
-```
-
-Vault Raft snapshot은 다음 명령으로 생성하고 S3에 저장한다. 복구할 때 같은 object를 내려받아 검사한 뒤 복원한다.
-
-```shell
-export VAULT_SNAPSHOT='<SNAPSHOT_FILE>'
-export VAULT_S3_KEY="vault/cpa/raft/$VAULT_SNAPSHOT"
-vault operator raft snapshot save "$VAULT_SNAPSHOT"
-vault operator raft snapshot inspect "$VAULT_SNAPSHOT"
-aws s3 cp "$VAULT_SNAPSHOT" "s3://ghilbut-backups/$VAULT_S3_KEY" \
-  --checksum-algorithm SHA256
-
-aws s3 cp "s3://ghilbut-backups/$VAULT_S3_KEY" "$VAULT_SNAPSHOT"
-vault operator raft snapshot inspect "$VAULT_SNAPSHOT"
-vault operator raft snapshot restore -force "$VAULT_SNAPSHOT"
-unset VAULT_SNAPSHOT VAULT_S3_KEY
-```
-
-PostgreSQL logical backup은 custom format으로 생성하고 S3에 저장한다. 복구 검증은 새 database를 만들고 같은 object를 복원하여 수행한다.
-
-```shell
-export PGDATABASE='<SOURCE_DATABASE>'
-export PG_DUMP_FILE="${PGDATABASE}-$(date -u +%Y%m%dT%H%M%SZ).dump"
-export PG_S3_KEY="postgresql/cpa/dump/$PG_DUMP_FILE"
-pg_dump \
-  --format=custom \
-  --no-owner \
-  --no-privileges \
-  --file="$PG_DUMP_FILE"
-aws s3 cp "$PG_DUMP_FILE" "s3://ghilbut-backups/$PG_S3_KEY" \
-  --checksum-algorithm SHA256
-
-export PG_RESTORE_DATABASE='<RESTORE_DATABASE>'
-createdb "$PG_RESTORE_DATABASE"
-aws s3 cp "s3://ghilbut-backups/$PG_S3_KEY" "$PG_DUMP_FILE"
-pg_restore \
-  --exit-on-error \
-  --no-owner \
-  --no-privileges \
-  --dbname="$PG_RESTORE_DATABASE" \
-  "$PG_DUMP_FILE"
-unset PGDATABASE PG_DUMP_FILE PG_S3_KEY PG_RESTORE_DATABASE
-```
-
-실제 실행 runbook은 backup을 삭제하거나 운영 data를 덮어쓰기 전에 대상 이름, namespace, S3 key와 checksum을 다시 확인한다.
+1. K3s etcd snapshot 복원을 시도한다.
+2. 실패하면 K3s와 `BOOTSTRAP`부터 Current runbook까지 다시 실행한다.
+3. OpenEBS volume snapshot backup으로 빠른 복원을 시도한다.
+4. 실패하면 새 volume에 application data backup을 복원한다.
+5. Vault, PostgreSQL, Keycloak, OIDC, network policy 순서로 확인한다.
+6. 복구에 사용한 Application source revision을 `main`으로 되돌린다.
 
 ### OpenTofu와 Git revision
 
