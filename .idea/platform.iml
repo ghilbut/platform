@@ -17,6 +17,7 @@
       <excludeFolder url="file://$MODULE_DIR$/github/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/k3s/tofu/.terraform" />
       <excludeFolder url="file://$MODULE_DIR$/ultary/domains/tofu/.terraform" />
+      <excludeFolder url="file://$MODULE_DIR$/aws/shared-services/tofu/.terraform" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
