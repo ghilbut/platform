@@ -15,4 +15,4 @@ Kubernetes workload 보안 기준은 [Pod Security Standards](https://kubernetes
 
 ## Security
 
-Vault, PostgreSQL, Keycloak, backup과 운영자 인증의 공통 설계는 [[RUNBOOK#SECURITY 설계|SECURITY 설계]]를 따른다. 실제 설치와 복구 명령은 `SECURITY`가 Current가 된 뒤 `runbooks/SECURITY.md`에서 관리한다.
+Vault, PostgreSQL, Keycloak, backup과 운영자 인증의 공통 설계는 [[RUNBOOK#SECURITY 설계|SECURITY 설계]]를 따른다. 실제 설치와 복구 절차는 [[runbooks/SECURITY|Security]]에서 관리한다.

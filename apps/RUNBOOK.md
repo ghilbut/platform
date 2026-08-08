@@ -61,13 +61,14 @@ Archive SHA로 임시 override한다. 단계 복구를 마치면 revision을 `ma
 
 | 단계 | 상태 | 실행 문서 | Archive SHA |
 | --- | --- | --- | --- |
-| BOOTSTRAP | Current | [[runbooks/BOOTSTRAP|Bootstrap]] |  |
+| BOOTSTRAP | Archived | [[runbooks/BOOTSTRAP|Bootstrap]] | [`d14b63a`](https://github.com/ghilbut/platform/tree/d14b63a3e59f076afcd1b5e15f2e31ae81800f33/apps) |
+| SECURITY | Current | [[runbooks/SECURITY|Security]] |  |
 
-`BOOTSTRAP`은 CPA Argo CD 설치, immutable bootstrap revision 적용, 기반 Application sync와 `main` handoff를 수행한다.
+`BOOTSTRAP`은 CPA Argo CD 설치, immutable bootstrap revision 적용, 기반 Application sync와 `main` handoff를 수행하는 복구 문서다. `SECURITY`는 Vault, PostgreSQL, Keycloak, workload 보안과 통합 복구를 진행한다.
 
 ## SECURITY 설계
 
-이 절은 `SECURITY` 실행 단계가 공유하는 제품, storage, backup, credential과 복구 기준을 정의한다. `BOOTSTRAP`은 Current 상태를 유지한다. 실제 설치와 복구 명령은 `SECURITY`가 Current가 된 뒤 `runbooks/SECURITY.md`에 작성한다.
+이 절은 `SECURITY` 실행 단계가 공유하는 제품, storage, backup, credential과 복구 기준을 정의한다. 실제 설치와 복구 절차는 [[runbooks/SECURITY|Security]]를 따른다.
 
 ### 실행 환경
 

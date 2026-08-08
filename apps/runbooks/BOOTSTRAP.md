@@ -14,14 +14,14 @@ Bootstrap을 실행하는 동안 `https://github.com/ghilbut/platform.git` 저�
 
 | 항목 | 값 |
 | --- | --- |
-| tag | `cpa-bootstrap-v1` |
-| commit SHA | `315bea2f88984c2458ca63c916e3e664a54a49bd` |
+| tag | `bootstrap-v1` |
+| commit SHA | `d14b63a3e59f076afcd1b5e15f2e31ae81800f33` |
 
 tag는 bootstrap 기준점의 이름이다. commit SHA는 bootstrap 대상의 불변 식별자다. 둘이 같은 commit을 가리킬 때만 계속한다.
 
 ```shell
-export BOOTSTRAP_TAG='cpa-bootstrap-v1'
-export BOOTSTRAP_REVISION='315bea2f88984c2458ca63c916e3e664a54a49bd'
+export BOOTSTRAP_TAG='bootstrap-v1'
+export BOOTSTRAP_REVISION='d14b63a3e59f076afcd1b5e15f2e31ae81800f33'
 
 git fetch origin "refs/tags/${BOOTSTRAP_TAG}:refs/tags/${BOOTSTRAP_TAG}"
 test "$(git rev-list -n 1 "$BOOTSTRAP_TAG")" = "$BOOTSTRAP_REVISION"
