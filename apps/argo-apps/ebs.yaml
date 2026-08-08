@@ -14,6 +14,8 @@ spec:
         values: |
           analytics:
             enabled: false
+          crds:
+            enabled: true
     - path: apps/argo-apps/ebs
       repoURL: https://github.com/ghilbut/platform.git
       targetRevision: main

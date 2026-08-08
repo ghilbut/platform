@@ -83,9 +83,11 @@ ip route show default
 # cpa
 sudo apt update -y
 sudo apt install -y lvm2
-printf '%s\n' dm_snapshot | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
+printf '%s\n' dm_snapshot dm_thin_pool | sudo tee /etc/modules-load.d/openebs.conf >/dev/null
 sudo modprobe dm_snapshot
-lsmod | grep '^dm_snapshot '
+sudo modprobe dm_thin_pool
+lsmod | grep -E '^dm_(snapshot|thin_pool) '
+sudo dmsetup targets | grep -E '^(snapshot|thin)'
 sudo pvcreate /dev/sda10
 sudo vgcreate openebs /dev/sda10
 sudo pvs -o pv_name,vg_name,pv_size
