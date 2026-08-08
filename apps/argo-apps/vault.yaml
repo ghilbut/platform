@@ -11,16 +11,14 @@ spec:
       targetRevision: 0.34.0
       helm:
         releaseName: vault
+        skipTests: true
         values: |
           global:
-            tlsDisable: false
+            tlsDisable: true
           injector:
             enabled: false
           server:
-            image:
-              repository: hashicorp/vault
-              tag: 2.0.3
-              pullPolicy: IfNotPresent
+            updateStrategyType: RollingUpdate
             serviceAccount:
               create: false
               name: vault
@@ -54,16 +52,14 @@ spec:
                   disable_mlock = true
 
                   listener "tcp" {
-                    tls_disable = 0
+                    tls_disable = 1
                     address = "[::]:8200"
                     cluster_address = "[::]:8201"
-                    tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
-                    tls_key_file = "/vault/userconfig/vault-server-tls/tls.key"
                   }
 
                   seal "awskms" {
                     region = "us-east-1"
-                    kms_key_id = "alias/vault-cpa-unseal"
+                    kms_key_id = "alias/vault-unseal"
                   }
 
                   storage "raft" {
@@ -71,6 +67,8 @@ spec:
                   }
 
                   service_registration "kubernetes" {}
+              disruptionBudget:
+                enabled: false
             dataStorage:
               enabled: true
               size: 10Gi
@@ -81,7 +79,7 @@ spec:
               whenScaled: Retain
             readinessProbe:
               enabled: true
-              path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
+              path: /v1/sys/health?standbyok=true&uninitcode=204
             livenessProbe:
               enabled: true
               path: /v1/sys/health?standbyok=true&sealedcode=204&uninitcode=204
@@ -91,8 +89,6 @@ spec:
               AWS_REGION: us-east-1
               AWS_ROLE_ARN: arn:aws:iam::954066442429:role/vault-cpa-unseal
               AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/aws-iam-token/token
-              VAULT_CACERT: /vault/userconfig/vault-server-tls/tls.crt
-              VAULT_TLS_SERVER_NAME: vault.ghilbut.com
             volumes:
               - name: aws-iam-token
                 projected:
@@ -119,19 +115,12 @@ spec:
                           - path: namespace
                             fieldRef:
                               fieldPath: metadata.namespace
-              - name: vault-server-tls
-                secret:
-                  defaultMode: 420
-                  secretName: vault-server-tls
             volumeMounts:
               - mountPath: /var/run/secrets/aws-iam-token
                 name: aws-iam-token
                 readOnly: true
               - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
                 name: kubernetes-api-access
-                readOnly: true
-              - mountPath: /vault/userconfig/vault-server-tls
-                name: vault-server-tls
                 readOnly: true
     - path: apps/argo-apps/vault
       repoURL: https://github.com/ghilbut/platform.git

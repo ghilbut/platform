@@ -69,29 +69,21 @@ unset BOOTSTRAP_TAG BOOTSTRAP_REVISION
 
 | 순서 | 범위 | 실행 Issue | 완료 결과 |
 | --- | --- | --- | --- |
-| 1 | Vault | #225 → #226 → #227 → #228 → #229 | auto-unseal, 접근 정책, S3 backup과 restore |
+| 1 | Vault | #225 → #226 → #251 → #253 → #227 → #228 → #229 | auto-unseal, 접근 정책, S3 backup과 restore |
 | 2 | PostgreSQL | #230 → (#231, #232) → #233 | database, Vault credential, S3 backup과 restore |
 | 3 | Keycloak과 운영자 인증 | #234 → #235 → #236 → #237 → (#238, #239) | Keycloak, Vault·K3s·Argo CD OIDC와 비상 접근 |
 | 4 | Workload 보안 | #240 → #241 → #242 → #243 | Pod 보안, Cilium policy, Istio mTLS와 authorization |
 | 5 | 통합 복구 | #244 → #245 | 전체 재설치·데이터 복구와 인증 장애 복구 |
 | 6 | 완료 | #246 | `SECURITY` Archive와 다음 Current runbook 전환 |
 
-#231과 #232는 #230 완료 뒤 함께 진행할 수 있다. #238과 #239는 #237 완료 뒤 함께 진행할 수 있다. 실제 명령과 검증 결과는 해당 Issue의 PR에서 이 문서에 추가한다.
+#231과 #232는 #230 완료 뒤 함께 진행할 수 있다. #238과 #239는 #237 완료 뒤 함께 진행할 수 있다. 반복 실행에 필요한 명령만 해당 Issue의 PR에서 이 문서에 추가한다.
 
 ### SECURITY-11: Vault AWS 권한
 
-[[aws/RUNBOOK#Plan and apply|AWS Plan과 Apply]] 절차로 다음 root를 순서대로 적용한다.
+[[aws/RUNBOOK#Plan and apply|AWS Plan과 Apply]] 절차로 다음 root를 각각 Plan하고 Apply한다. 두 root는 서로의 state를 참조하지 않는다.
 
-1. `aws/shared-services/tofu`: CPA OIDC issuer output과 `vault/cpa/raft/` backup role
-2. `aws/security-tooling/tofu`: CPA OIDC provider, Vault auto-unseal role과 KMS key
-
-SharedServices state는 CPA OIDC issuer와 TLS thumbprint의 원본이다. SecurityTooling state가 이
-output을 읽는다. 다음 output은 Vault 설치와 backup 작업에서 사용한다.
-
-| Root | Output |
-| --- | --- |
-| `aws/shared-services/tofu` | `vault_backup_prefix`, `vault_backup_role_arn` |
-| `aws/security-tooling/tofu` | `vault_unseal_kms_key_arn`, `vault_unseal_role_arn` |
+1. `aws/shared-services/tofu`: `data/vault/raft/`에 접근하는 CPA backup role
+2. `aws/security-tooling/tofu`: 플랫폼 공통 Vault KMS key와 CPA unseal role
 
 `vault` namespace의 `vault` ServiceAccount만 KMS role을 수임한다. 같은 namespace의
 `vault-backup` ServiceAccount만 backup role을 수임한다. `BackupRecovery` identity는 Vault backup을
@@ -99,31 +91,35 @@ output을 읽는다. 다음 output은 Vault 설치와 backup 작업에서 사용
 
 ### SECURITY-12: Vault 설치
 
-`ebs` Application은 `openebs-lvm-thin` StorageClass와 `openebs-lvm-snapshot`
-VolumeSnapshotClass를 만든다. Vault는 10 GiB thin volume, integrated Raft, AWS KMS auto-unseal과
-TLS를 사용한다. `vault` ServiceAccount는 `sts.amazonaws.com` audience의 projected token으로
-`vault-cpa-unseal` role을 수임한다.
+Vault는 Integrated Raft member 한 개와 AWS KMS auto-unseal로 시작한다. Helm HA mode는 Raft
+topology를 선택하며 현재 구성은 node 장애를 견디지 못한다. 외부 HTTPS는 Istio gateway에서 종료하고
+Vault service는 HTTP listener를 사용한다. MESH 단계는 내부 통신에 mTLS와 authorization을 추가한다.
 
 다음 순서로 적용한다.
 
 1. `ebs`를 동기화하고 두 storage class를 확인한다.
-2. `istio-gateways`를 동기화하고 `vault.ghilbut.com` 인증서가 Ready인지 확인한다.
+2. `istio-gateways`를 동기화하고 외부 HTTPS 인증서가 Ready인지 확인한다.
 3. `apps/argo-apps/vault.yaml`을 Argo CD에 적용하고 `vault`를 동기화한다.
-4. `vault-server` 인증서, `vault` StatefulSet과 `data-vault-0` PVC를 확인한다.
+4. `vault` StatefulSet, `data-vault-0` PVC와 실행 중인 Vault 설정을 확인한다.
 
 ```shell
 argocd app sync ebs istio-gateways
 argocd app wait ebs istio-gateways --sync --health --timeout 600
 kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
-argocd app sync vault
+argocd app sync vault --prune
+kubectl --context cpa -n vault delete secret vault-server-tls --ignore-not-found
 argocd app wait vault --sync --health --timeout 600
 
-kubectl --context cpa -n vault wait \
+kubectl --context cpa -n istio-gateways wait \
   --for=condition=Ready \
-  certificate/vault-server \
+  certificate/ingress-https \
   --timeout=10m
 kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
 kubectl --context cpa -n vault get statefulset,pod,pvc
+kubectl --context cpa -n vault exec vault-0 -- \
+  grep -F 'tls_disable = 1' /tmp/storageconfig.hcl
+kubectl --context cpa -n vault exec vault-0 -- \
+  grep -F 'kms_key_id = "alias/vault-unseal"' /tmp/storageconfig.hcl
 
 set +e
 VAULT_STATUS=$(kubectl --context cpa -n vault exec vault-0 -- \
@@ -144,9 +140,7 @@ unset VAULT_STATUS VAULT_STATUS_CODE
 `initialized=false`, `sealed=true`를 반환한다. exit code `2`는 sealed 상태를 뜻한다. 초기화와 recovery
 key 저장은 #227에서 수행한다.
 
-Vault Application 제거는 server, Service, route와 인증서를 제거한다. Namespace는 보존한다.
-StatefulSet의 retention policy가 PVC를 보존하고 `openebs-lvm-thin`의 `Retain` policy가 PV를 보존한다.
-PVC, PV, KMS key, IAM role과 공용 storage class는 제거 범위에 포함하지 않는다.
+Vault Application 제거는 PVC, PV, KMS key, IAM role과 공용 storage class를 제거하지 않는다.
 
 ## C. 복구 진입점
 
@@ -163,7 +157,8 @@ Archived Application을 복구할 때만 해당 Application의 platform Git sour
 ## D. 완료 조건
 
 - Vault, PostgreSQL과 Keycloak이 Ready다.
-- Vault OpenEBS·Raft snapshot과 PostgreSQL OpenEBS·Barman·logical backup이 S3에 저장되고 실제 restore가 성공한다.
+- Vault와 PostgreSQL의 OpenEBS volume snapshot backup이 S3에 저장되고 실제 restore가 성공한다.
+- Vault Raft, PostgreSQL Barman과 logical data backup이 S3에 저장되고 실제 restore가 성공한다.
 - Vault, K3s와 Argo CD의 Keycloak OIDC 로그인과 비상 접근이 성공한다.
 - Cilium policy와 Istio authorization 적용 뒤 정상 workload, backup과 복구 흐름이 유지된다.
 - `BOOTSTRAP`부터 `SECURITY`까지 전체 재설치와 데이터 복구가 성공한다.

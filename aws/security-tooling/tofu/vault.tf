@@ -1,21 +1,7 @@
-data "terraform_remote_state" "shared_services" {
-  backend = "s3"
-
-  config = {
-    bucket  = "ghilbut-tfstates"
-    encrypt = true
-    key     = "platform/aws/shared-services.tfstate"
-    region  = "us-east-1"
-    assume_role = {
-      role_arn = "arn:aws:iam::012646747332:role/tofu-state-readonly"
-    }
-  }
-}
-
 locals {
-  cpa_oidc_issuer               = data.terraform_remote_state.shared_services.outputs.cpa_oidc_issuer
+  cpa_oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
   cpa_oidc_provider_path        = trimprefix(local.cpa_oidc_issuer, "https://")
-  cpa_oidc_thumbprint           = data.terraform_remote_state.shared_services.outputs.cpa_oidc_thumbprint
+  cpa_oidc_thumbprint           = "e7b8b5a6743ce1b2f17b041de59558a41472d70c"
   vault_service_account_subject = "system:serviceaccount:vault:vault"
 }
 
@@ -131,7 +117,7 @@ data "aws_iam_policy_document" "vault_unseal_key" {
 }
 
 resource "aws_kms_key" "vault_unseal" {
-  description             = "CPA Vault auto-unseal key"
+  description             = "Platform Vault auto-unseal key"
   deletion_window_in_days = 30
   enable_key_rotation     = true
   policy                  = data.aws_iam_policy_document.vault_unseal_key.json
@@ -141,8 +127,18 @@ resource "aws_kms_key" "vault_unseal" {
   }
 }
 
-resource "aws_kms_alias" "vault_unseal" {
+moved {
+  from = aws_kms_alias.vault_unseal
+  to   = aws_kms_alias.vault_unseal_cpa_legacy
+}
+
+resource "aws_kms_alias" "vault_unseal_cpa_legacy" {
   name          = "alias/vault-cpa-unseal"
+  target_key_id = aws_kms_key.vault_unseal.key_id
+}
+
+resource "aws_kms_alias" "vault_unseal_common" {
+  name          = "alias/vault-unseal"
   target_key_id = aws_kms_key.vault_unseal.key_id
 }
 

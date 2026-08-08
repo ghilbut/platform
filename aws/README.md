@@ -246,9 +246,9 @@ snapshot 수를 관리한다.
 Access key ID는 AWS resource 식별자로 Plan과 Apply 진행 로그에 표시된다. Secret access key는
 `k3s.tfstate`에 민감한 값으로 저장하며 Plan과 Apply 출력에 표시하지 않는다.
 
-CPA의 `vault-backup` ServiceAccount는 SharedServices의 `vault-cpa-backup` role을 수임한다. 이 role은
-`vault/cpa/raft/` object를 생성하고 읽고 정리한다. CPA의 `vault` ServiceAccount는 SecurityTooling의
-`vault-cpa-unseal` role을 수임하며 `alias/vault-cpa-unseal` KMS key의 seal 작업만 수행한다.
+Vault의 논리 데이터 백업은 `data/vault/raft/`에 저장하고 공통 KMS key는 `alias/vault-unseal`로
+식별한다. CPA의 `vault-backup`과 `vault` ServiceAccount는 현재 런타임에 한정된 IAM role을 각각
+수임한다. 런타임을 옮길 때 새 OIDC trust와 role을 만들고 같은 backup prefix와 KMS key를 사용한다.
 
 `BackupRecovery` Permission Set은 `ghilbut-backups`의 current object와 noncurrent version을
 직접 읽고 bucket과 object를 변경하지 않는다. Session duration은 4시간이다.

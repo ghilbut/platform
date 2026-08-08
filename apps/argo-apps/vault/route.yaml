@@ -15,21 +15,3 @@ spec:
             host: vault-active.vault.svc.cluster.local
             port:
               number: 8200
----
-apiVersion: networking.istio.io/v1
-kind: DestinationRule
-metadata:
-  name: vault
-  annotations:
-    argocd.argoproj.io/sync-wave: "3"
-spec:
-  host: vault-active.vault.svc.cluster.local
-  trafficPolicy:
-    portLevelSettings:
-      - port:
-          number: 8200
-        tls:
-          mode: SIMPLE
-          sni: vault.ghilbut.com
-          subjectAltNames:
-            - vault.ghilbut.com

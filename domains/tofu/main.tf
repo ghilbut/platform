@@ -10,6 +10,8 @@ locals {
 
   root_domain = "ghilbut.com"
 
+  cpa_oidc_thumbprint = "e7b8b5a6743ce1b2f17b041de59558a41472d70c"
+
   contact = {
     address_line_1    = "분당구 성남대로 171번길17 (금곡동, 씨티밸리) 811호"
     address_line_2    = ""
@@ -48,7 +50,7 @@ data "terraform_remote_state" "cdn" {
 resource "aws_iam_openid_connect_provider" "cpa" {
   url             = "https://oidc.k3s.ghilbut.com/cpa"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [var.cpa_oidc_thumbprint]
+  thumbprint_list = [local.cpa_oidc_thumbprint]
 
   tags = {
     component       = "oidc"
