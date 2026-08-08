@@ -159,7 +159,7 @@ module "backup_recovery" {
         ]
         Resource = "arn:aws:s3:::ghilbut-backups"
         Condition = {
-          StringLikeIfExists = {
+          StringLike = {
             "s3:prefix" = [
               "k3s/cpa",
               "k3s/cpa/*",

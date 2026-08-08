@@ -1,6 +1,8 @@
 locals {
-  developer_central_administration_denied_actions = [
-    "account:*",
+  developer_sensitive_service_denied_actions = [
+    "account:GetAlternateContact",
+    "account:GetContactInformation",
+    "account:GetPrimaryEmail",
     "artifact:*",
     "aws-marketplace:*",
     "aws-portal:*",
@@ -14,18 +16,23 @@ locals {
     "identitystore-auth:*",
     "identity-sync:*",
     "invoicing:*",
-    "organizations:*",
-    "observabilityadmin:*ForOrganization",
+    "organizations:DescribeAccount",
+    "organizations:DescribeHandshake",
+    "organizations:DescribeOrganization",
+    "organizations:ListAccounts",
+    "organizations:ListAccountsForParent",
+    "organizations:ListDelegatedAdministrators",
+    "organizations:ListHandshakesForAccount",
+    "organizations:ListHandshakesForOrganization",
     "payments:*",
     "purchase-orders:*",
     "sso:*",
     "sso-directory:*",
     "support:*",
-    "trustedadvisor:*",
     "uxc:*",
   ]
 
-  developer_protected_value_denied_actions = [
+  developer_sensitive_action_denied_actions = [
     "appconfig:GetConfiguration",
     "appconfig:GetLatestConfiguration",
     "appconfig:StartConfigurationSession",
@@ -33,7 +40,6 @@ locals {
     "autoscaling:DescribeLaunchConfigurations",
     "backup:*LegalHold*",
     "cassandra:Select",
-    "cloudtrail:LookupEvents",
     "cognito-identity:GetCredentialsForIdentity",
     "cognito-identity:GetOpenIdToken",
     "cognito-identity:GetOpenIdTokenForDeveloperIdentity",
@@ -57,16 +63,6 @@ locals {
     "ecr:GetDownloadUrlForLayer",
     "es:ESHttpGet",
     "glacier:GetJobOutput",
-    "iam:GetCredentialReport",
-    "iam:GetLoginProfile",
-    "iam:GetMFADevice",
-    "iam:GetSSHPublicKey",
-    "iam:ListAccessKeys",
-    "iam:ListMFADevices",
-    "iam:ListServiceSpecificCredentials",
-    "iam:ListSigningCertificates",
-    "iam:ListSSHPublicKeys",
-    "iam:ListVirtualMFADevices",
     "iot:Connect",
     "iot:Receive",
     "iot:Subscribe",
@@ -94,8 +90,15 @@ locals {
     "route53domains:GetDomainDetail",
     "route53domains:RetrieveDomainAuthCode",
     "rum:GetAppMonitorData",
-    "s3:GetObject*",
-    "s3-object-lambda:GetObject*",
+    "s3:GetObject",
+    "s3:GetObjectLegalHold",
+    "s3:GetObjectRetention",
+    "s3:GetObjectTorrent",
+    "s3:GetObjectVersion",
+    "s3:GetObjectVersionForReplication",
+    "s3:GetObjectVersionTorrent",
+    "s3-object-lambda:GetObject",
+    "s3-object-lambda:GetObjectVersion",
     "secretsmanager:BatchGetSecretValue",
     "secretsmanager:GetSecretValue",
     "ses:ListContacts",
@@ -122,6 +125,8 @@ locals {
   ]
 
   developer_configuration_read_actions = [
+    "account:Get*",
+    "account:List*",
     "acm:DescribeCertificate",
     "acm:ListTagsForCertificate",
     "access-analyzer:CheckAccessNotGranted",
@@ -161,21 +166,32 @@ locals {
     "ecr:ListTagsForResource",
     "elasticloadbalancing:Describe*",
     "health:Describe*",
+    "iam:GenerateCredentialReport",
+    "iam:GenerateOrganizationsAccessReport",
+    "iam:GenerateServiceLastAccessedDetails",
+    "iam:GetAccessKeyLastUsed",
     "iam:GetAccountAuthorizationDetails",
     "iam:GetAccountPasswordPolicy",
     "iam:GetContextKeysForCustomPolicy",
     "iam:GetContextKeysForPrincipalPolicy",
+    "iam:GetCredentialReport",
     "iam:GetGroup",
     "iam:GetGroupPolicy",
     "iam:GetInstanceProfile",
+    "iam:GetLoginProfile",
+    "iam:GetMFADevice",
     "iam:GetOpenIDConnectProvider",
+    "iam:GetOrganizationsAccessReport",
     "iam:GetPolicy",
     "iam:GetPolicyVersion",
     "iam:GetRole",
     "iam:GetRolePolicy",
     "iam:GetSAMLProvider",
     "iam:GetServerCertificate",
+    "iam:GetServiceLastAccessedDetails",
+    "iam:GetServiceLastAccessedDetailsWithEntities",
     "iam:GetServiceLinkedRoleDeletionStatus",
+    "iam:GetSSHPublicKey",
     "iam:GetUser",
     "iam:GetUserPolicy",
     "iam:SimulateCustomPolicy",
@@ -200,13 +216,21 @@ locals {
     "lambda:GetPolicy",
     "lambda:GetProvisionedConcurrencyConfig",
     "lambda:GetRuntimeManagementConfig",
+    "organizations:Describe*",
     "s3:GetAccessPoint*",
     "s3:GetAccountPublicAccessBlock",
     "s3:GetBucket*",
     "s3:GetEncryptionConfiguration",
     "s3:GetLifecycleConfiguration",
+    "s3:GetObjectAcl",
+    "s3:GetObjectTagging",
+    "s3:GetObjectVersionAcl",
+    "s3:GetObjectVersionTagging",
     "s3:GetReplicationConfiguration",
     "s3:GetStorageLensConfiguration",
+    "s3:ListBucketMultipartUploads",
+    "s3:ListBucketVersions",
+    "s3:ListMultipartUploadParts",
     "servicequotas:GetAWSDefaultServiceQuota",
     "servicequotas:GetServiceQuota",
     "servicequotas:List*",
@@ -251,11 +275,6 @@ locals {
     "route53domains:ListTagsForDomain",
   ]
 
-  developer_protected_bucket_arns = [
-    "arn:aws:s3:::ghilbut-backups",
-    "arn:aws:s3:::ghilbut-tfstates",
-    "arn:aws:s3:::ghilbut-tfstates-v2",
-  ]
 }
 
 resource "aws_identitystore_group" "developers" {
@@ -274,7 +293,7 @@ module "developers" {
 
   instance_arn = local.instance_arn
   name         = "Developers"
-  description  = "Read-only AWS visibility for developers without protected values."
+  description  = "Read-only AWS visibility for developers without sensitive information."
   managed_policy_arns = toset([
     "arn:aws:iam::aws:policy/CloudWatchReadOnlyAccess",
     "arn:aws:iam::aws:policy/job-function/ViewOnlyAccess",
@@ -283,15 +302,15 @@ module "developers" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid      = "DenyCentralAdministration"
+        Sid      = "DenySensitiveServices"
         Effect   = "Deny"
-        Action   = local.developer_central_administration_denied_actions
+        Action   = local.developer_sensitive_service_denied_actions
         Resource = "*"
       },
       {
-        Sid      = "DenyProtectedValues"
+        Sid      = "DenySensitiveActions"
         Effect   = "Deny"
-        Action   = local.developer_protected_value_denied_actions
+        Action   = local.developer_sensitive_action_denied_actions
         Resource = "*"
       },
       {
@@ -299,15 +318,6 @@ module "developers" {
         Effect   = "Deny"
         Action   = "apigateway:GET"
         Resource = "arn:aws:apigateway:*::/apikeys*"
-      },
-      {
-        Sid    = "DenyProtectedObjectInventory"
-        Effect = "Deny"
-        Action = [
-          "s3:ListBucket",
-          "s3:ListBucketVersions",
-        ]
-        Resource = local.developer_protected_bucket_arns
       },
       {
         Sid      = "AllowConfigurationRead"

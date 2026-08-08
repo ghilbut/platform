@@ -122,7 +122,7 @@ data "aws_iam_policy_document" "cpa_snapshot" {
     resources = [aws_s3_bucket.backups.arn]
 
     condition {
-      test     = "StringLikeIfExists"
+      test     = "StringLike"
       variable = "s3:prefix"
       values = [
         local.cpa_snapshot_prefix,

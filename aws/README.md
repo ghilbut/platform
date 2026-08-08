@@ -110,7 +110,7 @@ Console을 열 수 있다.
 ## Developer access
 
 `Developers` Permission Set은 workload와 Domains account에 직접 읽기 권한을 제공한다. AWS 관리형
-`ViewOnlyAccess`와 `CloudWatchReadOnlyAccess`에 보호 정보 거부 정책과 필요한 추가 조회 권한을
+`ViewOnlyAccess`와 `CloudWatchReadOnlyAccess`에 민감정보 거부 정책과 필요한 추가 조회 권한을
 결합한다.
 
 | Permission set | Assignment | Profile | IAM Identity Center role |
@@ -119,10 +119,7 @@ Console을 열 수 있다.
 | `Developers` | SecurityTooling `954066442429` | `ghilbut-developers-for-security-tooling` | `AWSReservedSSO_Developers_*` |
 | `Developers` | Domains `869061964712` | `ghilbut-developers-for-domains` | `AWSReservedSSO_Developers_*` |
 
-`Developers`는 resource 구성, IAM policy, network, public DNS, certificate, metric, 개발자용 log,
-trace, 보안 finding과 secret inventory를 읽는다. Secret과 parameter 값, 자격 증명, application data,
-state, backup, private artifact, 개인정보, 비용, Support, Organizations, IAM Identity Center와 감사
-이력은 읽지 못한다. 세부 분류와 개발자에게 보이는 위치의 작성 기준은
+`Developers`의 정보 분류와 접근 범위는
 [[knowledge/rulebooks/aws/DEVELOPER-ACCESS|AWS 개발자 접근 기준]]을 따른다.
 
 ## OpenTofu access
