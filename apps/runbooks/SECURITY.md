@@ -69,7 +69,7 @@ unset BOOTSTRAP_TAG BOOTSTRAP_REVISION
 
 | 순서 | 범위 | 실행 Issue | 완료 결과 |
 | --- | --- | --- | --- |
-| 1 | Vault | #225 → #226 → #251 → #227 → #228 → #229 | auto-unseal, 접근 정책, S3 backup과 restore |
+| 1 | Vault | #225 → #226 → #251 → #253 → #227 → #228 → #229 | auto-unseal, 접근 정책, S3 backup과 restore |
 | 2 | PostgreSQL | #230 → (#231, #232) → #233 | database, Vault credential, S3 backup과 restore |
 | 3 | Keycloak과 운영자 인증 | #234 → #235 → #236 → #237 → (#238, #239) | Keycloak, Vault·K3s·Argo CD OIDC와 비상 접근 |
 | 4 | Workload 보안 | #240 → #241 → #242 → #243 | Pod 보안, Cilium policy, Istio mTLS와 authorization |
@@ -92,15 +92,15 @@ unset BOOTSTRAP_TAG BOOTSTRAP_REVISION
 ### SECURITY-12: Vault 설치
 
 Vault는 Integrated Raft member 한 개와 AWS KMS auto-unseal로 시작한다. Helm HA mode는 Raft
-topology를 선택하며 현재 구성은 node 장애를 견디지 못한다. Vault 자체 TLS는 #243에서 STRICT mTLS와
-AuthorizationPolicy를 적용하고 통신을 검증할 때 제거한다.
+topology를 선택하며 현재 구성은 node 장애를 견디지 못한다. 외부 HTTPS는 Istio gateway에서 종료하고
+Vault service는 HTTP listener를 사용한다. MESH 단계는 내부 통신에 mTLS와 authorization을 추가한다.
 
 다음 순서로 적용한다.
 
 1. `ebs`를 동기화하고 두 storage class를 확인한다.
-2. `istio-gateways`를 동기화하고 `vault.ghilbut.com` 인증서가 Ready인지 확인한다.
+2. `istio-gateways`를 동기화하고 외부 HTTPS 인증서가 Ready인지 확인한다.
 3. `apps/argo-apps/vault.yaml`을 Argo CD에 적용하고 `vault`를 동기화한다.
-4. `vault-server` 인증서, `vault` StatefulSet과 `data-vault-0` PVC를 확인한다.
+4. `vault` StatefulSet, `data-vault-0` PVC와 실행 중인 Vault 설정을 확인한다.
 
 ```shell
 argocd app sync ebs istio-gateways
@@ -109,12 +109,16 @@ kubectl --context cpa -n argo apply -f apps/argo-apps/vault.yaml
 argocd app sync vault
 argocd app wait vault --sync --health --timeout 600
 
-kubectl --context cpa -n vault wait \
+kubectl --context cpa -n istio-gateways wait \
   --for=condition=Ready \
-  certificate/vault-server \
+  certificate/ingress-https \
   --timeout=10m
 kubectl --context cpa -n vault rollout status statefulset/vault --timeout=10m
 kubectl --context cpa -n vault get statefulset,pod,pvc
+kubectl --context cpa -n vault exec vault-0 -- \
+  grep -F 'tls_disable = 1' /tmp/storageconfig.hcl
+kubectl --context cpa -n vault exec vault-0 -- \
+  grep -F 'kms_key_id = "alias/vault-unseal"' /tmp/storageconfig.hcl
 
 set +e
 VAULT_STATUS=$(kubectl --context cpa -n vault exec vault-0 -- \

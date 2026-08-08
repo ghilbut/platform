@@ -1,13 +1,14 @@
 locals {
   cpa_oidc_issuer               = "https://oidc.k3s.ghilbut.com/cpa"
   cpa_oidc_provider_path        = trimprefix(local.cpa_oidc_issuer, "https://")
+  cpa_oidc_thumbprint           = "e7b8b5a6743ce1b2f17b041de59558a41472d70c"
   vault_service_account_subject = "system:serviceaccount:vault:vault"
 }
 
 resource "aws_iam_openid_connect_provider" "cpa" {
   url             = local.cpa_oidc_issuer
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["e7b8b5a6743ce1b2f17b041de59558a41472d70c"]
+  thumbprint_list = [local.cpa_oidc_thumbprint]
 }
 
 data "aws_iam_policy_document" "vault_unseal_assume" {
@@ -126,13 +127,19 @@ resource "aws_kms_key" "vault_unseal" {
   }
 }
 
-resource "aws_kms_alias" "vault_unseal" {
+moved {
+  from = aws_kms_alias.vault_unseal
+  to   = aws_kms_alias.vault_unseal_cpa_legacy
+}
+
+resource "aws_kms_alias" "vault_unseal_cpa_legacy" {
+  name          = "alias/vault-cpa-unseal"
+  target_key_id = aws_kms_key.vault_unseal.key_id
+}
+
+resource "aws_kms_alias" "vault_unseal_common" {
   name          = "alias/vault-unseal"
   target_key_id = aws_kms_key.vault_unseal.key_id
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 data "aws_iam_policy_document" "vault_unseal" {

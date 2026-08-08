@@ -14,10 +14,11 @@ spec:
         skipTests: true
         values: |
           global:
-            tlsDisable: false
+            tlsDisable: true
           injector:
             enabled: false
           server:
+            updateStrategyType: RollingUpdate
             serviceAccount:
               create: false
               name: vault
@@ -51,11 +52,9 @@ spec:
                   disable_mlock = true
 
                   listener "tcp" {
-                    tls_disable = 0
+                    tls_disable = 1
                     address = "[::]:8200"
                     cluster_address = "[::]:8201"
-                    tls_cert_file = "/vault/userconfig/vault-server-tls/tls.crt"
-                    tls_key_file = "/vault/userconfig/vault-server-tls/tls.key"
                   }
 
                   seal "awskms" {
@@ -90,8 +89,6 @@ spec:
               AWS_REGION: us-east-1
               AWS_ROLE_ARN: arn:aws:iam::954066442429:role/vault-cpa-unseal
               AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/aws-iam-token/token
-              VAULT_CACERT: /vault/userconfig/vault-server-tls/tls.crt
-              VAULT_TLS_SERVER_NAME: vault.ghilbut.com
             volumes:
               - name: aws-iam-token
                 projected:
@@ -118,19 +115,12 @@ spec:
                           - path: namespace
                             fieldRef:
                               fieldPath: metadata.namespace
-              - name: vault-server-tls
-                secret:
-                  defaultMode: 420
-                  secretName: vault-server-tls
             volumeMounts:
               - mountPath: /var/run/secrets/aws-iam-token
                 name: aws-iam-token
                 readOnly: true
               - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
                 name: kubernetes-api-access
-                readOnly: true
-              - mountPath: /vault/userconfig/vault-server-tls
-                name: vault-server-tls
                 readOnly: true
     - path: apps/argo-apps/vault
       repoURL: https://github.com/ghilbut/platform.git

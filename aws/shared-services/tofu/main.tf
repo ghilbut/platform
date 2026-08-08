@@ -3,6 +3,7 @@ data "aws_caller_identity" "current" {}
 locals {
   active_state_bucket_names  = ["ghilbut-tfstates"]
   cpa_oidc_issuer            = "https://oidc.k3s.ghilbut.com/cpa"
+  cpa_oidc_thumbprint        = "e7b8b5a6743ce1b2f17b041de59558a41472d70c"
   shared_services_account_id = data.aws_caller_identity.current.account_id
   state_admin_role_arn       = "arn:aws:iam::${local.shared_services_account_id}:role/tofu-state-admin"
   protected_state_bucket_arns = [
@@ -35,5 +36,5 @@ locals {
 resource "aws_iam_openid_connect_provider" "cpa" {
   url             = local.cpa_oidc_issuer
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["e7b8b5a6743ce1b2f17b041de59558a41472d70c"]
+  thumbprint_list = [local.cpa_oidc_thumbprint]
 }
